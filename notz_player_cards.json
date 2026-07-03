@@ -1,0 +1,878 @@
+{
+ "01501": {
+  "abilities": [
+   {
+    "timing": "reaction",
+    "when": "after_you_defeat_enemy",
+    "limit": "round:1",
+    "do": [
+     {
+      "effect": "discover_clue",
+      "value": 1,
+      "target": "your_location",
+      "condition": "location_has_clue"
+     }
+    ]
+   },
+   {
+    "timing": "elder_sign",
+    "effect": {
+     "bonus": {
+      "test_skill": "your_location_clues"
+     }
+    }
+   }
+  ]
+ },
+ "01504": {
+  "abilities": [
+   {
+    "timing": "reaction",
+    "when": "after_horror_placed_on_self",
+    "limit": "phase:1",
+    "do": [
+     {
+      "effect": "damage",
+      "value": 1,
+      "target": "enemy_at_your_location"
+     }
+    ]
+   },
+   {
+    "timing": "elder_sign",
+    "effect": {
+     "bonus": {
+      "test_skill": "self_horror_count"
+     }
+    }
+   }
+  ]
+ },
+ "01516": {
+  "signals": [
+   "action"
+  ],
+  "uses": {
+   "type": "ammo",
+   "count": 4
+  },
+  "abilities": [
+   {
+    "timing": "action",
+    "requires": {
+     "ammo": ">=1"
+    },
+    "do": [
+     {
+      "effect": "do_fight",
+      "bonus": {
+       "combat": 1
+      },
+      "extra_damage": 1,
+      "spend": {
+       "ammo": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01517": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "fast",
+    "cost": {
+     "resources": 1
+    },
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "bonus",
+      "bonus": {
+       "willpower": 1
+      },
+      "scope": "this_test"
+     }
+    ]
+   },
+   {
+    "timing": "fast",
+    "cost": {
+     "resources": 1
+    },
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "bonus",
+      "bonus": {
+       "combat": 1
+      },
+      "scope": "this_test"
+     }
+    ]
+   }
+  ]
+ },
+ "01518": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": {
+      "combat": 1
+     },
+     "target": "owner",
+     "condition": "is_equipped"
+    }
+   },
+   {
+    "timing": "fast",
+    "cost": {
+     "discard": "self"
+    },
+    "do": [
+     {
+      "effect": "damage",
+      "value": 1,
+      "target": "enemy_at_your_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01519": {
+  "signals": [
+   "action"
+  ],
+  "uses": {
+   "type": "supply",
+   "count": 3,
+   "discard_if_empty": true
+  },
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "heal",
+      "target_choice": "investigator_at_your_location",
+      "heal": {
+       "choose_one": [
+        "damage",
+        "horror"
+       ],
+       "value": 1
+      },
+      "spend": {
+       "supply": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01520": {
+  "signals": [
+   "action"
+  ],
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "do_fight",
+      "bonus": {
+       "combat": 1
+      },
+      "extra_damage": 0,
+      "conditional": {
+       "if": "only_enemy_engaged_with_you",
+       "extra_damage": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01521": {
+  "signals": [
+   "reaction"
+  ],
+  "abilities": [
+   {
+    "timing": "reaction",
+    "when": "self_takes_damage_from_enemy_attack",
+    "point": "interrupt",
+    "do": [
+     {
+      "effect": "damage",
+      "value": 1,
+      "target": "attacking_enemy"
+     }
+    ]
+   }
+  ]
+ },
+ "01522": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "fast",
+    "when": "after_you_defeat_enemy",
+    "requires": {
+     "resources": ">=1"
+    },
+    "condition": "location_has_clue",
+    "do": [
+     {
+      "effect": "discover_clue",
+      "value": 1,
+      "target": "your_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01523": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "fast",
+    "when": "enemy_attacks_investigator_at_your_location",
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "cancel",
+      "target": "that_attack"
+     }
+    ]
+   }
+  ]
+ },
+ "01524": {
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "choose_location",
+      "location_range": "your_location_or_connected",
+      "store": "target_location"
+     },
+     {
+      "effect": "damage",
+      "value": 3,
+      "target": "all_at_target_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01525": {
+  "type": "skill",
+  "abilities": [
+   {
+    "timing": "skill",
+    "conditional": {
+     "if": "attack_test_succeeded",
+     "extra_effect": {
+      "effect": "extra_damage",
+      "value": 1,
+      "target": "that_attack"
+     }
+    }
+   }
+  ]
+ },
+ "01526": {
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "add_ammo",
+      "value": 3,
+      "target_choice": "firearm_at_your_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01527": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": {
+      "willpower": 1
+     },
+     "target": "owner",
+     "condition": "is_equipped"
+    }
+   },
+   {
+    "timing": "fast",
+    "when": "investigator_taking_turn_at_your_location",
+    "do": [
+     {
+      "effect": "extra_action",
+      "value": 2,
+      "target": "that_investigator"
+     },
+     {
+      "effect": "discard",
+      "target": "self"
+     }
+    ]
+   }
+  ]
+ },
+ "01528": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": {
+      "combat": 1
+     },
+     "target": "owner",
+     "condition": "is_equipped"
+    }
+   },
+   {
+    "timing": "fast",
+    "cost": {
+     "exhaust": true,
+     "self_damage": {
+      "damage": 1
+     }
+    },
+    "do": [
+     {
+      "effect": "damage",
+      "value": 1,
+      "target": "enemy_at_your_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01529": {
+  "signals": [
+   "action"
+  ],
+  "uses": {
+   "type": "ammo",
+   "count": 2
+  },
+  "abilities": [
+   {
+    "timing": "action",
+    "requires": {
+     "ammo": ">=1"
+    },
+    "do": [
+     {
+      "effect": "do_fight",
+      "bonus": {
+       "combat": 3
+      },
+      "spend": {
+       "ammo": 1
+      },
+      "damage_setup": {
+       "on_success": {
+        "value": "success_by",
+        "min": 1,
+        "max": 5
+       },
+       "on_failure": {
+        "value": "fail_by",
+        "min": 1,
+        "max": 5,
+        "target": "ally_engaged_with_that_enemy"
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01558": {
+  "signals": [
+   "fast"
+  ],
+  "uses": {
+   "type": "secret",
+   "count": 4,
+   "discard_if_empty": true
+  },
+  "abilities": [
+   {
+    "timing": "fast",
+    "cost": {
+     "exhaust": true,
+     "self_damage": {
+      "horror": 1
+     }
+    },
+    "do": [
+     {
+      "effect": "move_resources",
+      "value": 1,
+      "from": "self_secret",
+      "spend": {
+       "secret": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01559": {
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": {
+      "willpower": 1
+     },
+     "target": "owner",
+     "condition": "is_equipped"
+    }
+   }
+  ]
+ },
+ "01562": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "fast",
+    "cost": {
+     "resources": 1
+    },
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "bonus",
+      "bonus": {
+       "willpower": 1
+      },
+      "scope": "this_test"
+     }
+    ]
+   },
+   {
+    "timing": "fast",
+    "cost": {
+     "resources": 1
+    },
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "bonus",
+      "bonus": {
+       "intellect": 1
+      },
+      "scope": "this_test"
+     }
+    ]
+   }
+  ]
+ },
+ "01563": {
+  "signals": [
+   "fast",
+   "forced"
+  ],
+  "abilities": [
+   {
+    "timing": "forced",
+    "when": "after_this_enters_play",
+    "do": [
+     {
+      "effect": "place_doom",
+      "value": 1,
+      "target": "self"
+     }
+    ]
+   },
+   {
+    "timing": "fast",
+    "cost": {
+     "exhaust": true
+    },
+    "do": [
+     {
+      "effect": "search_deck",
+      "deck_range": "top",
+      "count": 1,
+      "search": "Spell",
+      "on_result": {
+       "none": "no_draw",
+       "one": "auto_draw",
+       "many": "popup_choice"
+      },
+      "then": "shuffle_deck"
+     }
+    ]
+   }
+  ]
+ },
+ "01564": {
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "draw_encounter",
+      "value": 1,
+      "resolve": "keywords_and_revelation_first"
+     },
+     {
+      "effect": "discover_clue",
+      "value": 2,
+      "target": "your_location"
+     }
+    ]
+   }
+  ]
+ },
+ "01565": {
+  "can_cancel": "on_draw_effect",
+  "abilities": [
+   {
+    "timing": "fast",
+    "when": "you_draw_nonweakness_treachery",
+    "requires": {
+     "resources": ">=1"
+    },
+    "do": [
+     {
+      "effect": "cancel",
+      "target": "triggering_card"
+     },
+     {
+      "effect": "damage",
+      "self_damage": {
+       "horror": 1
+      }
+     }
+    ]
+   }
+  ],
+  "signals": [
+   "fast"
+  ]
+ },
+ "01566": {
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "do_evade",
+      "replace_skill": {
+       "agility": "willpower"
+      }
+     },
+     {
+      "effect": "damage",
+      "value": 1,
+      "target": "evaded_enemy",
+      "condition": "on_success"
+     },
+     {
+      "effect": "penalty",
+      "condition": "special_token_this_test",
+      "detail": {
+       "lose_action": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01567": {
+  "type": "skill",
+  "abilities": [
+   {
+    "timing": "skill",
+    "conditional": {
+     "if": "test_succeeded",
+     "extra_effect": {
+      "effect": "heal",
+      "heal": {
+       "horror": 1
+      },
+      "target": "self"
+     }
+    }
+   }
+  ]
+ },
+ "01569": {
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "do_evade",
+      "replace_skill": {
+       "agility": "willpower"
+      }
+     },
+     {
+      "effect": "damage",
+      "value": 2,
+      "target": "evaded_enemy",
+      "condition": "on_success"
+     },
+     {
+      "effect": "penalty",
+      "condition": "special_token_this_test",
+      "detail": {
+       "lose_action": 1,
+       "self_damage": {
+        "horror": 1
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01570": {
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "add_slot": {
+      "arcane": 1
+     },
+     "target": "owner",
+     "condition": "is_equipped"
+    }
+   },
+   {
+    "timing": "action",
+    "cost": {
+     "exhaust": true
+    },
+    "do": [
+     {
+      "effect": "add_charge",
+      "value": 1,
+      "target_choice": "spell_asset_you_control"
+     }
+    ]
+   }
+  ]
+ },
+ "01571": {
+  "signals": [
+   "reaction"
+  ],
+  "uses": {
+   "type": "charge",
+   "count": 4,
+   "discard_if_empty": true
+  },
+  "abilities": [
+   {
+    "timing": "reaction",
+    "when": "before_reveal_chaos_token",
+    "cost": {
+     "spend": {
+      "charge": 1
+     }
+    },
+    "do": [
+     {
+      "effect": "change_token_count",
+      "value": 2,
+      "choice": "resolve_one_ignore_rest"
+     }
+    ]
+   }
+  ]
+ },
+ "01683": {
+  "signals": [
+   "action"
+  ],
+  "uses": {
+   "type": "supply",
+   "count": 4,
+   "discard_if_empty": true
+  },
+  "abilities": [
+   {
+    "timing": "action",
+    "do": [
+     {
+      "effect": "heal",
+      "target_choice": "investigator_or_ally_at_your_location",
+      "heal": {
+       "damage": 1,
+       "horror": 1
+      },
+      "spend": {
+       "supply": 1
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "01684": {
+  "signals": [
+   "fast"
+  ],
+  "abilities": [
+   {
+    "timing": "fast",
+    "when": "self_takes_damage_or_horror",
+    "do": [
+     {
+      "effect": "cancel",
+      "target": "damage_and_horror",
+      "max": 5,
+      "choice": "choose_cancel_target",
+      "store": "cancel_amount"
+     },
+     {
+      "effect": "gain_resources",
+      "value": "cancel_amount"
+     }
+    ]
+   }
+  ]
+ },
+ "01690": {
+  "signals": [
+   "fast"
+  ],
+  "uses": {
+   "type": "charge",
+   "count": 3
+  },
+  "abilities": [
+   {
+    "timing": "fast",
+    "cost": {
+     "exhaust": true,
+     "spend": {
+      "charge": 1
+     }
+    },
+    "do": [
+     {
+      "effect": "look_at_deck",
+      "target_choice": "any_player_or_encounter_deck",
+      "deck_range": "top",
+      "count": 3,
+      "method": "place_in_chosen_order"
+     },
+     {
+      "effect": "damage",
+      "self_damage": {
+       "horror": 1
+      },
+      "condition": "has_terror_or_omen"
+     }
+    ]
+   }
+  ]
+ },
+ "01603": {
+  "on_draw": "spawn_enemy",
+  "keywords": [
+   "hunter"
+  ],
+  "prey": "bearer_only",
+  "abilities": [
+   {
+    "timing": "constant",
+    "condition": "at_bearer_location",
+    "effect": "blank_text",
+    "target": "bearer_investigator",
+    "except": "traits"
+   }
+  ]
+ },
+ "01598": {
+  "on_draw": "put_into_play",
+  "zone": "threat",
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": {
+      "willpower": -1,
+      "intellect": -1,
+      "combat": -1,
+      "agility": -1
+     },
+     "target": "owner"
+    }
+   },
+   {
+    "timing": "action",
+    "cost": {
+     "action": 2
+    },
+    "do": [
+     {
+      "effect": "discard",
+      "target": "self"
+     }
+    ]
+   }
+  ]
+ },
+ "01596": {
+  "on_draw": "resolve_and_discard",
+  "abilities": [
+   {
+    "do": [
+     {
+      "effect": "discard",
+      "target": "hand",
+      "keep": 1,
+      "choice": "keep",
+      "ui": "popup_pick"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arkham Horror — 협력 카드게임</title>
+<style>
+  /* ============================================================
+     디자인 방향: 옛 존재의 공포 / 1920년대 신비주의
+     - 배경은 칠흑(#05060a), 강조는 창백한 청록 글로우(영안·심령)
+     - 메뉴 글씨는 가는 세리프, 자간 넓게 → 의식문 느낌
+     ============================================================ */
+  :root{
+    --void:#05060a;          /* 칠흑 배경 */
+    --ink:#0a0c12;           /* 팝업·패널 바탕 */
+    --pale:#e8e6dd;          /* 본문 흰 글씨(살짝 바랜 상아) */
+    --glow:#8fd6c8;          /* 심령 청록(호버 글로우) */
+    --glow-dim:#3a5d57;      /* 청록 어둡게 */
+    --gold:#c9a84c;          /* 엘더사인 금색 액센트 */
+    --blood:#7a2d2d;         /* 피해/위험 */
+    --edge:#1c2230;          /* 테두리 */
+    --muted:#6b6f7a;         /* 비활성 회색 */
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#000;overflow:hidden;}
+  body{
+    font-family:'Hoefler Text','Iowan Old Style','Apple Garamond','Times New Roman',serif;
+    color:var(--pale);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+
+  /* 1920x1080 무대. 화면이 작으면 비율 유지하며 축소 */
+  #stage{
+    position:relative;
+    width:1920px; height:1080px;
+    margin:0 auto;
+    background:var(--void);
+    overflow:hidden;
+  }
+
+  /* ---------- 공통: 페이드 레이어 ---------- */
+  #fade{
+    position:absolute; inset:0; z-index:90;
+    background:#000; opacity:0;
+    pointer-events:none;
+    transition:opacity 1.1s ease;
+  }
+  #fade.show{opacity:1; pointer-events:all;}
+
+  /* ============================================================
+     프롤로그 연출 — 검은 화면, 중앙 흰 글씨, 손으로 쓰듯 타이핑
+     ============================================================ */
+  #screen-prologue{
+    position:absolute; inset:0; z-index:80;
+    background:#000; display:none;
+    align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1.4s ease;
+  }
+  #screen-prologue.show{ display:flex; opacity:1; }
+  #prologue-text{
+    width:min(720px,82vw); max-height:74vh; overflow:hidden;
+    color:#f4f2ec; font-size:20px; line-height:2.05;
+    letter-spacing:.02em; text-align:left;
+    font-family:'Iowan Old Style','Hoefler Text','맑은 고딕',serif;
+    text-shadow:0 0 18px rgba(255,255,255,.06);
+    display:flex; flex-direction:column; justify-content:flex-end;  /* 아래 정렬 → 누적되며 위로 밀림 */
+  }
+  #prologue-text .pl-line{ opacity:.92; min-height:1.2em; }
+  #prologue-text .pl-cursor::after{ content:"▌"; margin-left:1px; animation:plblink 1s steps(1) infinite; color:#f4f2ec; }
+  @keyframes plblink{ 50%{opacity:0;} }
+
+  /* 스킵 안내 + 원형 게이지 (우상단) */
+  #prologue-skip{
+    position:absolute; top:26px; right:30px; z-index:82;
+    display:flex; align-items:center; gap:12px;
+    color:rgba(244,242,236,.55); font-size:13px; letter-spacing:.04em;
+  }
+  #prologue-skip .skip-ring{ transform:rotate(-90deg); }
+  #prologue-skip .ring-bg{ fill:none; stroke:rgba(255,255,255,.12); stroke-width:2.5; }
+  #prologue-skip .ring-fg{ fill:none; stroke:#f4f2ec; stroke-width:2.5; stroke-linecap:round;
+    stroke-dasharray:88; stroke-dashoffset:88; }   /* 2πr≈88, 처음엔 안 보임 */
+
+  /* ============================================================
+     화면 1 — 메인 메뉴 (영상 배경 + 의식문 메뉴)
+     ============================================================ */
+  #screen-main{position:absolute; inset:0; z-index:10;}
+
+  #bg-video{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    z-index:2;                 /* 대체 배경보다 위 */
+    /* 영상 위에 상호작용 막기 위해 pointer-events 차단 */
+    pointer-events:none;
+    background:#05060a;
+  }
+  /* 영상이 없을 때(미리보기)만 보일 대체 배경 — 영상보다 아래(맨 밑) */
+  #bg-fallback{
+    position:absolute; inset:0;
+    z-index:1;                 /* 영상 뒤로 깔림 */
+    background:
+      radial-gradient(120% 80% at 50% 18%, rgba(40,70,66,.22), transparent 60%),
+      radial-gradient(140% 90% at 50% 120%, rgba(0,0,0,.9), transparent 50%),
+      #05060a;
+    pointer-events:none;
+  }
+  #vignette{
+    position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(130% 100% at 50% 45%, transparent 50%, rgba(0,0,0,.75) 100%);
+    z-index:11;
+  }
+
+  /* 메뉴 묶음: 화면 중앙 세로 */
+  #menu{
+    position:absolute; z-index:12;
+    left:50%; top:calc(50% + 100px);
+    transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center;
+    gap:26px;
+    /* 처음엔 보이지 않음. 3초 시점에 천천히 드러남 */
+    opacity:0;
+    transition:opacity 1s ease;
+    /* 4초 전까지는 클릭 불가 */
+    pointer-events:none;
+  }
+  #menu.reveal{opacity:1;}
+  #menu.interactive{pointer-events:auto;}
+
+  .title{
+    font-size:18px; letter-spacing:.55em; text-transform:uppercase;
+    color:var(--glow); opacity:.65; margin-bottom:14px; font-weight:400;
+    text-indent:.55em;
+  }
+
+  .menu-item{
+    font-size:30px; letter-spacing:.30em; text-transform:uppercase;
+    color:rgba(232,230,221,.78);
+    cursor:pointer;
+    padding:4px 18px;
+    transition:transform .18s ease, color .18s ease, text-shadow .18s ease, letter-spacing .18s ease;
+    text-shadow:0 0 0 rgba(143,214,200,0);
+    line-height:1;
+  }
+  /* 호버: 더 크게 + 더 하얗게 + 청록 글로우(테두리 번짐) */
+  #menu.interactive .menu-item:hover{
+    color:#ffffff;
+    transform:scale(1.18);
+    letter-spacing:.34em;
+    text-shadow:
+      0 0 8px rgba(255,255,255,.55),
+      0 0 22px rgba(143,214,200,.85),
+      0 0 44px rgba(143,214,200,.55);
+  }
+  /* 미구현 항목: 흐릿하게, 호버해도 글로우만 약하게 */
+  .menu-item.disabled{ color:rgba(120,124,135,.55); }
+  #menu.interactive .menu-item.disabled:hover{
+    color:rgba(160,164,175,.8);
+    transform:scale(1.06);
+    text-shadow:0 0 10px rgba(120,124,135,.4);
+  }
+  .menu-item .tag{
+    font-size:11px; letter-spacing:.2em; color:var(--muted);
+    vertical-align:middle; margin-left:8px;
+  }
+
+  /* ============================================================
+     화면 2 — 플레이어 수 팝업 (검은 화면 위)
+     ============================================================ */
+  #screen-setup{
+    position:absolute; inset:0; z-index:40;
+    background:#000;
+    display:none;
+    align-items:center; justify-content:center;
+  }
+  #screen-setup.show{display:flex;}
+
+  .dialog{
+    width:440px;
+    background:linear-gradient(180deg,#0b0e15,#070910);
+    border:1px solid var(--edge);
+    box-shadow:0 0 60px rgba(143,214,200,.06), inset 0 0 40px rgba(0,0,0,.6);
+    padding:38px 36px 32px;
+    text-align:center;
+    border-radius:2px;
+  }
+  .dialog .sigil{
+    font-size:20px; color:var(--gold); letter-spacing:.4em; opacity:.7;
+    margin-bottom:18px;
+  }
+  .dialog h2{
+    font-size:19px; font-weight:400; letter-spacing:.08em;
+    margin:0 0 26px; color:var(--pale); line-height:1.5;
+  }
+  .field{ margin-bottom:28px; }
+  .field label{
+    display:block; font-size:12px; letter-spacing:.25em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:10px;
+  }
+  select{
+    appearance:none; -webkit-appearance:none;
+    width:160px; padding:12px 16px;
+    background:#05060a; color:var(--pale);
+    border:1px solid var(--glow-dim);
+    font-family:inherit; font-size:18px; letter-spacing:.1em;
+    text-align:center; text-align-last:center;
+    border-radius:2px; cursor:not-allowed;
+    background-image:linear-gradient(180deg,transparent,rgba(143,214,200,.04));
+  }
+  select:disabled{ opacity:.9; color:var(--glow); }
+  .hint{ font-size:11px; color:var(--muted); margin-top:8px; letter-spacing:.05em; }
+
+  .btn{
+    font-family:inherit;
+    font-size:15px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--pale);
+    background:transparent;
+    border:1px solid var(--glow-dim);
+    padding:12px 38px; cursor:pointer; border-radius:2px;
+    transition:all .2s ease;
+  }
+  .btn:hover{
+    color:#fff; border-color:var(--glow);
+    box-shadow:0 0 18px rgba(143,214,200,.4), inset 0 0 14px rgba(143,214,200,.08);
+    text-shadow:0 0 12px rgba(143,214,200,.6);
+  }
+
+  /* ============================================================
+     화면 3 — 캐릭터 선택 · 덱빌딩
+     ============================================================ */
+  #screen-deck{
+    position:absolute; inset:0; z-index:30;
+    background:
+      radial-gradient(100% 70% at 50% 0%, rgba(30,50,48,.18), transparent 55%),
+      #070910;
+    display:none;
+    flex-direction:column;
+  }
+  #screen-deck.show{display:flex;}
+
+  .deck-head{
+    flex:0 0 auto;
+    padding:30px 30px 20px;
+    border-bottom:1px solid var(--edge);
+    display:flex; align-items:baseline; gap:20px;
+    padding-right:160px;   /* 우상단 '메인으로' 버튼과 겹치지 않게 */
+  }
+  .deck-head h1{
+    font-size:30px; font-weight:400; letter-spacing:.16em; margin:0;
+    text-transform:uppercase; color:var(--pale);
+  }
+  .deck-head .sub{ font-size:15px; color:var(--muted); letter-spacing:.14em; }
+  .deck-head .step{ margin-left:auto; font-size:12px; color:var(--glow); letter-spacing:.2em; }
+
+  .deck-body{ flex:1 1 auto; display:flex; min-height:0; }
+
+  /* 좌: 조사자 선택 */
+  .col-invest{
+    flex:0 0 320px; border-right:1px solid var(--edge);
+    padding:20px; overflow-y:auto;
+  }
+  .col-title{
+    font-size:12px; letter-spacing:.25em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 16px;
+  }
+  .invest-card{
+    border:1px solid var(--edge); border-radius:3px; overflow:hidden;
+    margin-bottom:14px; cursor:pointer; background:#0a0c12;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .invest-card:hover{ border-color:var(--glow-dim); }
+  .invest-card.sel{
+    border:3px solid var(--gold);
+    box-shadow:0 0 28px rgba(201,168,76,.55), inset 0 0 0 1px rgba(201,168,76,.4);
+  }
+  .invest-card.sel .nm{ color:var(--gold); font-weight:600; }
+  .invest-card img{ width:100%; display:block; }
+  .invest-card .nm{ padding:8px 10px; font-size:14px; letter-spacing:.05em; }
+  .invest-card .ph{
+    padding:30px 10px; text-align:center; color:var(--muted); font-size:12px;
+  }
+
+  /* 우: 카드 풀 */
+  .col-pool{ flex:1 1 auto; padding:20px 24px; overflow-y:auto; }
+  .pool-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:14px;
+  }
+  .pcard{
+    border:1px solid var(--edge); border-radius:4px; overflow:hidden;
+    background:#0a0c12; cursor:pointer; position:relative;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .pcard:hover{
+    transform:translateY(-3px);
+    border-color:var(--glow-dim);
+    box-shadow:0 6px 22px rgba(0,0,0,.6), 0 0 16px rgba(143,214,200,.15);
+  }
+  .pcard img{ width:100%; display:block; aspect-ratio:5/7; object-fit:cover; }
+  .pcard .nm{
+    padding:6px 8px; font-size:12px; letter-spacing:.03em;
+    border-top:1px solid var(--edge); color:rgba(232,230,221,.85);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .pcard .ph{ padding:40px 6px; text-align:center; color:var(--muted); font-size:11px; }
+
+  .loading{
+    grid-column:1/-1; text-align:center; color:var(--muted);
+    padding:60px 0; font-size:14px; letter-spacing:.15em;
+  }
+  .loading .pulse{ color:var(--glow); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.35;} 50%{opacity:1;} }
+
+  /* 카드 위 매수 배지 (담은 수 / 한도) */
+  .pcard .count{
+    position:absolute; top:6px; right:6px; z-index:2;
+    font-size:11px; letter-spacing:.05em;
+    background:rgba(5,6,10,.82); color:var(--gold);
+    border:1px solid var(--glow-dim); border-radius:3px;
+    padding:2px 6px;
+  }
+  .pcard.full{ opacity:.45; }
+  .pcard.full:hover{ transform:none; box-shadow:none; border-color:var(--edge); }
+
+  /* 헤더 카운트 */
+  .deck-head .deck-count{
+    margin-left:14px; font-size:14px; color:var(--gold); letter-spacing:.1em;
+  }
+  .col-sub{ font-size:11px; color:var(--muted); letter-spacing:.05em; margin-left:6px; }
+
+  /* 우측: 덱 목록 칸 — 세로 배치(목록 위 / 카운터·버튼 하단 고정) */
+  .col-deck{
+    flex:0 0 300px; border-left:1px solid var(--edge);
+    padding:20px; display:flex; flex-direction:column; min-height:0;
+  }
+  .col-deck .col-title{ flex:0 0 auto; }
+  #deck-list{ flex:1 1 auto; overflow-y:auto; min-height:0; }
+  #deck-list .deck-empty{ color:var(--muted); font-size:13px; }
+  /* 덱 칸 하단: 0/30 카운터 + 진행 버튼 */
+  .deck-foot{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding-top:14px; margin-top:10px; border-top:1px solid var(--edge);
+  }
+  .deck-foot .deck-count{ font-size:18px; color:var(--muted); letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+  .deck-foot .deck-count.done{ color:var(--gold); }
+  .confirm-btn{ padding:9px 22px; font-size:14px; }
+  .confirm-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .dcard{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; margin-bottom:4px;
+    border:1px solid var(--edge); border-radius:4px;
+    background:#0a0c12; cursor:pointer; font-size:13px;
+    transition:border-color .15s, background .15s;
+  }
+  .dcard:hover{ border-color:var(--blood); background:#160d0d; }
+  .dcard .qty{ color:var(--gold); font-weight:600; flex:0 0 auto; }
+  .dcard .dn{ flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:rgba(232,230,221,.9); }
+  .dcard .rm{ flex:0 0 auto; color:var(--muted); font-size:14px; }
+  .dcard:hover .rm{ color:var(--blood); }
+  .dcard.sig{ border-color:#7a5a2a; background:#1a140c; cursor:default; }
+  .dcard .sigtag{ flex:0 0 auto; font-size:10px; color:var(--gold); border:1px solid #7a5a2a; border-radius:3px; padding:1px 5px; letter-spacing:.05em; }
+
+  .deck-back{
+    position:absolute; top:18px; right:30px; z-index:5;
+  }
+
+  /* 덱 완성 확인 팝업 */
+  #deck-pop{ position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+    background:rgba(5,6,10,.6); }
+  .deck-pop-box{ background:linear-gradient(180deg,#1f1828,#15101c); border:1px solid var(--glow,#7a4ea8);
+    border-radius:12px; padding:28px 34px; text-align:center; box-shadow:0 14px 44px rgba(0,0,0,.7); }
+  .deck-pop-box p{ margin:0 0 22px; font-size:15px; line-height:1.7; }
+  .deck-pop-btns{ display:flex; gap:12px; justify-content:center; }
+  .deck-pop-btns .btn{ padding:9px 24px; font-size:14px; }
+  .deck-pop-btns .primary{ background:#7a4ea8; }
+
+  /* 무작위 약점 결과 팝업 */
+  #weak-pop{ position:absolute; inset:0; z-index:31; display:flex; align-items:center; justify-content:center;
+    background:rgba(5,6,10,.78); }
+  .weak-pop-box{ background:linear-gradient(180deg,#1f1828,#15101c); border:1px solid #7a4ea8;
+    border-radius:12px; padding:26px 30px; text-align:center; box-shadow:0 14px 44px rgba(0,0,0,.8); }
+  .weak-title{ margin:0 0 16px; font-size:14px; letter-spacing:.1em; color:var(--gold); }
+  .weak-img{ width:240px; height:336px; margin:0 auto 14px; border-radius:10px; overflow:hidden;
+    background:#0a0810; border:1px solid var(--edge); display:flex; align-items:center; justify-content:center; }
+  .weak-img img{ width:100%; height:100%; object-fit:cover; }
+  .weak-name{ margin:0 0 20px; font-size:15px; color:var(--pale); }
+  #weak-ok{ padding:9px 30px; font-size:14px; }
+
+  /* 카드 호버 번역 툴팁 (deckbuilder.html 방식) */
+  #tip{
+    position:fixed; display:none; z-index:200;
+    width:300px; max-height:92vh; overflow:auto;
+    background:#15111c; border:1px solid var(--glow-dim);
+    border-radius:10px; padding:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.7), 0 0 22px rgba(143,214,200,.12);
+    font-size:13px; line-height:1.6; pointer-events:none;
+    font-family:'Hoefler Text','Iowan Old Style','Times New Roman',serif;
+    color:var(--pale);
+  }
+  #tip .tn{ font-size:17px; font-weight:600; margin-bottom:2px; color:#fff; }
+  #tip .ts{ color:var(--glow); font-size:12px; margin-bottom:5px; letter-spacing:.03em; }
+  #tip .tt{ font-style:italic; color:#b9c9c4; font-size:12px; margin-bottom:6px; }
+  #tip .tx{ white-space:pre-line; border-top:1px solid var(--edge); padding-top:8px; }
+  #tip .tf{ margin-top:8px; font-style:italic; color:var(--muted); font-size:12px; }
+
+  /* 무대 축소 기준점을 좌상단으로 고정 (JS의 left/top 계산과 일치) */
+  #stage{ transform-origin:top left; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ===== 화면 1: 메인 메뉴 ===== -->
+  <div id="screen-main">
+    <video id="bg-video" src="arkhamhorror.mp4" autoplay loop muted playsinline preload="auto"></video>
+    <div id="bg-fallback"></div>
+    <div id="vignette"></div>
+
+    <nav id="menu">
+      <div class="menu-item" data-action="single">Single Game</div>
+      <div class="menu-item disabled" data-action="multi">Multi Game <span class="tag">(준비 중)</span></div>
+      <div class="menu-item disabled" data-action="option">Option <span class="tag">(준비 중)</span></div>
+      <div class="menu-item disabled" data-action="credit">Credit <span class="tag">(준비 중)</span></div>
+      <div class="menu-item" data-action="quit">Quit</div>
+    </nav>
+  </div>
+
+  <!-- ===== 화면 2: 플레이어 수 팝업 ===== -->
+  <div id="screen-setup">
+    <div class="dialog">
+      <div class="sigil">✦</div>
+      <h2>플레이어 숫자를 지정해 주십시오.</h2>
+      <div class="field">
+        <label>Investigators</label>
+        <select id="player-count" disabled>
+          <option value="1" selected>1</option>
+        </select>
+        <div class="hint">테스트 빌드 — 1인 고정</div>
+      </div>
+      <button class="btn" id="confirm-players">확인</button>
+    </div>
+  </div>
+
+  <!-- ===== 화면 3: 캐릭터 선택 · 덱빌딩 ===== -->
+  <div id="screen-deck">
+    <div class="deck-head">
+      <h1>Investigator &amp; Deck</h1>
+      <span class="sub">Night of the Zealot</span>
+    </div>
+    <div class="deck-body">
+      <div class="col-invest">
+        <p class="col-title">조사자</p>
+        <div id="invest-list"></div>
+      </div>
+      <div class="col-pool">
+        <p class="col-title">카드 풀 — Night of the Zealot</p>
+        <div class="pool-grid" id="pool-grid">
+          <div class="loading"><span class="pulse">카드를 불러오는 중…</span></div>
+        </div>
+      </div>
+      <div class="col-deck">
+        <p class="col-title">덱 목록 <span class="col-sub">이름 클릭 = 1장 빼기</span></p>
+        <div id="deck-list"><div class="deck-empty">조사자를 고르고 카드를 담으세요.</div></div>
+        <div class="deck-foot">
+          <span class="deck-count" id="deck-count">0/30</span>
+          <button class="btn confirm-btn" id="confirm-btn" disabled>진행</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn deck-back" id="deck-back">← 메인으로</button>
+
+    <!-- 덱 완성 확인 팝업 -->
+    <div id="deck-pop" style="display:none">
+      <div class="deck-pop-box">
+        <p>덱을 확정하고 무작위 약점을 뽑으시겠습니까?</p>
+        <div class="deck-pop-btns">
+          <button class="btn" id="pop-cancel">취소</button>
+          <button class="btn primary" id="pop-yes">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 무작위 약점 결과 팝업 -->
+    <div id="weak-pop" style="display:none">
+      <div class="weak-pop-box">
+        <p class="weak-title">무작위 기본 약점</p>
+        <div class="weak-img" id="weak-img" data-c=""></div>
+        <p class="weak-name" id="weak-name"></p>
+        <button class="btn primary" id="weak-ok">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 카드 호버 번역 툴팁 -->
+  <div id="tip"></div>
+
+  <!-- 프롤로그 연출 화면 -->
+  <div id="screen-prologue">
+    <div id="prologue-text"></div>
+    <div id="prologue-skip">
+      <span class="skip-label">스킵하려면 esc를 길게 누르십시오.</span>
+      <svg class="skip-ring" width="34" height="34" viewBox="0 0 34 34">
+        <circle class="ring-bg" cx="17" cy="17" r="14"></circle>
+        <circle class="ring-fg" id="skip-ring-fg" cx="17" cy="17" r="14"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 페이드 레이어(맨 위) -->
+  <div id="fade"></div>
+</div>
+
+<!-- 프롤로그 내레이션 음성(파일을 게임 폴더에 두세요: opening narration.mp3) -->
+<audio id="prologue-audio" src="opening narration.mp3" preload="auto"></audio>
+
+<script>
+/* =====================================================================
+   notz_player_cards.json 에 들어있는 카드번호 목록
+   (지금까지 직접 데이터화한 카드들만 덱빌딩 화면에 노출)
+   ===================================================================== */
+const NOTZ_CODES = ["01501","01504","01516","01517","01518","01519","01520",
+  "01521","01522","01523","01524","01525","01526","01527","01528","01529",
+  "01558","01559","01562","01563","01564","01565","01566","01567","01569",
+  "01570","01571","01683","01684","01690"];
+
+const EN_API = "https://arkhamdb.com";       /* 영문 이미지 */
+const KO_API = "https://ko.arkhamdb.com";     /* 한국어 텍스트 */
+
+/* ---------- 요소 ---------- */
+const fade   = document.getElementById("fade");
+const menu   = document.getElementById("menu");
+const scrMain  = document.getElementById("screen-main");
+const scrSetup = document.getElementById("screen-setup");
+const scrDeck  = document.getElementById("screen-deck");
+
+/* =====================================================================
+   전역 우클릭 처리
+   - 윈도우 기본 메뉴(복사·이미지 저장 등)를 게임 어디서도 안 뜨게 차단
+   - 취소 옵션이 있는 팝업이 떠 있으면, 우클릭 = 자동 취소
+   ===================================================================== */
+window.addEventListener("contextmenu", (e)=>{
+  e.preventDefault();
+  // 떠 있는 팝업의 '취소' 버튼을 우클릭으로 누른 효과
+  const cancelTargets = [
+    {pop:"deck-pop",  cancel:"pop-cancel"},   // 덱 완성 확인(취소 있음)
+  ];
+  for(const t of cancelTargets){
+    const pop=document.getElementById(t.pop);
+    if(pop && pop.style.display!=="none" && getComputedStyle(pop).display!=="none"){
+      const btn=document.getElementById(t.cancel);
+      if(btn){ btn.click(); return; }
+    }
+  }
+  // 무작위 약점 팝업(weak-pop)은 취소 옵션이 없으므로 우클릭으로 닫지 않음
+});
+
+/* =====================================================================
+   화면 1 — 메뉴 등장 타이밍
+   3초: 글씨가 페이드인으로 천천히 드러남
+   4초: 상호작용 가능
+   ===================================================================== */
+function startMainSequence(){
+  menu.classList.remove("reveal","interactive");
+  // 3초 시점 → 페이드인 시작(1초에 걸쳐 드러남)
+  setTimeout(()=>{ menu.classList.add("reveal"); }, 3000);
+  // 4초 시점 → 클릭 등 상호작용 허용
+  setTimeout(()=>{ menu.classList.add("interactive"); }, 4000);
+}
+
+/* ---------- 메뉴 클릭 ---------- */
+menu.addEventListener("click", (e)=>{
+  const item = e.target.closest(".menu-item");
+  if(!item) return;
+  if(!menu.classList.contains("interactive")) return;  // 4초 전 무시
+  const action = item.dataset.action;
+
+  if(item.classList.contains("disabled")) return;       // 미구현
+
+  if(action==="single"){ goSingle(); }
+  else if(action==="quit"){ doQuit(); }
+});
+
+function doQuit(){
+  // 브라우저 보안상 window.close()는 직접 연 창에서만 동작.
+  // Electron 패키징 시 실제 종료로 교체 예정.
+  fade.classList.add("show");
+  setTimeout(()=>{
+    document.body.innerHTML =
+      '<div style="height:100vh;display:flex;align-items:center;justify-content:center;'+
+      'background:#000;color:#6b6f7a;font-family:serif;letter-spacing:.3em;">— 게임을 종료했습니다 —</div>';
+    try{ window.close(); }catch(_){}
+  }, 1100);
+}
+
+/* =====================================================================
+   화면 1 → 2 : Single Game → 페이드아웃 → 플레이어 수 팝업
+   ===================================================================== */
+function goSingle(){
+  fade.classList.add("show");                 // 검게 페이드아웃
+  setTimeout(()=>{
+    scrMain.style.display = "none";
+    scrSetup.classList.add("show");           // 검은 화면 위 팝업
+    fade.classList.remove("show");            // 검은 막 걷기(팝업이 검은 배경)
+  }, 1150);
+}
+
+/* =====================================================================
+   화면 2 → 3 : 확인 → 페이드인 → 덱빌딩
+   ===================================================================== */
+document.getElementById("confirm-players").addEventListener("click", ()=>{
+  fade.classList.add("show");
+  setTimeout(()=>{
+    scrSetup.classList.remove("show");
+    scrDeck.classList.add("show");
+    fade.classList.remove("show");            // 페이드인으로 덱빌딩 등장
+    loadDeckScreen();
+  }, 1150);
+});
+
+/* 메인으로 돌아가기 */
+document.getElementById("deck-back").addEventListener("click", ()=>{
+  fade.classList.add("show");
+  setTimeout(()=>{
+    scrDeck.classList.remove("show");
+    scrMain.style.display = "";
+    fade.classList.remove("show");
+    startMainSequence();                      // 메뉴 등장 시퀀스 재생
+  }, 1150);
+});
+
+/* 덱 완성 → 확인 팝업 → 진행 */
+const deckPop=document.getElementById("deck-pop");
+document.getElementById("confirm-btn").addEventListener("click", ()=>{
+  if(deckTotal()!==DECK_SIZE) return;
+  deckPop.style.display="flex";
+});
+document.getElementById("pop-cancel").addEventListener("click", ()=>{
+  deckPop.style.display="none";   // 30/30 상태 유지, 확인 버튼도 그대로 활성
+});
+document.getElementById("pop-yes").addEventListener("click", ()=>{
+  deckPop.style.display="none";
+  drawRandomWeakness();           // 무작위 약점 뽑아 표시
+});
+
+/* 무작위 기본 약점 뽑기 → 결과 팝업(이미지) */
+const weakPop=document.getElementById("weak-pop");
+function drawRandomWeakness(){
+  if(!RANDOM_WEAKNESSES.length){
+    // 약점 풀이 없으면(폴백 등) 그냥 프롤로그로
+    startPrologue(); return;
+  }
+  const w = RANDOM_WEAKNESSES[Math.floor(Math.random()*RANDOM_WEAKNESSES.length)];
+  drawnWeakness = w;
+  const imgBox=document.getElementById("weak-img");
+  imgBox.dataset.c = w.code;       // 호버 툴팁(한글 텍스트)용
+  imgBox.innerHTML = w.imagesrc
+    ? '<img src="'+EN_API+w.imagesrc+'" alt="">'
+    : '<div class="ph" style="color:var(--muted)">이미지 없음</div>';
+  document.getElementById("weak-name").textContent = w.name||"";
+  weakPop.style.display="flex";
+}
+document.getElementById("weak-ok").addEventListener("click", ()=>{
+  // 뽑힌 약점을 덱에 추가(시그니처처럼 30장에 안 셈)
+  if(drawnWeakness){
+    deck[drawnWeakness.code] = 1;
+    if(!signatureCodes.includes(drawnWeakness.code)) signatureCodes.push(drawnWeakness.code);
+  }
+  weakPop.style.display="none";
+  saveCompletedDeck();             // 완성 덱을 묶어서 저장
+  startPrologue();                 // 다음 화면으로
+});
+
+/* =====================================================================
+   완성된 덱 묶어 저장 — 조사자 + 고유 + 일반30 + 무작위약점
+   완성된 덱들은 completedDecks[]에 쌓임(다인 플레이 대비)
+   ===================================================================== */
+let completedDecks = [];
+function saveCompletedDeck(){
+  const inv = byCode[chosenInv];
+  // 일반 카드(30장)와 고유/약점 분리해서 기록
+  const signatures = signatureCodes.filter(c=>c!==(drawnWeakness&&drawnWeakness.code));
+  const built = {
+    investigator: chosenInv,                 // 조사자 코드(상시 플레이 카드 — 덱에서 뽑지 않음)
+    investigatorName: inv ? inv.name : chosenInv,
+    signatures: signatures.slice(),          // 고유 자산 + 고유 약점 코드
+    randomWeakness: drawnWeakness ? drawnWeakness.code : null,
+    cards: {},                               // 일반 카드 코드→매수 (덱 30장)
+  };
+  Object.entries(deck).forEach(([code,n])=>{
+    if(code===chosenInv) return;
+    if(signatureCodes.includes(code)) return;   // 고유·약점은 따로 기록됨
+    built.cards[code] = n;
+  });
+  completedDecks.push(built);
+  console.log("완성 덱 저장:", built);
+}
+
+/* =====================================================================
+   프롤로그 연출
+   - 검은 화면에 흰 글씨가 손으로 쓰듯 일정 속도로 타이핑(약 1분 10초)
+   - 줄이 바뀌면 위로 누적, opening narration.mp3 동시 재생(반복X)
+   - 시작 후 1분 20초에 페이드아웃 → 다음 장면
+   - ESC 길게(2초) 누르면 원형 게이지 차오르고 → 스킵(페이드아웃)
+   ===================================================================== */
+const PROLOGUE_LINES = [
+  "금요일, 1913년 9월 18일. 아캄, 매사추세츠.",
+  "",
+  "길고 비정상적으로 더운 여름의 끝자락이다.",
+  "가을이 다가오고 있음에도, 무더위는 끊임없이 계속되고 있다.",
+  "",
+  "고요하고 형언할 수 없는 분노가 마을을 지배하고 있다.",
+  "사람들은 걸핏하면 화를 내는 일이 잦아졌고, 지난 주에만도",
+  "단순한 오해를 둘러싼 마을 사람들의 과격한 폭행에 대한",
+  "수많은 보고가 있었다.",
+  "",
+  "그리고 지금, 제임스 핸커슨에게서 전화가 왔다.",
+  "그는 자신의 헛간에서 해체된 유해를 발견했다고 말했다.",
+  "",
+  "날씨를 탓하는 것은 너무 쉬운 해결책이다.",
+  "마을에 뭔가 이상한 점이 있다. 그렇지만 이 늙은 점쟁이가",
+  "이 흐름을 막기 위해 할 수 있는 것은 많지 않다.",
+  "",
+  "점을 친 결과, 작은 조사자 그룹이 곧 이 이상한 사건에",
+  "주의를 기울일 것이고, 이를 바로잡기 위해 출발할 것이라고 한다.",
+  "",
+  "나는 그들의 행보를 지켜보겠지만,",
+  "그러나 그리 기대하지는 않을 것이다.",
+];
+
+const TYPING_TOTAL_MS = 73000;   // 전체 타이핑 1분 13초
+const PROLOGUE_END_MS = 77000;   // 시작 후 1분 17초에 다음 장면
+const SKIP_HOLD_MS    = 2000;    // ESC 2초 길게
+
+let prologueTimers = [];
+let prologueDone = false;
+
+function startPrologue(){
+  const scr = document.getElementById("screen-prologue");
+  const textBox = document.getElementById("prologue-text");
+  const audio = document.getElementById("prologue-audio");
+  textBox.innerHTML = "";
+  prologueDone = false;
+  prologueTimers = [];
+
+  // 덱 화면 페이드아웃 → 프롤로그 화면 등장
+  fade.classList.add("show");
+  setTimeout(()=>{
+    scrDeck.classList.remove("show");
+    scrDeck.style.display="none";
+    scr.classList.add("show");
+    fade.classList.remove("show");
+    runTyping(textBox, audio);
+  }, 1200);
+}
+
+function runTyping(textBox, audio){
+  // 빈 줄을 제외한 실제 글자 수로 글자당 간격 계산(일정 속도)
+  const realChars = PROLOGUE_LINES.reduce((a,l)=>a+l.length,0);
+  const perChar = TYPING_TOTAL_MS / realChars;
+
+  // 음성 재생(글자와 동시에 시작, 반복 없음)
+  try{ audio.currentTime=0; audio.play().catch(()=>{}); }catch(_){}
+
+  // 모든 줄 요소를 미리 만들어 두되(빈 줄 포함), 글자는 순차로 채움
+  const lineEls = PROLOGUE_LINES.map(line=>{
+    const el=document.createElement("div");
+    el.className="pl-line";
+    if(line==="") el.innerHTML="&nbsp;";   // 빈 줄은 간격만
+    textBox.appendChild(el);
+    return el;
+  });
+
+  // 단일 타임라인: (줄 인덱스, 글자 인덱스)를 순서대로 진행
+  let li=0, ci=0, t=0;
+  function step(){
+    if(prologueDone) return;
+    // 빈 줄은 건너뜀
+    while(li<PROLOGUE_LINES.length && PROLOGUE_LINES[li].length===0) li++;
+    if(li>=PROLOGUE_LINES.length){
+      lineEls.forEach(e=>e.classList.remove("pl-cursor"));
+      return;   // 타이핑 끝
+    }
+    const line=PROLOGUE_LINES[li], el=lineEls[li];
+    // 현재 줄에 커서 표시
+    lineEls.forEach(e=>e.classList.remove("pl-cursor"));
+    el.classList.add("pl-cursor");
+    // 글자 한 개 추가
+    el.textContent = line.slice(0, ci+1);
+    ci++;
+    if(ci>=line.length){ li++; ci=0; }
+    prologueTimers.push(setTimeout(step, perChar));
+  }
+  step();
+
+  // 시작 후 1분 20초 → 다음 장면
+  prologueTimers.push(setTimeout(()=>{ endPrologue(); }, PROLOGUE_END_MS));
+
+  enableSkip();
+}
+
+function clearPrologueTimers(){ prologueTimers.forEach(t=>clearTimeout(t)); prologueTimers=[]; }
+
+function endPrologue(){
+  if(prologueDone) return;
+  prologueDone = true;
+  clearPrologueTimers();
+  disableSkip();
+  const audio = document.getElementById("prologue-audio");
+
+  // 화면 페이드아웃 + 음성 페이드아웃
+  fade.classList.add("show");
+  fadeAudioOut(audio, 1200);
+  setTimeout(()=>{
+    // 완성된 덱(들)을 localStorage에 저장 → scenario1이 읽어서 플레이
+    try{
+      localStorage.setItem("arkham_decks", JSON.stringify(completedDecks));
+    }catch(e){ /* 저장 실패해도 진행은 함 */ }
+    // 시나리오(3D 맵)로 이동
+    location.href = "scenario1.html";
+  }, 1300);
+}
+
+/* 음성 서서히 줄이기 */
+function fadeAudioOut(audio, ms){
+  if(!audio) return;
+  const steps=20, dt=ms/steps, v0=audio.volume;
+  let i=0;
+  const t=setInterval(()=>{
+    i++; audio.volume=Math.max(0, v0*(1-i/steps));
+    if(i>=steps){ clearInterval(t); audio.pause(); audio.volume=v0; }
+  }, dt);
+}
+
+/* ----- ESC 길게 눌러 스킵 (원형 게이지) ----- */
+let skipHolding=false, skipStart=0, skipRAF=null;
+const skipRing=document.getElementById("skip-ring-fg");
+const RING_LEN=88;   // 2πr (r=14)
+function enableSkip(){
+  window.addEventListener("keydown", onSkipDown);
+  window.addEventListener("keyup", onSkipUp);
+}
+function disableSkip(){
+  window.removeEventListener("keydown", onSkipDown);
+  window.removeEventListener("keyup", onSkipUp);
+  resetSkipRing();
+}
+function onSkipDown(e){
+  if(e.key!=="Escape" || skipHolding || prologueDone) return;
+  skipHolding=true; skipStart=performance.now();
+  tickSkip();
+}
+function onSkipUp(e){
+  if(e.key!=="Escape") return;
+  skipHolding=false;
+  if(skipRAF) cancelAnimationFrame(skipRAF);
+  resetSkipRing();   // 손 떼면 원 리셋
+}
+function tickSkip(){
+  if(!skipHolding) return;
+  const p=Math.min(1,(performance.now()-skipStart)/SKIP_HOLD_MS);
+  if(skipRing) skipRing.style.strokeDashoffset = RING_LEN*(1-p);   // 차오름
+  if(p>=1){ endPrologue(); return; }   // 2초 채우면 스킵
+  skipRAF=requestAnimationFrame(tickSkip);
+}
+function resetSkipRing(){ if(skipRing) skipRing.style.strokeDashoffset=RING_LEN; }
+
+/* =====================================================================
+   덱빌딩 화면 — ArkhamDB 실시간 fetch
+   notz 카드번호만 가져와서 조사자/플레이어 카드로 분류
+   ===================================================================== */
+let deckLoaded = false;
+let byCode = {};               // 코드 → 카드 데이터
+let deck = {};                 // 코드 → 담은 수
+let chosenInv = null;          // 선택된 조사자 코드
+const DECK_SIZE = 30;          // 덱 완성 장수
+let RANDOM_WEAKNESSES = [];    // 무작위 기본 약점 풀
+let investigatorCards = [];    // 조사자 카드 목록(카드풀과 별도)
+let signatureCodes = [];       // 현재 조사자의 고유(시그니처) 카드 코드들 — 덱에 자동 포함, 30장에 안 셈
+let drawnWeakness = null;      // 마지막에 뽑힌 무작위 약점
+let deckPopShown = false;      // 완성 팝업 중복 방지
+
+/* 카드 텍스트의 아이콘 토큰을 한글/기호로 (deckbuilder 방식) */
+function cleanText(t){ if(!t) return "";
+  return t.replace(/\[reaction\]/g,"⟳").replace(/\[action\]/g,"➤").replace(/\[free\]/g,"⚡").replace(/\[fast\]/g,"⚡")
+    .replace(/\[willpower\]/g,"의지").replace(/\[intellect\]/g,"지식").replace(/\[combat\]/g,"전투")
+    .replace(/\[agility\]/g,"민첩").replace(/\[wild\]/g,"★").replace(/\[elder_sign\]/g,"표식")
+    .replace(/\[skull\]/g,"해골").replace(/\[cultist\]/g,"추종자").replace(/\[tablet\]/g,"석판")
+    .replace(/\[elder_thing\]/g,"옛존재").replace(/\[auto_fail\]/g,"촉수").replace(/\[bless\]/g,"축복").replace(/\[curse\]/g,"저주")
+    .replace(/\[guardian\]/g,"수호").replace(/\[seeker\]/g,"탐구").replace(/\[rogue\]/g,"무법").replace(/\[mystic\]/g,"신비").replace(/\[survivor\]/g,"생존")
+    .replace(/<\/?b>|<\/?i>/g,"").replace(/\[\[|\]\]/g,""); }
+
+const FAC_KO={guardian:"수호자",seeker:"탐구자",rogue:"무법자",mystic:"신비주의자",survivor:"생존자",neutral:"중립"};
+
+async function loadDeckScreen(){
+  if(deckLoaded) return;       // 한 번만 로드
+  deckLoaded = true;
+
+  const grid = document.getElementById("pool-grid");
+  const investList = document.getElementById("invest-list");
+
+  try{
+    // 1순위: 로컬 cards.json (광신도의 밤 전체). 없으면 ArkhamDB로 폴백.
+    let cards = [];
+    try{
+      const res = await fetch("cards.json");
+      if(res.ok){
+        const all = await res.json();
+
+        // (0) byCode 저장소에는 "모든" 카드를 넣는다(시그니처·약점·장소 등 참조용).
+        //     단 같은 코드 중복만 정리. 카드풀에 보이는 건 따로 거름.
+        all.forEach(c=>{ byCode[c.code]=c; });
+
+        // (0-1) 무작위 기본 약점 목록 만들기(subtype_code: basicweakness, 타입 공포/적)
+        //       core판 기준 8종. 같은 이름 중복 제거.
+        const wkSeen=new Set();
+        RANDOM_WEAKNESSES = all.filter(c=>{
+          if(c.subtype_code!=="basicweakness") return false;
+          if(!["treachery","enemy"].includes(c.type_code)) return false;
+          if(c.code==="01000") return false;     // 플레이스홀더 제외
+          const nm=c.real_name||c.name;
+          if(wkSeen.has(nm)) return false; wkSeen.add(nm);
+          return true;
+        });
+
+        // 무작위 약점 이미지를 화면 밖에서 미리 받아둠(뽑는 순간 즉시 표시)
+        RANDOM_WEAKNESSES.forEach(w=>{
+          if(w.imagesrc){ const im=new Image(); im.src=EN_API+w.imagesrc; }
+        });
+
+        // (1) 카드풀에 보일 카드: 자산/이벤트/스킬 (조사자는 좌측 따로).
+        const POOL_TYPES = ["asset","event","skill"];
+        let pool = all.filter(c=>{
+          if(!POOL_TYPES.includes(c.type_code)) return false;
+          if(c.encounter_code) return false;       // 조우 세트 제외
+          if(c.hidden) return false;               // 숨김(플레이스홀더) 제외
+          if(c.subtype_code==="basicweakness") return false;  // 기본약점 제외
+          if(c.subtype_code==="weakness") return false;       // 시그니처 약점 제외
+          if(c.restrictions && c.restrictions.investigator) return false;  // 특정 조사자 전용 제외
+          if(c.bonded_to) return false;            // 결속 카드 제외
+          return true;
+        });
+
+        // (2) 구판/개정판 중복 제거: 같은 이름+레벨이면 rcore(개정판) 우선.
+        const dedup = (arr)=>{
+          const m={};
+          arr.forEach(c=>{
+            const k=(c.real_name||c.name)+"|"+(c.xp??"")+"|"+(c.type_code)+"|"+(c.faction_code||"");
+            const prev=m[k];
+            if(!prev){ m[k]=c; return; }
+            const score=x=>(x.pack_code==="rcore"?2:1);
+            if(score(c)>score(prev)) m[k]=c;
+          });
+          return Object.values(m);
+        };
+        cards = dedup(pool);
+
+        // (3) 조사자는 카드풀과 별도로 추출(중복 제거 적용)
+        investigatorCards = dedup(all.filter(c=> c.type_code==="investigator" && !c.encounter_code && !c.hidden ));
+      }
+    }catch(_){ /* cards.json 없음 → 폴백 */ }
+
+    // 폴백: 로컬에 없으면 ArkhamDB에서 NOTZ_CODES만
+    if(cards.length === 0){
+      for(const code of NOTZ_CODES){
+        try{
+          const res = await fetch(KO_API + "/api/public/card/" + code);
+          if(res.ok){ const c=await res.json(); cards.push(c); byCode[c.code]=c; }
+        }catch(_){}
+      }
+    }
+
+    if(cards.length === 0){
+      grid.innerHTML =
+        '<div class="loading">카드를 불러오지 못했습니다.<br><br>'+
+        '<span style="font-size:12px">cards.json을 이 폴더에 두거나, '+
+        '<b>python -m http.server</b> 로 열어 주세요.</span></div>';
+      return;
+    }
+
+    // 조사자 vs 플레이어 카드 분류
+    const investigators = investigatorCards.length
+      ? investigatorCards
+      : cards.filter(c=>c.type_code === "investigator");   // 폴백 대비
+    const players       = cards.filter(c=>c.type_code !== "investigator")
+                               .sort((a,b)=> (a.name>b.name?1:-1));
+
+    // ----- 좌측: 조사자 -----
+    investList.innerHTML = "";
+    investigators.forEach(c=>{
+      const el = document.createElement("div");
+      el.className = "invest-card";
+      el.dataset.c = c.code;                    // 호버 툴팁용
+      const img = c.imagesrc
+        ? '<img src="'+EN_API+c.imagesrc+'" alt="">'
+        : '<div class="ph">이미지 없음</div>';
+      el.innerHTML = img + '<div class="nm">'+(c.name||c.code)+'</div>';
+      el.addEventListener("click", ()=>{
+        document.querySelectorAll(".invest-card").forEach(n=>n.classList.remove("sel"));
+        el.classList.add("sel");
+        selectInvestigator(c.code);
+      });
+      investList.appendChild(el);
+    });
+
+    // ----- 가운데: 플레이어 카드 풀 -----
+    grid.innerHTML = "";
+    players.forEach(c=>{
+      const el = document.createElement("div");
+      el.className = "pcard";
+      el.dataset.c = c.code;                    // 담기 + 호버 툴팁용
+      const img = c.imagesrc
+        ? '<img src="'+EN_API+c.imagesrc+'" alt="" loading="lazy">'
+        : '<div class="ph">이미지 없음</div>';
+      el.innerHTML =
+        '<span class="count" data-count></span>' + img +
+        '<div class="nm">'+(c.name||"")+'</div>';
+      el.addEventListener("click", ()=>addCard(c.code));
+      grid.appendChild(el);
+    });
+
+    renderPoolCounts();
+    renderDeck();
+
+  }catch(err){
+    grid.innerHTML = '<div class="loading">오류: '+err.message+'</div>';
+  }
+}
+
+/* ---- 담기 / 빼기 (deck_limit 매수 제한) ---- */
+function limitOf(code){ const c=byCode[code]; return (c && c.deck_limit) ? c.deck_limit : 2; }
+/* =====================================================================
+   조사자 선택 → 고유(시그니처) 카드 자동 포함
+   - deck_requirements.card 에 시그니처 카드 코드들이 들어 있음(개수 지정 가능)
+   - 시그니처는 덱에 항상 포함되고 30장에 세지 않음
+   ===================================================================== */
+function parseSignatures(inv){
+  // ArkhamDB 카드의 deck_requirements 구조: { size, card:{ "01006":1, "01007":1 }, random:[...] }
+  const req = inv.deck_requirements;
+  const out = [];
+  if(req && req.card){
+    Object.entries(req.card).forEach(([code,n])=>{
+      // n이 객체일 수도(대체 카드). 키만 취함.
+      out.push(code);
+    });
+  }
+  return out;
+}
+function selectInvestigator(code){
+  // 조사자를 바꾸면 덱 전체 초기화(이전 구성 버그 방지)
+  deck = {};
+  drawnWeakness = null;
+  deckPopShown = false;
+  chosenInv = code;
+  const inv = byCode[code];
+  signatureCodes = parseSignatures(inv).filter(sc=>byCode[sc]);
+  // 시그니처 카드를 덱에 자동 포함(고유 자산 + 고유 약점)
+  signatureCodes.forEach(sc=>{ deck[sc] = 1; });
+  renderPoolCounts(); renderDeck();
+}
+
+/* 덱 장수 — 시그니처(고유) 카드는 30장에 세지 않음 */
+function deckTotal(){
+  return Object.entries(deck)
+    .filter(([code])=>!signatureCodes.includes(code))
+    .reduce((a,[,n])=>a+n,0);
+}
+
+function addCard(code){
+  if(!chosenInv) return;                        // 조사자를 먼저 골라야 카드 담기 가능
+  const have = deck[code]||0;
+  if(have >= limitOf(code)) return;            // 장당 한도 도달 → 무시
+  // 시그니처가 아닌 일반 카드는 덱 30장을 넘길 수 없음
+  if(!signatureCodes.includes(code) && deckTotal() >= DECK_SIZE) return;
+  deck[code] = have+1;
+  renderPoolCounts(); renderDeck();
+}
+function removeCard(code){
+  if(!deck[code]) return;
+  deck[code]--; if(deck[code]<=0) delete deck[code];
+  renderPoolCounts(); renderDeck();
+}
+
+/* 카드풀의 매수 배지/꽉참 표시 갱신 */
+function renderPoolCounts(){
+  document.querySelectorAll("#pool-grid .pcard").forEach(el=>{
+    const code=el.dataset.c, have=deck[code]||0, lim=limitOf(code);
+    const badge=el.querySelector("[data-count]");
+    if(badge) badge.textContent = have+"/"+lim;
+    el.classList.toggle("full", have>=lim);
+  });
+}
+
+/* 우측 덱 목록 + 헤더 카운트 */
+function renderDeck(){
+  const box=document.getElementById("deck-list");
+  // 시그니처(고유)를 위로, 그다음 일반 카드
+  const sig = signatureCodes.filter(c=>deck[c]);
+  const normal = Object.keys(deck).filter(c=>!signatureCodes.includes(c)).sort();
+  const codes = [...sig, ...normal];
+  if(codes.length===0){
+    box.innerHTML='<div class="deck-empty">조사자를 고르고 카드를 담으세요.</div>';
+  }else{
+    box.innerHTML=codes.map(code=>{
+      const c=byCode[code];
+      const isSig = signatureCodes.includes(code);
+      return '<div class="dcard'+(isSig?' sig':'')+'" data-c="'+code+'">'+
+             '<span class="qty">'+deck[code]+'×</span>'+
+             '<span class="dn">'+(c?c.name:code)+'</span>'+
+             (isSig ? '<span class="sigtag">고유</span>' : '<span class="rm">✕</span>')+
+             '</div>';
+    }).join("");
+    box.querySelectorAll(".dcard").forEach(el=>{
+      if(signatureCodes.includes(el.dataset.c)) return;  // 고유 카드는 못 뺌
+      el.addEventListener("click", ()=>removeCard(el.dataset.c));
+    });
+  }
+  const n=deckTotal();
+  const cnt=document.getElementById("deck-count");
+  cnt.textContent = n+"/"+DECK_SIZE;
+  cnt.classList.toggle("done", n===DECK_SIZE);
+  document.getElementById("confirm-btn").disabled = (n!==DECK_SIZE);
+
+  // 30장에 도달하는 순간 자동으로 완성 팝업(조사자를 골랐을 때만)
+  if(n===DECK_SIZE && chosenInv && !deckPopShown){
+    deckPopShown = true;
+    document.getElementById("deck-pop").style.display="flex";
+  }
+  if(n!==DECK_SIZE) deckPopShown = false;   // 30 미만으로 내려가면 다시 뜰 수 있게
+}
+
+/* =====================================================================
+   카드 호버 번역 툴팁 (deckbuilder.html 방식)
+   data-c 를 가진 요소(카드풀·덱목록·조사자)에 마우스 올리면 표시
+   ===================================================================== */
+const tip = document.getElementById("tip");
+function buildTip(c){
+  const meta=[c.subname, c.type_name, FAC_KO[c.faction_code]||c.faction_name,
+    (c.xp!=null?("레벨 "+c.xp):null), (c.cost!=null?("비용 "+c.cost):null), (c.slot?("슬롯 "+c.slot):null)
+  ].filter(Boolean).join(" · ");
+  const hs=(c.health!=null||c.sanity!=null)
+    ? '<div class="ts">체력 '+(c.health??"-")+' · 정신 '+(c.sanity??"-")+'</div>' : "";
+  return '<div class="tn">'+(c.name||"")+'</div><div class="ts">'+meta+'</div>'+hs+
+    (c.traits?'<div class="tt">'+c.traits+'</div>':"")+
+    (c.text?'<div class="tx">'+cleanText(c.text)+'</div>':"")+
+    (c.flavor?'<div class="tf">'+cleanText(c.flavor)+'</div>':"");
+}
+function showTip(code, el){
+  const c=byCode[code]; if(!c) return;
+  tip.innerHTML=buildTip(c); tip.style.display="block";
+  const r=el.getBoundingClientRect(), tw=tip.offsetWidth, th=tip.offsetHeight;
+  // 요소가 화면 오른쪽에 있으면 왼쪽에, 아니면 오른쪽에 표시
+  let left = (r.left > window.innerWidth/2) ? (r.left - tw - 12) : (r.right + 12);
+  left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+  let topPos = Math.max(8, Math.min(r.top, window.innerHeight - th - 8));
+  tip.style.left=left+"px"; tip.style.top=topPos+"px";
+}
+function hideTip(){ tip.style.display="none"; }
+document.addEventListener("mouseover", e=>{
+  const el=e.target.closest("[data-c]");
+  if(el && byCode[el.dataset.c]) showTip(el.dataset.c, el);
+});
+document.addEventListener("mouseout", e=>{
+  const el=e.target.closest("[data-c]");
+  if(el){ if(e.relatedTarget && el.contains(e.relatedTarget)) return; hideTip(); }
+});
+
+/* =====================================================================
+   무대 스케일: 창이 1920보다 좁으면 비율 유지하며 축소
+   ===================================================================== */
+function fitStage(){
+  const stage = document.getElementById("stage");
+  const scale = Math.min(window.innerWidth/1920, window.innerHeight/1080, 1);
+  stage.style.transform = "scale("+scale+")";
+  // 가운데 정렬 보정
+  stage.style.position = "absolute";
+  stage.style.left = ((window.innerWidth  - 1920*scale)/2) + "px";
+  stage.style.top  = ((window.innerHeight - 1080*scale)/2) + "px";
+}
+window.addEventListener("resize", fitStage);
+
+/* =====================================================================
+   배경 영상 강제 재생
+   - muted 자동재생이 막히는 브라우저 대비: JS로 play() 호출
+   - 그래도 막히면(드묾) 첫 클릭/키 입력 때 한 번 더 시도
+   ===================================================================== */
+function kickVideo(){
+  const v = document.getElementById("bg-video");
+  if(!v) return;
+  v.muted = true;            // 음소거여야 자동재생 허용됨
+  const p = v.play();
+  if(p && p.catch){
+    p.catch(()=>{
+      // 자동재생 차단 → 사용자 첫 상호작용 때 재시도
+      const retry = ()=>{ v.play().catch(()=>{}); cleanup(); };
+      const cleanup = ()=>{
+        window.removeEventListener("click", retry);
+        window.removeEventListener("keydown", retry);
+        window.removeEventListener("mousemove", retry);
+      };
+      window.addEventListener("click", retry, {once:true});
+      window.addEventListener("keydown", retry, {once:true});
+      window.addEventListener("mousemove", retry, {once:true});
+    });
+  }
+}
+
+/* ---------- 시작 ---------- */
+fitStage();
+kickVideo();
+startMainSequence();
+</script>
+</body>
+</html>

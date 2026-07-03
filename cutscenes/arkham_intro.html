@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아컴 호러 — 시네마틱 인트로</title>
+<style>
+  /* ───────── 기본 무대: 화면 전체를 칠흑으로 ───────── */
+  html,body{margin:0;height:100%;background:#050506;overflow:hidden;}
+  *{box-sizing:border-box;}
+
+  /* 화면 두 겹(레이어)을 겹쳐 둔다:
+     · #game  = 진짜 "게임 시작 화면" (맨 아래, 처음엔 검은 인트로에 가려 안 보임)
+     · #intro = 그 위를 덮는 검은 막. 여기 안에서 글자들이 떴다 사라짐.
+     인트로가 끝나면 #intro 의 opacity 를 0 으로 → 아래 게임 화면이 "페이드인" 된다. */
+  #stage{position:fixed;inset:0;}
+
+  /* ───────── 맨 위: 검은 인트로 막 ───────── */
+  #intro{
+    position:absolute;inset:0;z-index:10;
+    background:#050506;
+    display:flex;align-items:center;justify-content:center;
+    /* 인트로 막 자체가 사라질 때(=게임으로 페이드인) 쓰는 전환 속도 */
+    transition:opacity 1.4s ease-in;
+    opacity:1;
+  }
+  #intro.gone{opacity:0;}                 /* 이 클래스가 붙으면 막이 서서히 걷힘 */
+  #intro.gone{pointer-events:none;}       /* 걷힌 뒤엔 밑 화면을 클릭할 수 있게 */
+
+  /* 아주 옅은 비네트(가장자리 어둠) — 극장 느낌 */
+  #intro::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,
+       rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%);
+  }
+
+  /* 글자 두 개를 같은 자리에 겹쳐 두고, 필요할 때만 하나씩 보여준다 */
+  .line{
+    position:absolute;text-align:center;padding:0 24px;
+    color:#d7d0c2;                         /* 뼛빛(bone-white) */
+    font-family:'나눔명조','Nanum Myeongjo','바탕','Batang',serif;
+    opacity:0;                             /* ★ 처음엔 완전히 투명 = 안 보임 */
+  }
+  .line.show{opacity:1;}                   /* ★ .show 가 붙으면 보임 — 아래 transition 이 "천천히"를 담당 */
+
+  /* ① 헌사 문구: 작고, 자간 넓게, 차분하게 서서히 */
+  .eyebrow{
+    font-size:clamp(13px,2.4vw,18px);
+    letter-spacing:.42em;                  /* 넓은 자간 = 격식/고전 느낌 */
+    text-indent:.42em;                     /* 자간 때문에 오른쪽이 뜨는 것 보정 */
+    color:#9a927f;
+    text-transform:none;
+    transition:opacity 1.6s ease;          /* 1.6초에 걸쳐 뜨고/짐 */
+  }
+
+  /* ② 제목: 크고, 은은한 초록빛 광채 + 미세한 깜빡임 */
+  .title{
+    font-size:clamp(40px,10vw,96px);
+    letter-spacing:.12em;text-indent:.12em;
+    font-weight:600;
+    color:#e8e2d4;
+    transition:opacity 1.6s ease;          /* 제목이 뜨고 지는 속도 */
+  }
+  .title.show{
+    /* .show 일 때만 광채 + 낡은 영사기 같은 미세 깜빡임(플리커) 애니메이션 */
+    animation:flicker 4.2s ease-in-out infinite;
+  }
+  /* 깜빡임: 초록빛 글로우의 세기와 밝기를 아주 살짝 흔든다.
+     opacity 는 건드리지 않음(그건 위 transition 이 맡으니 서로 안 싸움). */
+  @keyframes flicker{
+    0%,100%{ text-shadow:0 0 18px rgba(120,180,150,.35), 0 0 46px rgba(90,150,120,.18); filter:brightness(1);}
+    47%    { text-shadow:0 0 14px rgba(120,180,150,.28), 0 0 40px rgba(90,150,120,.14); filter:brightness(.94);}
+    50%    { text-shadow:0 0 24px rgba(140,200,165,.5),  0 0 60px rgba(90,150,120,.26); filter:brightness(1.08);}
+    53%    { text-shadow:0 0 14px rgba(120,180,150,.28), 0 0 40px rgba(90,150,120,.14); filter:brightness(.96);}
+  }
+
+  /* ───────── 맨 아래: 게임 시작 화면(자리표시) ───────── */
+  #game{
+    position:absolute;inset:0;z-index:1;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    background:radial-gradient(ellipse at 50% 40%, #14131a 0%, #060608 70%);
+    color:#cfc8ba;font-family:'나눔명조','Nanum Myeongjo','바탕','Batang',serif;
+  }
+  #game h2{margin:0;font-size:clamp(24px,5vw,40px);letter-spacing:.1em;font-weight:600;}
+  #game p{margin:0;color:#8a8272;font-size:14px;letter-spacing:.05em;}
+
+  /* 조작 버튼(연출과 무관, 미리보기용) */
+  .ctrl{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:30;
+    display:flex;gap:10px;}
+  .ctrl button{font-family:inherit;font-size:13px;letter-spacing:.05em;
+    background:#1b1a22;color:#c9c1b0;border:1px solid #3a3746;border-radius:6px;
+    padding:8px 16px;cursor:pointer;transition:background .15s;}
+  .ctrl button:hover{background:#282634;}
+  .ctrl button:focus-visible{outline:2px solid #7aa88f;outline-offset:2px;}
+
+  /* 움직임을 줄이도록 설정한 사용자는 깜빡임을 끈다(접근성) */
+  @media (prefers-reduced-motion:reduce){
+    .title.show{animation:none;text-shadow:0 0 20px rgba(120,180,150,.3);}
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <!-- 맨 아래: 인트로가 걷히면 드러날 게임 화면 -->
+    <div id="game">
+      <h2>아컴 호러</h2>
+      <p>여기서부터 실제 게임 화면이 시작됩니다</p>
+    </div>
+
+    <!-- 맨 위: 검은 인트로 막 + 겹쳐 둔 두 줄의 글자 -->
+    <div id="intro">
+      <div class="line eyebrow" id="eyebrow">미스캐토닉 대학 소장 · 봉인된 기록</div>
+      <div class="line title" id="title">아컴 호러</div>
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <button id="replay">다시 보기</button>
+    <button id="skip">건너뛰기</button>
+  </div>
+
+<script>
+  /* ═══════════════ 타임라인(연출 순서표) ═══════════════
+     여기 숫자만 바꾸면 속도/타이밍을 조절할 수 있어요.
+     단위는 밀리초(ms). 1000 = 1초.
+     "at" = 시작하고 몇 ms 뒤에, "그 일을 한다"는 뜻.               */
+  const CONFIG = {
+    eyebrowIn:   600,    // 0.6초: 헌사 문구 등장 시작
+    eyebrowOut:  2800,   // 2.8초: 헌사 문구 사라짐
+    titleIn:     3700,   // 3.7초: 제목 등장
+    titleOut:    5900,   // 5.9초: 제목 사라짐
+    introGone:   6400,   // 6.4초: 검은 막이 걷히며 게임 화면으로 페이드인
+  };
+  /* ※ 실제 "글자가 보이는 시간"은 대략 0.6초~6.4초 ≒ 약 5.8초.
+     4초로 줄이고 싶으면 각 숫자를 비례해서 줄이면 됩니다.       */
+
+  const intro   = document.getElementById("intro");
+  const eyebrow = document.getElementById("eyebrow");
+  const title   = document.getElementById("title");
+  let timers = [];   // 예약해 둔 setTimeout 들을 모아 두는 곳(다시 보기 때 취소하려고)
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function at(ms, fn){ timers.push(setTimeout(fn, ms)); }  // "ms 뒤에 fn 실행"을 예약
+
+  // 연출을 처음 상태로 되돌림
+  function reset(){
+    clearTimers();
+    intro.classList.remove("gone");
+    eyebrow.classList.remove("show");
+    title.classList.remove("show");
+  }
+
+  // 타임라인 재생: CONFIG 순서대로 클래스를 켜고 끈다
+  function play(){
+    reset();
+    at(CONFIG.eyebrowIn,  ()=> eyebrow.classList.add("show"));    // 헌사 서서히 등장
+    at(CONFIG.eyebrowOut, ()=> eyebrow.classList.remove("show")); // 헌사 서서히 사라짐
+    at(CONFIG.titleIn,    ()=> title.classList.add("show"));      // 제목 등장(+깜빡임)
+    at(CONFIG.titleOut,   ()=> title.classList.remove("show"));   // 제목 사라짐
+    at(CONFIG.introGone,  ()=> intro.classList.add("gone"));      // 검은 막 걷힘 = 게임 페이드인
+  }
+
+  // 건너뛰기: 바로 게임 화면으로
+  function skip(){ clearTimers(); eyebrow.classList.remove("show");
+    title.classList.remove("show"); intro.classList.add("gone"); }
+
+  document.getElementById("replay").onclick = play;
+  document.getElementById("skip").onclick   = skip;
+
+  play();   // 페이지 열리면 자동 재생
+</script>
+</body>
+</html>
