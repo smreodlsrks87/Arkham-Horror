@@ -4,16 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2막 맵 — 3D 구조 개선 (길 B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   /* 아컴 폰트 — fonts 폴더에 넣으면 적용, 없으면 폴백 */
   @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }  /* 심볼·숫자 */
-  @font-face{ font-family:'ArkhamKR'; src:url('fonts/arkham-kr.ttf'); }        /* 한글 분위기(제목·본문) */
+  /* 한글 본문은 본명조(Noto Serif KR, 구글폰트)로 사용 — 별도 ttf 불필요 */
   :root{ --void:#0b0910; --pale:#ece9e2; --muted:#8a8296; --gold:#d4b15a; --glow:#8a6fb0; }
   *{box-sizing:border-box;}
   #stage,#stage *{ user-select:none; -webkit-user-select:none; }
   #stage img{ -webkit-user-drag:none; user-drag:none; pointer-events:auto; }   /* 이미지 드래그 잔상 방지 */
   body{margin:0;background:#000;
-    color:var(--pale);font-family:'ArkhamKR','Iowan Old Style','Hoefler Text','맑은 고딕',serif;
+    color:var(--pale);font-family:'Noto Serif KR','Iowan Old Style','Hoefler Text','맑은 고딕',serif;
     height:100vh;overflow:hidden;}
   /* 1920×1080 고정 무대 — 화면 크기에 맞춰 스케일 */
   #stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:top left;
@@ -228,7 +231,7 @@
   .doom-visual{ position:relative; width:150px; height:200px; display:flex; align-items:center; justify-content:center; margin-top:6px; }
   /* 악마 이미지 — 위치·크기 고정(조절 완료) */
   .doom-devil{ position:absolute; left:50%; top:50%; width:306px; height:auto;
-    transform:translate(calc(-50% - 6px), calc(-50% + 4px)); z-index:5; pointer-events:none;
+    transform:translate(calc(-50% - 6px), calc(-50% - 2px)); z-index:5; pointer-events:none;
     filter:drop-shadow(0 3px 8px rgba(0,0,0,.7)); }
   /* 수정구 — 구(球) 느낌. 악마 부피만큼 왼쪽으로 */
   .doom-gauge{ position:absolute; left:50%; top:50%; transform:translate(calc(-50% - 36px), calc(-50% + 4px));
@@ -242,11 +245,14 @@
     background:radial-gradient(circle at 34% 26%, rgba(255,255,255,.4), rgba(255,255,255,.06) 26%, transparent 46%),
               radial-gradient(circle at 68% 74%, rgba(120,90,180,.22), transparent 46%);
     box-shadow:inset 0 -10px 20px rgba(0,0,0,.4), inset 0 8px 14px rgba(255,255,255,.08); }
-  /* 파멸 숫자 — 악마 발 아래로 충분히 내림 */
+  /* 파멸 숫자 — 악마 발 아래로 충분히 내림. 숫자는 아컴 아이콘 폰트로 통일 */
   .doom-count{ font-size:24px; color:var(--muted); font-variant-numeric:tabular-nums; letter-spacing:.02em; margin-top:20px; }
-  .doom-count .d-agenda{ color:#e08aa8; font-weight:600; }
-  .doom-count .d-field{ color:#c9a86a; font-weight:600; }
-  .doom-count .d-sum{ color:#f0dde5; font-weight:700; font-size:26px; }
+  /* 숫자 부분(분자 구성·합·분모) 전부 아컴 아이콘 폰트 + 같은 크기 */
+  .doom-count .d-agenda,.doom-count .d-field,.doom-count .d-sum,.doom-count .d-thr{
+    font-family:'ArkhamIcons',serif; font-size:25px; }
+  .doom-count .d-agenda{ color:#e08aa8; }
+  .doom-count .d-field{ color:#c9a86a; }
+  .doom-count .d-sum{ color:#f0dde5; }
   .doom-count .d-thr{ color:var(--pale); }
   .doom-count .d-plus,.doom-count .d-eq,.doom-count .d-slash{ opacity:.5; margin:0 3px; }
   /* 현재 페이즈 뱃지(맵 상단 중앙, 실시간) */
@@ -360,24 +366,20 @@
   .cutscene-text{
     width:100%; height:240px; flex:0 0 auto; overflow:hidden;
     color:#f4f2ec; font-size:18px; line-height:1.9;
-    letter-spacing:.02em; text-align:left;
-    font-family:'Iowan Old Style','Hoefler Text','맑은 고딕',serif;
+    letter-spacing:.02em; text-align:left; white-space:pre-line;
+    font-family:'Noto Serif KR','Iowan Old Style','Hoefler Text','맑은 고딕',serif;
     text-shadow:0 0 16px rgba(255,255,255,.05);
   }
   .cutscene-text .cs-cursor::after{ content:"▌"; margin-left:1px; animation:csblink 1s steps(1) infinite; }
   @keyframes csblink{ 50%{opacity:0;} }
-  /* 확인 버튼 — 자리를 항상 차지(높이 고정), visibility로만 보임/숨김 → 영상 안 밀림 */
+  /* "아무 키나 누르세요" — 자리를 항상 차지(높이 고정), visibility로만 보임/숨김 → 영상 안 밀림 */
   #cutscene-ok{
-    align-self:center; flex:0 0 auto; height:44px;
-    font-family:inherit; font-size:15px; letter-spacing:.08em;
-    padding:0 34px; border-radius:7px; cursor:pointer;
-    background:linear-gradient(180deg,#caa44a,#9c7c2e); color:#1a1206;
-    border:1px solid #e0c060; font-weight:600;
-    box-shadow:0 4px 18px rgba(202,164,74,.3);
-    visibility:hidden; transition:opacity .4s ease; opacity:0;
+    align-self:center; flex:0 0 auto; height:44px; display:flex; align-items:center;
+    font-family:inherit; font-size:15px; letter-spacing:.08em; color:#d8c89a;
+    text-shadow:0 1px 4px #000, 0 0 10px rgba(0,0,0,.7);
+    visibility:hidden; opacity:0;
   }
-  #cutscene-ok.show{ visibility:visible; opacity:1; }
-  #cutscene-ok:hover{ background:linear-gradient(180deg,#d8b25a,#a8863a); }
+  #cutscene-ok.show{ visibility:visible; animation:continueBlink 1.3s ease-in-out infinite; }
   /* 스킵 UI(우상단) */
   #cutscene-skip{
     position:absolute; top:26px; right:30px; z-index:96;
@@ -391,6 +393,99 @@
 </style>
 </head>
 <body>
+<style>
+  /* ===== 로딩 화면 ===== */
+  #loading-screen{ position:fixed; inset:0; z-index:9999; background:#050408;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:opacity .8s ease; font-family:'Noto Serif KR',serif;
+    user-select:none; -webkit-user-select:none; -moz-user-select:none; cursor:default; }
+  #loading-screen.hide{ opacity:0; pointer-events:none; }
+  .load-inner{ max-width:680px; padding:0 40px; text-align:center; margin-bottom:100px; }
+  /* 제목·부제 = 광신도의 광기(창백한 주술 보라) */
+  .load-title{ font-family:'Noto Serif KR',serif; font-size:52px; letter-spacing:.15em; color:#b89ac8;
+    margin-bottom:6px; text-shadow:0 0 26px rgba(150,90,190,.55), 0 0 6px rgba(180,120,210,.4); }
+  .load-subtitle{ font-family:'Noto Serif KR',serif; font-size:24px; letter-spacing:.1em; color:#8a6f9e;
+    margin-left:120px; margin-bottom:38px; text-shadow:0 0 16px rgba(140,90,170,.4); }
+  .load-story{ font-size:17px; line-height:2; color:#c8c2b8; white-space:pre-line; text-align:left;
+    max-width:700px; margin:0 auto; text-shadow:0 1px 3px #000; }
+  /* 계속 문구 = 읽을거리와 게이지 사이 (조금 아래로) */
+  .load-continue{ margin-top:74px; font-size:15px; color:#a98fc0; letter-spacing:.08em;
+    font-family:sans-serif; opacity:0; animation:continueBlink 1.3s ease-in-out infinite;
+    visibility:hidden; }
+  .load-continue.on{ visibility:visible; }
+  @keyframes continueBlink{ 0%,100%{ opacity:.25; } 50%{ opacity:1; } }
+  /* 하단 불꽃 게이지 */
+  .load-bar-wrap{ position:fixed; left:0; right:0; bottom:0; height:90px; overflow:hidden; }
+  .load-wave-svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* 준비완료(상태) = 막대 바로 위에 떠 있음 (wrap 밖에 둬서 안 잘림) */
+  .load-status{ position:fixed; left:50%; bottom:78px; transform:translateX(-50%);
+    font-size:13px; color:#d8b0a0; letter-spacing:.05em; font-family:sans-serif;
+    text-shadow:0 1px 6px #000, 0 0 10px rgba(0,0,0,.8); z-index:10000; white-space:nowrap; }
+  /* 퍼센트 = 막대 안, 중앙보다 살짝 아래 */
+  .load-pct{ position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+    font-family:'ArkhamIcons',serif; font-size:22px; color:#fff3e0; z-index:10000;
+    text-shadow:0 0 12px rgba(0,0,0,.95), 0 0 18px rgba(255,120,40,.6), 0 2px 4px #000; letter-spacing:.05em; }
+  .load-pct .pct-sign{ font-family:sans-serif; font-size:15px; margin-left:.4em; opacity:.9; }
+  /* 불꽃 일렁임·불티 */
+  #flame1{ animation:flameDrift1 4s ease-in-out infinite alternate; }
+  #flame2{ animation:flameDrift2 3s ease-in-out infinite alternate; }
+  @keyframes flameDrift1{ 0%{ transform:translateX(0) scaleY(1);} 100%{ transform:translateX(-60px) scaleY(1.12);} }
+  @keyframes flameDrift2{ 0%{ transform:translateX(0) scaleY(1);} 100%{ transform:translateX(-90px) scaleY(.9);} }
+  .ember{ animation:emberRise 2.4s ease-in-out infinite; }
+  .ember:nth-of-type(2){ animation-delay:.5s; } .ember:nth-of-type(3){ animation-delay:1s; }
+  .ember:nth-of-type(4){ animation-delay:1.5s; }
+  @keyframes emberRise{ 0%{ transform:translateY(6px); opacity:.2;} 50%{ opacity:.8;} 100%{ transform:translateY(-14px); opacity:0;} }
+</style>
+<!-- ===== 로딩 화면 (진입 시 모든 자원 로드) ===== -->
+<div id="loading-screen">
+  <div class="load-inner">
+    <div class="load-title">광신도의 밤</div>
+    <div class="load-subtitle">episode 1. 회합</div>
+    <div class="load-story">당신과 당신의 파트너들은 매사추세츠주의 고향 도시,
+아캄에서 일어나는 이상한 사건을 조사하고 있습니다.
+
+지난 몇 주 동안 여러 마을 사람들이 불가사의하게 실종되었으며,
+최근에는 짐승에게 공격당하고 반쯤 먹혀 버린 사람들의 시체가
+발견되었습니다. 경찰과 신문은 야생 동물 탓이라고 했지만,
+당신들은 다른 일이 벌어지고 있다고 믿습니다.
+
+당신은 이 기괴한 사건을 논의하기 위해
+수석 조사관의 집에 모여 있습니다...</div>
+    <div class="load-continue" id="load-continue">— 계속하려면 아무 키나 누르세요 —</div>
+  </div>
+  <!-- 하단 주술적 불꽃 게이지 (밑동 주황 → 끝 보라연기) -->
+  <div class="load-bar-wrap">
+    <svg class="load-wave-svg" id="load-wave-svg" preserveAspectRatio="none" viewBox="0 0 1200 90">
+      <defs>
+        <linearGradient id="flame-grad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ffd23a"/>
+          <stop offset="35%" stop-color="#ff8c1a"/>
+          <stop offset="70%" stop-color="#f2431c"/>
+          <stop offset="92%" stop-color="#c81f2e"/>
+          <stop offset="100%" stop-color="#9a2a54"/>
+        </linearGradient>
+        <filter id="flame-flicker"><feTurbulence type="fractalNoise" baseFrequency="0.02 0.08" numOctaves="2" seed="3" result="n">
+            <animate attributeName="baseFrequency" dur="6s" values="0.02 0.08;0.03 0.12;0.02 0.08" repeatCount="indefinite"/>
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="16"/></filter>
+      </defs>
+      <clipPath id="fill-clip"><rect id="fill-rect" x="0" y="0" width="0" height="90"/></clipPath>
+      <g clip-path="url(#fill-clip)">
+        <rect x="0" y="30" width="1200" height="60" fill="url(#flame-grad)" opacity="0.92"/>
+        <path id="flame1" fill="url(#flame-grad)" opacity="0.9" filter="url(#flame-flicker)"
+          d="M0,34 Q40,10 80,34 T160,34 T240,34 T320,34 T400,34 T480,34 T560,34 T640,34 T720,34 T800,34 T880,34 T960,34 T1040,34 T1120,34 T1200,34 V90 H0 Z"/>
+        <path id="flame2" fill="#ffc040" opacity="0.65" filter="url(#flame-flicker)"
+          d="M0,44 Q50,28 100,44 T200,44 T300,44 T400,44 T500,44 T600,44 T700,44 T800,44 T900,44 T1000,44 T1100,44 T1200,44 V90 H0 Z"/>
+        <circle class="ember" cx="160" cy="40" r="3" fill="#c89aff" opacity="0.55"/>
+        <circle class="ember" cx="420" cy="46" r="2" fill="#ffb060" opacity="0.7"/>
+        <circle class="ember" cx="700" cy="38" r="3.5" fill="#b87ae0" opacity="0.5"/>
+        <circle class="ember" cx="980" cy="44" r="2.5" fill="#ffa050" opacity="0.6"/>
+      </g>
+    </svg>
+  </div>
+  <div class="load-status" id="load-status">준비 중...</div>
+  <div class="load-pct" id="load-pct">0<span class="pct-sign">%</span></div>
+</div>
 <div id="stage">
 <div id="map-area">
   <div id="wrap"></div>
@@ -445,7 +540,7 @@
         <span class="d-eq">=</span>
         <span class="d-sum" id="d-sum">0</span>
         <span class="d-slash">/</span>
-        <span class="d-thr" id="d-thr">10</span>
+        <span class="d-thr" id="d-thr">3</span>
       </div>
     </div>
     <div class="tr-tokens">
@@ -542,15 +637,15 @@
 <div id="cutscene">
   <div class="cutscene-inner">
     <div class="cutscene-video" id="cutscene-video-box">
-      <video id="cutscene-video" playsinline></video>
+      <video id="cutscene-video" playsinline preload="auto"></video>
       <div class="cutscene-novideo" id="cutscene-novideo">◆</div>
       <iframe class="cutscene-intro" id="cutscene-intro" src="" frameborder="0" scrolling="no"></iframe>
     </div>
     <div class="cutscene-text" id="cutscene-text"></div>
-    <button id="cutscene-ok">확인</button>
+    <div id="cutscene-ok">— 계속하려면 아무 키나 누르세요 —</div>
   </div>
   <div id="cutscene-skip">
-    <span class="skip-label">스킵하려면 esc를 길게 누르십시오.</span>
+    <span class="skip-label">스킵하려면 esc를 길게 누르세요.</span>
     <svg class="skip-ring" width="34" height="34" viewBox="0 0 34 34">
       <circle class="ring-bg" cx="17" cy="17" r="14"></circle>
       <circle class="ring-fg" id="cs-skip-ring" cx="17" cy="17" r="14"></circle>
@@ -651,9 +746,6 @@ let invCard = null;              // 조사자 카드 데이터
 let playerDeck = [];             // 뽑을 덱(카드코드 배열, 셔플됨)
 let playerHand = [];             // 손패
 let playerDiscard = [];          // 버린 더미
-let hpPositions = {};            // 능력치/체력/정신 좌표
-// 좌표 기본값(편집기에서 뽑은 값)
-const HP_DEFAULT = {hx:70,hy:86,sx:85,sy:86,sz:17,wx:57,wy:9,ix:69,iy:9,cx:80,cy:9,ax:92,ay:9,stz:20,statBg:"#e8dcc0"};
 
 // 배열 셔플(피셔-예이츠)
 function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -662,6 +754,8 @@ async function loadPlayerDecks(){
   try{
     const diff = localStorage.getItem("arkham_difficulty");
     if(diff==="hard"||diff==="normal"){ chaosDifficulty = diff; renderTokens(); }
+    // 플레이어 수(a) — arkham_game에서 저장. 없으면 1. 막 목표 단서수(a×2, a×3) 계산에 사용.
+    playerCount = parseInt(localStorage.getItem("arkham_playercount"),10) || 1;
 
     // 카드 데이터 로드
     let all = [];
@@ -670,9 +764,6 @@ async function loadPlayerDecks(){
 
     // 카드 효과(작동 방식) 데이터 로드 — cards.json엔 없는 abilities/zone 등
     try{ const r3=await fetch("notz_player_cards.json"); if(r3.ok) cardAbilities = await r3.json(); }catch(e){}
-
-    // 좌표 로드(없으면 기본값)
-    try{ const r2=await fetch("investigator_hp_positions.json"); if(r2.ok) hpPositions=await r2.json(); }catch(e){}
 
     // 넘어온 덱 or 임의 덱
     const raw = localStorage.getItem("arkham_decks");
@@ -794,6 +885,21 @@ function preloadAllCardImages(){
   // 실제 프리로드
   urls.forEach(u=>{ const im=new Image(); im.src=u; preloadedImgs.push(im); });
   addLog("카드 이미지 "+urls.size+"장을 미리 불러왔습니다.");
+}
+
+// 초반 컷신 영상·음성을 미리 받아둔다(진입 시 호출) → 재생할 때 안 끊김
+let preloadedMedia = [];
+function preloadCutsceneMedia(ids){
+  ids.forEach(id=>{
+    // 영상 미리 다운로드(숨긴 video로 버퍼링)
+    const v=document.createElement("video");
+    v.preload="auto"; v.muted=true; v.src="cutscenes/"+id+".mp4";
+    v.load?.(); preloadedMedia.push(v);
+    // 음성도 미리
+    const a=document.createElement("audio");
+    a.preload="auto"; a.src="cutscenes/"+id+".mp3";
+    a.load?.(); preloadedMedia.push(a);
+  });
 }
 
 /* ===== 카드더미 · 버린더미 · 손패 ===== */
@@ -1146,6 +1252,7 @@ function finishMulligan(){
   }
   updatePiles();
   addLog("시작 손패가 준비되었습니다. ("+playerHand.length+"장)");
+  phaseBusy = true;         // 도입 컷신(agenda1a→act1a) 끝나 조사자 단계 시작 전까지 조작 잠금
   playOpeningCutscenes();   // 멀리건 끝 → 도입 컷신(agenda1a → act1a)
 }
 
@@ -1570,10 +1677,19 @@ let currentStage = "study";   // 시작은 서재
 function updateGoal(text){
   document.getElementById("tr-goal").innerHTML = "목표: <b>"+text+"</b>";
 }
+// 막(Act) 단서 목표 설정: multiplier=2 → a×2, 3 → a×3. 목표 텍스트도 갱신.
+// 단서 아이콘(아컴 폰트)으로 "단서(N)" 표시. suffix로 뒷말(예: "를 모아 복도로 이동한다") 붙임.
+function setActGoal(multiplier, prefix, suffix){
+  actGoalClues = playerCount * multiplier;
+  const text = (prefix||"") + "단서(" + actGoalClues + ")" + (suffix||"를 모아라");
+  updateGoal(text);
+}
 
 // --- 파멸 ---
 let agendaDoom = 0;        // 의제 자체 파멸(신화 단계마다 +1)
-let doomThreshold = 10;    // 의제 전진 임계치(의제마다 다름 — 이후 데이터화)
+let doomThreshold = 3;    // 의제 전진 임계치(단계별: 3→7→10)
+let playerCount = 1;      // 플레이어 수(a) — arkham_game에서 읽음, 없으면 1
+let actGoalClues = 0;     // 현재 막이 요구하는 단서 수(a×2 또는 a×3)
 // 필드 파멸: 장소·적·플레이된 카드에 놓인 파멸의 합. 파멸원(源)을 등록해두고 합산.
 let doomSources = [];      // 예: [{id:"비술입문자", get:()=>2}] 형태로 등록
 function fieldDoom(){ return doomSources.reduce((a,s)=>a+(s.get?s.get():0),0); }
@@ -1612,16 +1728,42 @@ function checkAgendaAdvance(){
   }
   return false;
 }
+// 의제 진행 단계 데이터: 현재 임계치 → {컷신, 다음 임계치, 후속컷신}
+// 3 도달 → agenda1b (→2초후 agenda2a) + 다음 7
+// 7 도달 → agenda2b (→2초후 agenda3a) + 다음 10
+// 10 도달 → agenda3b (마지막)
+const AGENDA_STAGES = {
+  3:  { cutscene:"agenda1b", next:7,    follow:"agenda2a" },
+  7:  { cutscene:"agenda2b", next:10,   follow:"agenda3a" },
+  10: { cutscene:"agenda3b", next:null, follow:null },   // 마지막
+};
 function advanceAgenda(){
-  // 파멸은 아직 그대로 둠(확인 누르기 전까지 가득 찬 상태 유지 → 파멸 도래 연출)
-  showPopup('파멸이 가득 찼습니다…<br>의제가 진행됩니다.',
-    [{label:"확인", primary:true, act:()=>{
-      hidePopup();
-      clearAllDoom();          // 확인 시 파멸 0으로
-      // 다음 의제 컷신 재생(agenda1b 등). 데이터 채워지면 id 교체.
-      playCutscene("agenda1b", null);
-      // TODO: 다음 의제 데이터(임계치 등) 적용
-    }}]);
+  const stage = AGENDA_STAGES[doomThreshold];
+  const cut = stage ? stage.cutscene : "agenda1b";
+  // 파멸 구슬이 가득 찬 상태를 먼저 보여주고(2초), 그 뒤에 의제 컷신 묶음 재생
+  phaseBusy = true;    // 구슬 참~컷신 시작(2초)까지도 조작 잠금(틈 방지)
+  updateDoom();
+  setTimeout(()=>{
+    // 묶음 구성: [Xb] 또는 [Xb, (X+1)a]. 묶음이 끝나면 조사자 단계로 복귀(잠금 해제).
+    const ids = [cut];
+    if(stage && stage.follow) ids.push(stage.follow);
+    // 첫 컷신(Xb)이 끝난 직후 파멸 처리를 해야 하므로, playCutscene 콜백 대신
+    // 묶음 시작 전에 "b 컷신 후 처리"를 예약할 수 없어 → 묶음 함수에 afterFirst 훅을 쓴다.
+    playCutsceneSequence(ids, ()=>{
+      // 묶음 전체 종료 → 조사자 단계로 복귀(도중에 파멸이 찼던 것이므로 단계 재개, 잠금 해제)
+      resumeInvestigationAfterCutscene();
+    }, 2000, ()=>{
+      // afterFirst: 첫 컷신(Xb) 끝난 직후 실행 — 파멸 초기화·임계치 상승
+      clearAllDoom();
+      if(stage && stage.next!=null){
+        doomThreshold = stage.next;
+        updateDoom();
+        addLog("의제가 진행되었습니다. 다음 임계치: 파멸 "+doomThreshold+".");
+      }else{
+        addLog("최종 의제에 도달했습니다.");
+      }
+    });
+  }, 2000);
 }
 
 /* 게임상의 모든 파멸 제거 — 의제 파멸 0, 필드 파멸원(적·장소·플레이어 카드) 전부 제거
@@ -1644,6 +1786,9 @@ function setPhase(ph){
   badge.textContent = PHASE_NAMES[ph]||ph;
   // 차례 종료 버튼은 조사자 단계에만 보임
   document.getElementById("end-turn-btn").style.display = (ph==="investigation") ? "block" : "none";
+  // 이야기 진행 버튼도 조사자 단계에만 — 다른 단계로 넘어가면 숨김(눌려도 실행 안 되게)
+  if(ph!=="investigation") hideAdvanceButton();
+  else if(advanceReady) showAdvanceButton();   // 조사자 단계 복귀 시, 조건 충족 상태면 다시 표시
 }
 
 /* =====================================================================
@@ -1652,7 +1797,8 @@ function setPhase(ph){
    차례 종료 → 적 → 정비 → 신화 → 조사자 → ...
    지금은 적/정비/신화 로직은 자리만. 각 단계 잠깐 머물며 로그 남기고 넘어감.
    ===================================================================== */
-let phaseBusy = false;   // 페이즈 전환 중 입력 잠금
+let phaseBusy = true;   // 입력 잠금 — 기본 잠금. 조사자 단계 정식 시작 때만 풀림.
+                        // (시작~도입컷신, 막 전환 틈 등 "내 턴 아닌 구간"은 전부 잠긴 채가 기본)
 const PHASE_HOLD = 1200; // 각 자동 페이즈에 머무는 시간(ms)
 
 // 차례 종료 버튼 클릭
@@ -1695,10 +1841,15 @@ function runMythosPhase(){
   agendaDoom += 1;
   updateDoom();
   addLog("신화 단계 — 의제에 파멸 +1 (현재 "+totalDoom()+"/"+doomThreshold+").");
-  // 파멸 임계치 확인 — 넘으면 아젠다 진행(팝업). 진행 여부와 무관하게 다음 단계로.
+  // 파멸 임계치 확인 — 넘으면 의제 진행(구슬 참 2초 → agendaXb 컷신 묶음).
   const advanced = checkAgendaAdvance();
   // TODO: 대표 조사자부터 순서대로 조우 1장씩 처리
-  //       + 조우 뽑기 전 사용 카드(타이밍 태그 검색) 처리 윈도우
+  if(advanced){
+    // 의제가 진행되면 조사자 단계 전환은 하지 않는다.
+    // (advanceAgenda의 컷신 묶음이 끝난 뒤 resumeInvestigationAfterCutscene가 복귀시킴)
+    // → 이렇게 안 하면 컷신(2초 후) 전에 조사자 단계가 돼서 그 틈에 조작이 가능해짐.
+    return;
+  }
   setTimeout(()=>{ startInvestigatorPhase(); }, PHASE_HOLD);
 }
 
@@ -1709,6 +1860,16 @@ function startInvestigatorPhase(){
   updateAP();
   phaseBusy = false;
   addLog("조사자 단계 — 행동력이 회복되었습니다.");
+}
+// 컷신(의제 전진 등)이 끝났을 때 조사자 단계로 복귀시킨다.
+// - 이미 조사자 단계 도중이었으면: 단계 재시작 없이 잠금만 해제(행동력 유지).
+// - 다른 단계(신화 등)에서 전진한 것이면: 조사자 단계를 정식 시작(행동력 회복).
+function resumeInvestigationAfterCutscene(){
+  if(currentPhase==="investigation"){
+    phaseBusy = false;              // 조사자 단계 도중 → 잠금만 해제(행동력 리셋 X)
+  }else{
+    startInvestigatorPhase();       // 신화 등에서 전진 → 조사자 단계 정식 시작(행동력 회복·잠금 해제)
+  }
 }
 
 /* =====================================================================
@@ -1891,53 +2052,171 @@ function setStageVisible(stage){
 function advanceToMansion(){
   if(currentStage!=="study") return;
   hideAdvanceButton();
-  // 막 1b 컷신(양탄자→복도 발견) 재생 → 끝나면 저택 등장 → 막 2a 컷신(장벽)
-  playCutscene("act1b", ()=>{
+  // 막 전진 대가: 서재의 조사자들에게서 필요 단서(a×2)를 공평하게 제거
+  const need = actCluesNeeded();
+  const removed = removeCluesEvenly("study", need);
+  addLog("이야기 진행 — 단서 "+removed+"개를 소비했습니다.");
+  // 막 전진 묶음: [act1b, act2a]. 첫 컷신(act1b) 후 저택 등장·복도 이동,
+  // 묶음 전체가 끝나면 조사자 단계로 복귀(잠금 해제). 사이 간격 2초.
+  playCutsceneSequence(["act1b","act2a"], ()=>{
+    resumeInvestigationAfterCutscene();   // 묶음 끝 → 조작 잠금 해제
+    beginAct(2);                           // 2막 시작 — 복도에서 단서(a×3) 목표로 전환
+    // 저택 첫 진입 — 이동 방법 안내(맵 우상단 장소 클릭 → 행동력 1 소비 이동)
+    showPopup('맵의 우측 상단에 연결된 장소를 클릭하면 <span class="hl">행동력 1</span>을 소비하여 선택한 장소로 이동할 수 있습니다.',
+      [{label:"확인", primary:true, act:hidePopup}]);
+  }, 2000, ()=>{
+    // afterFirst: act1b 끝난 직후 — 저택 등장, 복도로 이동
     setStageVisible("mansion");
     cur = "hallway";
     placePawn("hallway");
-    renderRoomButtons();   // 연결된 장소 목록 갱신(전체보기라 focusRoom을 안 거치므로 직접 호출)
+    renderRoomButtons();
     updateLocInfo();
-    showOverview();   // 저택 진입 순간 전체 구조를 보여줌
-    // 저택을 인식할 시간을 준 뒤(2초) 거실 장벽 안내(막 2a) 컷신
-    setTimeout(()=>playCutscene("act2a", null), 2000);
+    showOverview();
   });
 }
 
+/* 2막→3막 전진: 복도 조사자 단서(a×3) 공평 제거 → act2b → act3a → 3막 시작 */
+function advanceToAct3(){
+  hideAdvanceButton();
+  const need = actCluesNeeded();
+  const removed = removeCluesEvenly("hallway", need);
+  addLog("이야기 진행 — 복도에서 단서 "+removed+"개를 소비했습니다.");
+  // 막 전진 묶음: [act2b, act3a]. 묶음 끝 → 조사자 단계 복귀 + 3막 시작.
+  playCutsceneSequence(["act2b","act3a"], ()=>{
+    resumeInvestigationAfterCutscene();
+    beginAct(3);   // 구울 사제를 쓰러뜨려라
+  }, 2000);
+}
+
+/* 3막 해결: 구울 사제를 쓰러뜨리면 호출 → act3b(최종) 재생.
+   ※ 아직 적(구울 사제)이 구현 안 됨 → 적 처치 로직에서 이 함수를 부르면 됨(지금은 뼈대).
+   테스트: 콘솔에서 defeatGhoulPriest() 호출로 확인 가능. */
+function defeatGhoulPriest(){
+  if(currentAct!==3) return;             // 3막에서만
+  addLog("구울 사제를 쓰러뜨렸습니다.");
+  hideAdvanceButton();
+  // 최종 컷신 묶음: [act3b]. 마지막이라 이후 시나리오 해결(지금은 뼈대).
+  playCutsceneSequence(["act3b"], ()=>{
+    // TODO: 시나리오 해결(승리 처리·캠페인 로그·다음 시나리오)
+    addLog("시나리오 해결 지점(추후 구현).");
+  }, 2000);
+}
+
 /* =====================================================================
-   이야기 진행 조건 — 충족 시 진행 버튼 노출, 해제 시 숨김(자동 진행 X)
-   현재 조건: (서재 단계) 서재 단서를 모두 모음
+   막(Act) 시스템 — 데이터 목록 + 처리기 하나
+   각 막: 목표 텍스트 · 요구 장소 · 필요 단서(a×배수) · 진행 시 동작.
+   조건 체크(checkActCondition)를 상태가 바뀌는 모든 곳(조사·이동 등)에서 호출.
    ===================================================================== */
+// 현재 막 번호(1,2,3). act1a 컷신 후 1로 시작.
+let currentAct = 0;
+// a = 플레이어 수(playerCount). 필요 단서 = a × mult.
+const ACT_STAGES = {
+  1: { goal:"서재에서 단서(N)를 모아라", locationKey:"study",   clueMult:2, killTarget:null },
+  2: { goal:"복도에서 단서(N)를 모아라", locationKey:"hallway", clueMult:3, killTarget:null },
+  3: { goal:"구울 사제를 쓰러뜨려라!",   locationKey:null,       clueMult:0, killTarget:"ghoul_priest" },
+};
+// 특정 장소에 있는 조사자들의 단서 총합(지금은 1인 → 그 조사자가 그 방이면 invClue).
+// 여러 명 되면 조사자 배열을 순회하도록 확장.
+function cluesAtLocation(roomKey){
+  let sum = 0;
+  if(cur === roomKey) sum += invClue;   // 조사자가 그 장소에 있으면 그 단서 합산
+  return sum;
+}
+// 현재 막의 필요 단서 수(a × 배수).
+function actCluesNeeded(){
+  const st = ACT_STAGES[currentAct];
+  if(!st) return 0;
+  return playerCount * st.clueMult;
+}
+// 특정 장소의 조사자들에게서 총 count개의 단서를 "최대한 공평하게" 제거.
+// 라운드로빈: 단서 가진 사람들을 한 개씩 돌아가며 빼면 자동으로 고르게 분배됨.
+// (예: 4·6 보유, 4개 필요 → 번갈아 빼서 2·2 / 4·0 보유, 4 필요 → 4 가진 쪽만 0으로)
+// 지금은 1인이라 그 조사자(invClue)에서만. 여러 명 되면 investigators 배열로 확장.
+function removeCluesEvenly(roomKey, count){
+  const holders = [];
+  if(cur === roomKey && invClue > 0){
+    holders.push({ get:()=>invClue, sub:()=>{ invClue--; } });
+  }
+  let remaining = count;
+  while(remaining > 0){
+    let removedThisRound = 0;
+    for(const h of holders){
+      if(remaining <= 0) break;
+      if(h.get() > 0){ h.sub(); remaining--; removedThisRound++; }
+    }
+    if(removedThisRound === 0) break;
+  }
+  onClueChanged();                      // 단서 변화 → 화면 갱신 + 막 조건 재검사
+  return count - remaining;
+}
+// 단서 개수가 바뀌는 모든 곳이 거치는 지점 — 화면 갱신 + 막 조건 재검사.
+// (조사 획득, 막 진행 소비, 나중에 조우·약점 변화도 전부 여기로 통일 → 빈틈 없음)
+function onClueChanged(){
+  document.getElementById("st-clue").textContent = invClue;
+  checkActCondition();                  // 단서 변화 순간마다 조건 체크(제작자 설계)
+}
+// 조사자 단서 증감(양수=획득, 음수=잃음). 앞으로 단서 변경은 이걸로 통일.
+function changeClue(delta){
+  invClue = Math.max(0, invClue + delta);
+  onClueChanged();
+}
+// 현재 막의 진행 조건 충족 여부.
+function advanceConditionMet(){
+  const st = ACT_STAGES[currentAct];
+  if(!st) return false;
+  if(st.killTarget) return false;   // 적 처치형(act3) — 단서 조건 아님, 별도 처리
+  if(!st.locationKey) return false;
+  return cluesAtLocation(st.locationKey) >= actCluesNeeded();
+}
+// 현재 막 목표 텍스트를 화면에 표시(단서 필요수 N을 실제 값으로).
+function setActGoalText(){
+  const st = ACT_STAGES[currentAct];
+  if(!st){ updateGoal("—"); return; }
+  const text = st.goal.replace("(N)", "("+actCluesNeeded()+")");
+  updateGoal(text);
+}
+// 막 시작(act1a/act2a/act3a 컷신 후 호출) — 막 번호 세팅 + 목표 표시 + 조건 재검사.
+function beginAct(n){
+  currentAct = n;
+  advanceReady = false;
+  hideAdvanceButton();
+  setActGoalText();
+  checkActCondition();
+}
 const advanceBtn = document.getElementById("advance-btn");
 let advanceReady = false;
-function advanceConditionMet(){
-  if(currentStage==="study"){
-    return clueMeshes.filter(c=>c.room==="study" && !c.collected).length===0;
-  }
-  return false;   // 저택 단계 조건은 이후 막/의제에서 정의
-}
-function checkAdvanceCondition(){
+let actTipShown = false;   // 진행 안내 팝업(초보자 팁)을 이미 띄웠는지 — 1막에서 한 번만
+function checkActCondition(){
   const met = advanceConditionMet();
-  if(met && !advanceReady){
-    advanceReady = true;
-    showAdvanceButton();
-    showPopup('필요한 단서를 모아 이야기의 진행이 가능합니다.<br>준비가 되면 <span class="hl">이야기 진행</span>을 누르십시오.',
-      [{label:"확인", primary:true, act:hidePopup}]);
-  }else if(!met && advanceReady){
-    // 단서를 잃는 등 조건이 깨짐
-    advanceReady = false;
-    hideAdvanceButton();
-    showPopup('이야기 진행 조건을 충족시키지 못하게 되었습니다.<br>진행이 비활성화됩니다.',
+  // 버튼 표시/숨김은 조건에 따라 항상 갱신
+  if(met) showAdvanceButton(); else hideAdvanceButton();
+  advanceReady = met;
+}
+// 진행 안내 팝업을 띄울 수 있으면 띄운다(1막에서 딱 한 번 — 초보자 조작 팁).
+// 조사 성공 팝업을 닫은 뒤에 호출 → 팝업이 안 가려지고 뜸.
+function maybeShowAdvanceTip(){
+  if(currentAct===1 && !actTipShown && advanceConditionMet()){
+    actTipShown = true;
+    showPopup('제시된 목표를 완수하여 지도 좌측 상단에 활성화 된 <span class="hl">이야기 진행</span> 버튼을 눌러 이야기를 진행할 수 있게 되었습니다.',
       [{label:"확인", primary:true, act:hidePopup}]);
   }
 }
+// 이전 이름 호환(조사·이동 등에서 checkAdvanceCondition 호출하던 곳)
+function checkAdvanceCondition(){ checkActCondition(); }
 function showAdvanceButton(){ advanceBtn.style.display="block"; }
 function hideAdvanceButton(){ advanceBtn.style.display="none"; }
 advanceBtn.onclick = ()=>{
-  // 진행 확인(취소 가능 — 우클릭 자동취소도 적용됨)
-  showPopup('이야기를 진행합니다.<br>저택의 다른 공간이 드러납니다…',
+  // 조사자 단계가 아니거나 입력 잠금 중이면 진행 불가(버튼이 남아있어도 실행 안 함)
+  if(currentPhase!=="investigation" || phaseBusy || csActive) return;
+  // 현재 막에 따라 다른 전진 처리(1막→2막, 2막→3막)
+  const doAdvance = ()=>{
+    hidePopup();
+    if(currentAct===1) advanceToMansion();
+    else if(currentAct===2) advanceToAct3();
+  };
+  showPopup('이야기를 진행합니다.<br>다음 국면으로 넘어갑니다…',
     [{label:"취소", act:hidePopup},
-     {label:"진행", primary:true, act:()=>{ hidePopup(); advanceToMansion(); }}]);
+     {label:"진행", primary:true, act:doAdvance}]);
 };
 // (테스트용) 콘솔에서 advanceToMansion() / unlockParlor()
 
@@ -1973,6 +2252,7 @@ function focusRoom(k){
   renderRoomButtons();
   const c=roomCenter(k); wantTarget.set(c.x, c.y+1, c.z); wantFrustum=13;
   wantYaw=Math.PI*1.22; wantPitch=0.78;   // 방 안을 비스듬히 내려다보는 각도(반대편)
+  checkActCondition();   // 위치 변화 순간 막 조건 재검사(복도 출입 등 — 제작자 설계)
 }
 function showOverview(){
   overview=true;
@@ -2027,7 +2307,16 @@ window.addEventListener("contextmenu", e=>{
 /* 좌클릭 = 단서 클릭(조사) 우선, 아니면 현재 방 안 이동 */
 let walkTo=null;
 let pendingInvestigate=null;   // 조사하러 걸어가는 중인 단서
+// 진행 중이던 맵 행동·예약을 전부 취소하고 말을 그 자리에 고정(컷신 시작 등에서 호출)
+function cancelAllMapActions(){
+  walkTo=null;               // 방 내 걷기 취소(말이 그 자리에 멈춤)
+  pendingInvestigate=null;   // 도착 시 조사 예약 취소
+  pawnMoving=null;           // 방 간 이동 취소
+  hidePopup();               // 열려있던 조사/이동 확인 팝업 닫기
+}
 function clickWorld(e){
+  // 컷신 중(csActive)·페이즈 전환 중(phaseBusy)·조사자 단계 아닐 때는 맵 조작 불가
+  if(csActive || phaseBusy || currentPhase!=="investigation") return;
   const rect=renderer.domElement.getBoundingClientRect();
   mouse.x=((e.clientX-rect.left)/rect.width)*2-1; mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
   ray.setFromCamera(mouse,camera);
@@ -2058,6 +2347,8 @@ function startInvestigate(cm){
   pendingInvestigate=cm;   // 도착하면 팝업
 }
 function askInvestigate(cm){
+  // 컷신 중·입력 잠금 중·조사자 단계 아니면 조사 팝업 자체를 띄우지 않음
+  if(csActive || phaseBusy || currentPhase!=="investigation") return;
   if(actionPoints<=0){
     showPopup('<span class="warn">행동력이 없습니다.</span><br>조사하려면 행동력이 필요합니다.',
       [{label:"확인", primary:true, act:hidePopup}]);
@@ -2068,18 +2359,20 @@ function askInvestigate(cm){
      {label:"조사", primary:true, act:()=>{ hidePopup(); doInvestigate(cm); }}]);
 }
 function doInvestigate(cm){
+  // 최종 방어선: 컷신 중·입력 잠금 중·조사자 단계 아니면 조사 실행 안 함
+  if(csActive || phaseBusy || currentPhase!=="investigation"){ hidePopup(); return; }
   actionPoints--; updateAP();
   // 판정: (지식+토큰) vs 은폐도
   const r=investigateTest(ROOMS[cur].shroud);
   if(r.success){
     cm.mesh.visible=false; cm.collected=true;   // 맵 단서 1개 제거
-    invClue++;                                    // 조사자 단서 1개 증가
-    document.getElementById("st-clue").textContent=invClue;   // 아래 단서 표시 갱신
+    changeClue(1);                                // 조사자 단서 +1 (화면 갱신·막 조건 체크 자동)
     addLog(ROOMS[cur].name+"에서 단서 1개 획득 (조사 성공). 현재 단서 "+invClue+"개.");
     updateLocInfo();
     showPopup('조사 성공! <span class="hl">토큰 '+(r.token>=0?"+":"")+r.token+'</span> · '+
       '지식 '+INTELLECT+(r.token>=0?"+":"")+r.token+' = '+r.total+' ≥ 은폐 '+r.shroud+'<br>단서 1개를 획득했습니다. (보유 '+invClue+'개)',
-      [{label:"확인", primary:true, act:()=>{ hidePopup(); checkAdvanceCondition(); }}]);
+      [{label:"확인", primary:true, act:()=>{ hidePopup(); maybeShowAdvanceTip(); }}]);
+      // ↑ 조사 성공 팝업을 닫은 뒤 진행 안내 팝업(1막 1회)이 안 가려지고 뜸
   }else{
     showPopup('조사 실패… <span class="warn">토큰 '+(r.token>=0?"+":"")+r.token+'</span> · '+
       '지식 '+INTELLECT+(r.token>=0?"+":"")+r.token+' = '+r.total+' < 은폐 '+r.shroud+'<br>단서를 얻지 못했습니다.',
@@ -2171,20 +2464,28 @@ function animate(){
      영상 = cutscenes/<id>.mp4   음성 = cutscenes/<id>.mp3
    ===================================================================== */
 const CUTSCENES = {
-  act1a:    { text:"무슨 일인지 알아보려고 하자, 서재의 문이 눈앞에서 사라지며 단단한 벽만이 남아 있습니다. 다른 방법을 찾기 전까지는 서재 안에 갇혀 버린 것 같습니다.", typeMs:11000, okDelayMs:13000 },
-  act1b:    { text:"당신은 구입한 지 얼마 안 되는 양탄자의 가장자리가 얼룩진 누더기가 된 것을 알아차립니다. 이상함을 알아차리고, 가구를 옆으로 밀고 양탄자를 치워버립니다. 놀랍게도, 바닥에 서재 밖으로 향하는 문이 나타납니다. 천천히 손잡이를 돌리고 문을 열자 밑에 복도가 보입니다. 당신은 문으로 뛰어들어서 부드러운 바닥 위에 착지합니다. 문이 당신 위에서 소리를 내며 닫힙니다. 나무 타는 냄새와 함께 무엇인가가 썩고 부패하는 냄새가 좁은 복도에 가득 차 있습니다.", typeMs:37500, okDelayMs:41000 },
-  act2a:    { text:"타고 있는 장벽이 응접실로 들어가는 길을 막고 있습니다. 그쪽으로 움직이려 하자, 강력한 열기가 당신을 밀어냅니다. 장애물에 흙을 집어 던져보지만, 공포스럽게도 흙이 타버립니다. 아마도 저장고나 다락에 도움이 될 만한 무언가가 있을 것입니다.", typeMs:18000, okDelayMs:20500 },
-  act2b:    { text:"" },
-  act3a:    { text:"" },
-  act3b:    { text:"" },
+  act1a:    { text:"무슨 일인지 알아보려고 하자, 서재의 문이 눈앞에서 사라지며 단단한 벽만이 남아 있습니다.\n다른 방법을 찾기 전까지는 서재 안에 갇혀 버린 것 같습니다.", typeMs:11000, okDelayMs:13000 },
+  act1b:    { text:"당신은 구입한 지 얼마 안 되는 양탄자의 가장자리가 얼룩진 누더기가 된 것을 알아차립니다. 이상함을\n알아차리고, 가구를 옆으로 밀고 양탄자를 치워버립니다. 놀랍게도, 바닥에 서재 밖으로 향하는 문이\n나타납니다. 천천히 손잡이를 돌리고 문을 열자 밑에 복도가 보입니다. 당신은 문으로 뛰어들어서 부드러운\n바닥 위에 착지합니다. 문이 당신 위에서 소리를 내며 닫힙니다. 나무 타는 냄새와 함께 무엇인가가\n썩고 부패하는 냄새가 좁은 복도에 가득 차 있습니다.", typeMs:37500, okDelayMs:41000 },
+  act2a:    { text:"타고 있는 장벽이 응접실로 들어가는 길을 막고 있습니다. 그쪽으로 움직이려 하자, 강력한 열기가\n당신을 밀어냅니다. 장애물에 흙을 집어 던져보지만, 공포스럽게도 흙이 타버립니다.\n아마도 저장고나 다락에 도움이 될 만한 무언가가 있을 것입니다.", typeMs:18000, okDelayMs:20500 },
+  act2b:    { text:"다락에서 찾은 통을 사용하여 저장고의 얼음과 눈을 가져다가 장애물에 던집니다.\n얼음이 녹으면서 장벽이 번쩍이고 흔들리더니, 쉿쉿 소리를 내며 점차 희미해집니다.",
+             typeMs:13500, okDelayMs:15500 },
+  act3a:    { text:"당신의 응접실에서 횃불을 든 여자가 눈에서 증오의 빛을 발합니다. \"내 장벽에 무슨 짓을 한 거야?!\" 그녀는 비명을 지르며 분노합니다. 당신이 대답하기도 전에, 무시무시한 울부짖는 소리가 당신 뒤에서 울리며, 로브를 입고 피눈물을 흘리는 사슴 두개골 가면을 쓰고 있는 피조물이 벽에서 나와 당신 쪽으로 다가옵니다.",
+             typeMs:25500, okDelayMs:27500 },
+  act3b:    { text:"로브를 입은 생물이 쓰러지자 악마의 무리가 다시 땅속으로 숨어 버리며, 혼란스러웠던 집이 다시\n조용해집니다. 그러나 당신의 응접실에 있는 낯선 사람은 안심한 것처럼 보이지 않습니다.\n\"당신이 구울들을 가두어 놓았던 내 봉인을 깨뜨렸어.\" 그녀는 횃불을 들어올립니다.\n\"이제 우리는 더 직접적인 조치를 취해야 해! 이 지옥을 태워야 해!\"",
+             typeMs:28500, okDelayMs:30500 },
   // 인트로 이미지를 5초 보여준 뒤 영상으로 크로스페이드(introMs), 자막·음성은 0초부터
-  agenda1a: { text:"늦은 밤, 당신은 서재에서 이 지역에서 발생한 실종에 대해서 조사 중입니다. 두세 시간쯤 조사했을까, 갑자기 홀 끝에 있는 응접실에서 들려오는 이상한 노래소리를 듣습니다. 그와 동시에 마치 바닥 아래의 땅을 파는 것 같이 흙이 움직이는 소리가 들려옵니다.",
-             typeMs:23000, okDelayMs:25000, introHtml:"cutscenes/arkham_intro.html", introMs:5000 },
-  agenda1b: { text:"" },
-  agenda2a: { text:"" },
-  agenda2b: { text:"" },
-  agenda3a: { text:"" },
-  agenda3b: { text:"" },
+  agenda1a: { text:"늦은 밤, 당신은 서재에서 이 지역에서 발생한 실종에 대해서 조사 중입니다. 두세 시간쯤 조사했을까,\n갑자기 홀 끝에 있는 응접실에서 들려오는 이상한 노래소리를 듣습니다. 그와 동시에 마치 바닥 아래의\n땅을 파는 것 같이 흙이 움직이는 소리가 들려옵니다.",
+             typeMs:23000, okDelayMs:25000 },
+  agenda1b: { text:"당신의 집이 눈 앞에서 계속 변해갑니다. 벽들은 낡아지고 대부분의 방들 바닥이 흙으로 변합니다.\n알아 볼 수 있는 집의 장식들이 아니라면 전혀 새로운 장소로 이동한 것으로 알았을 것입니다.",
+             typeMs:14500, okDelayMs:16500 },
+  agenda2a: { text:"서 있는 바닥이 무너지면서 떨어진 곳에서 어두운 터널들이 꼬여 어두운 곳으로 향해 있습니다.\n기이한 생물의 형체와 윤곽이 위로 향하는 길을 찾으려는 듯이 터널을 빠르게 지나다니고 있습니다.\n저것들이 지상에 올라왔을 때에는 아마도 같이 있지 않고 싶을 것입니다...",
+             typeMs:20500, okDelayMs:22500 },
+  agenda2b: { text:"송곳니가 있고 발에는 발굽이 있는, 사람의 형상을 한 야수가 당신 앞에 있는 땅을 헤치며 돌진합니다. 바닥 아래에 광대한 터널이 집 아래에 있습니다. 지하동굴 깊은 곳에서 악마의 울부짖음이 울려퍼집니다.",
+             typeMs:20500, okDelayMs:22500 },
+  agenda3a: { text:"밖에서 미친듯한 울부짖음이 들리니 갑자기 모든 생물이 그 소리에 관심을 돌립니다. 그들은 집을 벗어나기 위해 문을 부수고 가로막는 모든 것을 부수며 달아납니다.",
+             typeMs:12500, okDelayMs:14500 },
+  agenda3b: { text:"땅이 흔들리기 시작하며 주변의 땅에서 필사적으로 올라오는 괴상한 생물의 발톱을 볼 수 있습니다.\n당신의 주변 모든 곳의 땅에서 괴물들이 올라옵니다. 당신은 겁에 질려, 최대한 빨리 달아납니다.",
+             typeMs:16500, okDelayMs:18500 },
 };
 
 const csScreen = document.getElementById("cutscene");
@@ -2200,11 +2501,16 @@ const CS_SKIP_MS = 2000;
 const CS_TYPE_MS_PER_CHAR = 55;   // 글자당 타이핑 속도(느긋하게)
 
 let csActive=false, csDone=false, csTimers=[], csOnEnd=null;
+
+// (삭제됨) 탭 복귀 시 미디어 재생 핸들러 — 처음부터 되감겨 재생되는 버그를 유발.
+// 알트탭·작업탭 전환 시 영상 끊김은 .exe 패키징(backgroundThrottling:false)에서 해결 예정.
 let csEndTimer=null;
 
 function playCutscene(id, onEnd){
   const data = CUTSCENES[id];
   if(!data){ if(onEnd) onEnd(); return; }
+  cancelAllMapActions();            // 컷신 시작 → 진행 중이던 이동·조사·팝업 전부 취소
+  phaseBusy = true;                 // 컷신 시작 → 입력 잠금(조사자 단계 복귀 시 풀림)
   csOnEnd = onEnd || null;
   csDone=false; csActive=true; csTimers=[];
   csTextBox.innerHTML=""; csTextBox.classList.add("cs-cursor");
@@ -2213,11 +2519,15 @@ function playCutscene(id, onEnd){
   csScreen.style.transition="opacity 1s ease";
   csScreen.classList.add("show");
 
-  // 영상: 파일이 있으면 재생, 없으면 자리표시(◆)
+  // 영상: 파일이 있으면 재생, 없으면 자리표시(◆). preload로 미리 받아둬 안 끊김.
   const videoSrc = "cutscenes/"+id+".mp4";
   csVideo.src = videoSrc;
+  csVideo.muted = true;   // 모든 mp4 음소거 — 소리는 mp3(csAudio)로만
   csVideo.classList.remove("on"); csNoVideo.style.display="block";
-  csVideo.onloadeddata = ()=>{ csVideo.classList.add("on"); csNoVideo.style.display="none"; };
+  // 충분히 재생 가능해지면(버퍼됨) 표시 — 첫 프레임만이 아니라 끊김 없이 틀 수 있을 때
+  const showVideo = ()=>{ csVideo.classList.add("on"); csNoVideo.style.display="none"; };
+  csVideo.oncanplaythrough = showVideo;
+  csVideo.onloadeddata = showVideo;   // 폴백(canplaythrough 안 오는 환경)
   csVideo.onerror = ()=>{ csVideo.classList.remove("on"); csNoVideo.style.display="block"; };
 
   // 인트로 HTML(iframe): 있으면 처음 introMs 동안 영상 위를 덮고, 그 뒤 크로스페이드로 사라짐
@@ -2255,8 +2565,15 @@ function playCutscene(id, onEnd){
   enableCsSkip();
 }
 
-// 컷신 확인 버튼 → 종료(진행)
+// 컷신 진행: "아무 키나" 문구가 떴을 때(csOk.show) 키/클릭이면 진행
 csOk.onclick = ()=>{ endCutscene(false); };
+function csCanProceed(){ return csActive && csOk.classList.contains("show"); }
+document.addEventListener("keydown", (e)=>{
+  if(csCanProceed()){ e.preventDefault(); endCutscene(false); }
+});
+document.addEventListener("mousedown", (e)=>{
+  if(csCanProceed()){ endCutscene(false); }
+});
 
 function typeCutsceneText(text, totalMs){
   let i=0;
@@ -2292,7 +2609,8 @@ function endCutscene(skipped){
     csScreen.style.display="none";
     csVideo.src=""; csAudio.src="";
     const cb=csOnEnd; csOnEnd=null;
-    if(cb) cb();     // 컷신 끝 → 다음 동작(막 전진 등)
+    if(cb) cb();     // 컷신 끝 → 다음 동작(묶음의 다음 컷신·막 전진 등)
+    // 잠금 해제는 여기서 하지 않음 — 컷신 묶음(playCutsceneSequence)이 관리한다.
   }, 950);
 }
 
@@ -2320,7 +2638,6 @@ function resetCsRing(){ csRing.style.strokeDashoffset=CS_RING_LEN; }
 // (테스트) 콘솔에서: playCutscene("act1b")  /  playCutscene("act2a")
 
 animate();
-loadPlayerDecks();   // 덱빌딩에서 넘어온 조사자·지식 반영(비동기)
 setStageVisible("study");   // 시작은 서재만 보임(저택 숨김)
 updateAP();
 renderRoomButtons();
@@ -2360,17 +2677,177 @@ addEventListener("resize", fitStage);
    진입 → 2초 맵 확인 → agenda1a → (종료 1초 후) act1a → (종료 1초 후) 딜/멀리건 */
 /* 시작: 멀리건 먼저(클릭으로 소리 재생 허용됨) → 끝나면 agenda1a → act1a */
 function startScenarioIntro(){
+  updateGoal("—");                    // act1a 컷신 전까지 목표 비워둠
   setTimeout(dealOpeningHand, 800);   // 진입 잠깐 뒤 딜 + 멀리건
 }
 // 멀리건 완료 후 호출될 컷신 시퀀스
 function playOpeningCutscenes(){
+  // 도입 묶음: agenda1a → act1a. 묶음 끝 → 조사자 단계 시작 + 1막 시작(목표·조건).
   setTimeout(()=>{
-    playCutscene("agenda1a", ()=>{
-      setTimeout(()=>{ playCutscene("act1a", ()=>{ startInvestigatorPhase(); }); }, 1000);
+    playCutsceneSequence(["agenda1a","act1a"], ()=>{
+      startInvestigatorPhase();
+      beginAct(1);                     // 서재에서 단서(a×2)를 모아라 — 목표 표시·조건 체크
     });
-  }, 800);   // 멀리건 종료 잠깐 뒤 agenda1a
+  }, 800);
 }
-startScenarioIntro();
+
+/* 컷신 묶음(시퀀스) — 여러 컷신을 순서대로 재생. 묶음 전체가 하나의 잠금 단위.
+   - 묶음 시작: 입력 잠금(phaseBusy=true)
+   - 컷신 사이 간격(gapMs) 동안에도 잠금 유지 → setTimeout 틈 안 뚫림
+   - 묶음 끝: onAllDone 실행. 여기서 조사자 단계 복귀 등으로 잠금을 푼다.
+   - afterFirst: 첫 컷신이 끝난 직후 실행(의제의 파멸 처리 등에 사용)
+   ids: 컷신 id 배열, onAllDone: 전부 끝난 뒤, gapMs: 컷신 사이 간격, afterFirst: 첫 컷신 후 훅 */
+function playCutsceneSequence(ids, onAllDone, gapMs, afterFirst){
+  gapMs = (gapMs==null) ? 1000 : gapMs;
+  phaseBusy = true;                    // 묶음 시작 → 잠금
+  let i = 0;
+  const playNext = ()=>{
+    if(i >= ids.length){                // 묶음 끝
+      if(onAllDone) onAllDone();
+      return;
+    }
+    const id = ids[i++];
+    playCutscene(id, ()=>{
+      if(i===1 && afterFirst) afterFirst();   // 첫 컷신 끝난 직후 훅
+      if(i < ids.length){                // 다음 컷신 남음 → 간격 두고(잠금 유지) 재생
+        setTimeout(playNext, gapMs);
+      }else{
+        playNext();                      // 마지막 → 종료 처리
+      }
+    });
+  };
+  playNext();
+}
+// ===== 로딩 화면 시스템 =====
+const CUTSCENE_IDS = ["agenda1a","agenda1b","agenda2a","agenda2b","agenda3a","agenda3b",
+                      "act1a","act1b","act2a","act2b","act3a","act3b"];
+function setLoadProgress(pct, statusText){
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  const fillRect=document.getElementById("fill-rect");
+  const pctEl=document.getElementById("load-pct");
+  const statusEl=document.getElementById("load-status");
+  if(fillRect) fillRect.setAttribute("width", (pct/100*1200)+"");  // viewBox 폭 1200 기준
+  if(pctEl){ pctEl.firstChild ? pctEl.firstChild.nodeValue=pct : pctEl.textContent=pct; }  // 숫자만(% span 유지)
+  if(statusText && statusEl) statusEl.textContent = statusText;
+}
+// 이미지 1장 로드(성공/실패 무관 완료 처리)
+function loadOneImage(url){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>res(); im.onerror=()=>res();
+    im.src=url; preloadedImgs.push(im);
+  });
+}
+// 미디어 1개 로드(영상·음성) — 없으면 즉시 넘어감(onerror), 느리면 짧은 타임아웃
+function loadOneMedia(url, isVideo){
+  return new Promise(res=>{
+    const el = isVideo ? document.createElement("video") : document.createElement("audio");
+    el.preload="auto"; if(isVideo) el.muted=true;
+    let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
+    el.oncanplaythrough=finish; el.onloadeddata=finish;
+    el.onerror=finish;              // 파일 없으면 거의 즉시 → 대기 안 함
+    el.onstalled=finish;            // 멈추면 넘어감
+    setTimeout(finish, 2500);       // 최대 2.5초만 기다림
+    el.src=url; el.load?.(); preloadedMedia.push(el);
+  });
+}
+// 전체 로딩: 카드 이미지 → 영상 → 음성 순서로, 진행률 갱신
+async function runLoading(){
+  // 1) 로드할 카드 이미지 URL 모으기
+  const EN="https://arkhamdb.com";
+  const imgUrls=new Set();
+  const addImg=(src)=>{ if(src) imgUrls.add(src.startsWith("http")?src:EN+src); };
+  if(invCard){ addImg(invCard.imagesrc); }
+  const cs = activeInvestigator && activeInvestigator.cards ? activeInvestigator.cards : {};
+  Object.keys(cs).forEach(code=>{ const c=byCode[code]; if(c){ addImg(c.imagesrc); addImg(c.backimagesrc); } });
+  if(activeInvestigator){
+    (activeInvestigator.signatures||[]).forEach(code=>{ const c=byCode[code]; if(c){ addImg(c.imagesrc); addImg(c.backimagesrc); } });
+    if(activeInvestigator.randomWeakness){ const c=byCode[activeInvestigator.randomWeakness]; if(c) addImg(c.imagesrc); }
+  }
+  // 덱에 없더라도 조우·적 대비가 필요하면 여기서 추가하지만,
+  // 로딩 속도를 위해 지금은 "덱·시그니처·약점"만 우선 로드. 나머지는 게임 중 필요시 로드.
+  // (전체 301장을 받으려면 아래 주석을 해제)
+  // Object.keys(byCode).forEach(code=>{ const c=byCode[code]; if(c&&c.imagesrc) addImg(c.imagesrc); });
+
+  const imgList=[...imgUrls];
+  const videoList=CUTSCENE_IDS.map(id=>"cutscenes/"+id+".mp4");
+  const audioList=CUTSCENE_IDS.map(id=>"cutscenes/"+id+".mp3");
+  const total = imgList.length + videoList.length + audioList.length;
+  let done=0;
+  const tick=(label)=>{ done++; setLoadProgress(done/total*100, label); };
+
+  // 2) 카드 이미지 (병렬 8개씩)
+  setLoadProgress(2, "카드 이미지를 불러오는 중...");
+  for(let i=0;i<imgList.length;i+=8){
+    await Promise.all(imgList.slice(i,i+8).map(u=>loadOneImage(u).then(()=>tick("카드 이미지를 불러오는 중... ("+done+"/"+total+")"))));
+  }
+  // 3) 영상 (병렬 4개씩 — 없는 파일은 즉시 넘어감)
+  setLoadProgress(done/total*100, "과거의 기록(영상)을 여는 중...");
+  for(let i=0;i<videoList.length;i+=4){
+    await Promise.all(videoList.slice(i,i+4).map(u=>loadOneMedia(u,true).then(()=>tick("과거의 기록(영상)을 여는 중..."))));
+  }
+  // 4) 음성 (병렬 4개씩)
+  setLoadProgress(done/total*100, "속삭임(음성)을 듣는 중...");
+  for(let i=0;i<audioList.length;i+=4){
+    await Promise.all(audioList.slice(i,i+4).map(u=>loadOneMedia(u,false).then(()=>tick("속삭임(음성)을 듣는 중..."))));
+  }
+
+  setLoadProgress(100, "준비 완료");
+}
+// 로딩 끝 → 화면 감추고 게임 시작
+function finishLoading(){
+  const ls=document.getElementById("loading-screen");
+  if(ls){ ls.classList.add("hide"); setTimeout(()=>{ ls.style.display="none"; }, 900); }
+  startScenarioIntro();
+}
+
+// ===== 진입 =====
+(async function boot(){
+  const startT = Date.now();
+  await loadPlayerDecks();     // 데이터·조사자 준비(비동기 완료 대기)
+  fitStage();
+  try{ await runLoading(); }catch(e){ console.error("로딩 오류:", e); }
+  // 실제 로드가 아무리 빨라도 최소 2초는 게이지가 차오르도록(0.1초에 끝나면 어색)
+  const elapsed = Date.now()-startT;
+  const MIN_MS = 2000;
+  if(elapsed < MIN_MS){
+    await smoothFillTo100(MIN_MS - elapsed);
+  }
+  // 게이지 다 참 → 자동으로 안 넘어가고, "아무 키나 누르세요" 띄우고 입력 대기(읽을 시간)
+  waitForContinue();
+})();
+
+// "계속하려면 아무 키나" 깜빡임 → 키·클릭 시 게임 시작
+let continueReady=false;
+function waitForContinue(){
+  const cont=document.getElementById("load-continue");
+  if(cont) cont.classList.add("on");
+  continueReady=true;
+  const go=()=>{
+    if(!continueReady) return;
+    continueReady=false;
+    document.removeEventListener("keydown", go);
+    document.removeEventListener("mousedown", go);
+    finishLoading();
+  };
+  document.addEventListener("keydown", go);
+  document.addEventListener("mousedown", go);
+}
+
+// 남은 시간(ms) 동안 게이지를 현재값→100%로 부드럽게 채움
+function smoothFillTo100(ms){
+  return new Promise(res=>{
+    const fillRect=document.getElementById("fill-rect");
+    const startPct = fillRect ? (parseFloat(fillRect.getAttribute("width"))||1080)/1200*100 : 90;
+    const t0=Date.now();
+    const step=()=>{
+      const p=Math.min(1,(Date.now()-t0)/ms);
+      setLoadProgress(startPct + (100-startPct)*p, "준비 완료");
+      if(p<1) requestAnimationFrame(step); else res();
+    };
+    step();
+  });
+}
 </script>
 </body>
 </html>

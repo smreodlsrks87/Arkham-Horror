@@ -609,6 +609,9 @@ function goSingle(){
    화면 2 → 3 : 확인 → 페이드인 → 덱빌딩
    ===================================================================== */
 document.getElementById("confirm-players").addEventListener("click", ()=>{
+  // 선택한 플레이어 수 저장(scenario1에서 목표 단서 수 계산에 사용). 값 없으면 1.
+  const pc = parseInt(document.getElementById("player-count").value,10) || 1;
+  localStorage.setItem("arkham_playercount", pc);
   fade.classList.add("show");
   setTimeout(()=>{
     scrSetup.classList.remove("show");
