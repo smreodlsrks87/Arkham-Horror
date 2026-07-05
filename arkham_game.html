@@ -64,9 +64,10 @@
     letter-spacing:.02em; text-align:left;
     font-family:'Iowan Old Style','Hoefler Text','맑은 고딕',serif;
     text-shadow:0 0 18px rgba(255,255,255,.06);
-    display:flex; flex-direction:column; justify-content:flex-end;  /* 아래 정렬 → 누적되며 위로 밀림 */
+    display:flex; flex-direction:column; justify-content:flex-start;  /* 위 정렬(줄이 미리 자리 잡아 안 밀림) */
   }
-  #prologue-text .pl-line{ opacity:.92; min-height:1.2em; }
+  /* 각 줄이 타이핑 전에도 최종 줄높이(2.05em)를 차지 → 글자가 채워져도 줄 위치 안 밀림 */
+  #prologue-text .pl-line{ opacity:.92; min-height:2.05em; }
   #prologue-text .pl-cursor::after{ content:"▌"; margin-left:1px; animation:plblink 1s steps(1) infinite; color:#f4f2ec; }
   @keyframes plblink{ 50%{opacity:0;} }
 
@@ -167,13 +168,62 @@
   /* ============================================================
      화면 2 — 플레이어 수 팝업 (검은 화면 위)
      ============================================================ */
-  #screen-setup{
+  #screen-setup, #screen-difficulty{
     position:absolute; inset:0; z-index:40;
     background:#000;
     display:none;
     align-items:center; justify-content:center;
   }
-  #screen-setup.show{display:flex;}
+  #screen-setup.show, #screen-difficulty.show{display:flex;}
+
+  /* ============================================================
+     헌사·경구 인트로 (모든 캠페인 공통) — 검은 화면 위 글자 페이드
+     ============================================================ */
+  #screen-intro{
+    position:absolute; inset:0; z-index:45;
+    background:#050506; display:none;
+    align-items:center; justify-content:center;
+    text-align:center; padding:0 32px;
+  }
+  #screen-intro.show{display:flex;}
+  #screen-intro::before{                       /* 극장 비네트 */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%);
+  }
+  #screen-intro .intro-line{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(84%,760px);
+    color:#d7d0c2; font-family:'나눔명조','Nanum Myeongjo','바탕','Batang',serif;
+    opacity:0; transition:opacity 1.6s ease;   /* .show 로 서서히 떴다/짐 */
+  }
+  #screen-intro .intro-line.show{ opacity:1; }
+  #screen-intro .intro-dedication{
+    font-size:clamp(16px,3vw,24px); letter-spacing:.34em; text-indent:.34em; color:#9a927f;
+  }
+  #screen-intro .intro-epigraph{
+    font-size:clamp(19px,3.4vw,30px); letter-spacing:.05em; line-height:1.95;
+    color:#cfc8b6; font-style:italic;
+  }
+  #screen-intro .intro-epigraph .cite{
+    display:block; margin-top:20px; font-style:normal; font-size:.6em;
+    letter-spacing:.2em; color:#7c7566;
+  }
+  #screen-intro .intro-title{
+    font-size:clamp(44px,10vw,96px); letter-spacing:.12em; text-indent:.12em;
+    font-weight:600; color:#e8e2d4;
+  }
+  #screen-intro .intro-title.show{                 /* 등장 후 낡은 영사기 같은 초록빛 깜빡임 */
+    animation:introFlicker 4.2s ease-in-out infinite;
+  }
+  @keyframes introFlicker{  /* opacity는 건드리지 않음(등장 페이드와 안 싸우게) */
+    0%,100%{ text-shadow:0 0 18px rgba(120,180,150,.35),0 0 46px rgba(90,150,120,.18); filter:brightness(1); }
+    47%    { text-shadow:0 0 14px rgba(120,180,150,.28),0 0 40px rgba(90,150,120,.14); filter:brightness(.94); }
+    50%    { text-shadow:0 0 24px rgba(140,200,165,.5), 0 0 60px rgba(90,150,120,.26); filter:brightness(1.08); }
+    53%    { text-shadow:0 0 14px rgba(120,180,150,.28),0 0 40px rgba(90,150,120,.14); filter:brightness(.96); }
+  }
+  @media (prefers-reduced-motion:reduce){         /* 깜빡임 최소화(접근성) */
+    #screen-intro .intro-title.show{ animation:none; text-shadow:0 0 20px rgba(120,180,150,.3); }
+  }
 
   .dialog{
     width:440px;
@@ -278,6 +328,19 @@
   .invest-card .nm{ padding:8px 10px; font-size:14px; letter-spacing:.05em; }
   .invest-card .ph{
     padding:30px 10px; text-align:center; color:var(--muted); font-size:12px;
+  }
+
+  /* 시험판: 잠긴(선택 불가) 조사자 — 회색 처리 + "준비 중" 배지 */
+  .invest-card{ position:relative; }
+  .invest-card.locked{
+    filter:grayscale(1) brightness(.4); opacity:.75; cursor:not-allowed;
+  }
+  .invest-card.locked:hover{ border-color:var(--edge); box-shadow:none; }
+  .invest-card .lock-tag{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,.72); color:#c9c1b0; white-space:nowrap;
+    font-size:11px; letter-spacing:.15em; padding:3px 12px; border-radius:3px;
+    border:1px solid var(--edge); pointer-events:none;
   }
 
   /* 우: 카드 풀 */
@@ -413,7 +476,7 @@
 
   <!-- ===== 화면 1: 메인 메뉴 ===== -->
   <div id="screen-main">
-    <video id="bg-video" src="arkhamhorror.mp4" autoplay loop muted playsinline preload="auto"></video>
+    <video id="bg-video" src="cutscenes/arkhamhorror.mp4" autoplay loop muted playsinline preload="auto"></video>
     <div id="bg-fallback"></div>
     <div id="vignette"></div>
 
@@ -439,6 +502,23 @@
         <div class="hint">테스트 빌드 — 1인 고정</div>
       </div>
       <button class="btn" id="confirm-players">확인</button>
+    </div>
+  </div>
+
+  <!-- ===== 화면 2.5: 난이도 선택 ===== -->
+  <div id="screen-difficulty">
+    <div class="dialog">
+      <div class="sigil">✦</div>
+      <h2>난이도를 선택해 주십시오.</h2>
+      <div class="field">
+        <label>Difficulty</label>
+        <select id="difficulty-select" disabled>
+          <option value="easy" selected>쉬움</option>
+          <option value="hard">어려움</option>
+        </select>
+        <div class="hint">테스트 빌드 — 쉬움 고정</div>
+      </div>
+      <button class="btn" id="confirm-difficulty">확인</button>
     </div>
   </div>
 
@@ -495,6 +575,17 @@
   <!-- 카드 호버 번역 툴팁 -->
   <div id="tip"></div>
 
+  <!-- ===== 헌사·경구 인트로 (모든 캠페인 공통) → 프롤로그 나레이션으로 ===== -->
+  <div id="screen-intro">
+    <div class="intro-line intro-dedication" id="intro-dedication">미스캐토닉 대학 소장 · 봉인된 기록</div>
+    <div class="intro-line intro-epigraph" id="intro-epigraph">
+      영원히 잠들 수 있는 것은 죽은 것이 아니며,<br>
+      기이한 영겁 속에서는 죽음마저 죽으리라.
+      <span class="cite">— 압둘 알하즈레드, 『네크로노미콘』</span>
+    </div>
+    <div class="intro-line intro-title" id="intro-title">아컴 호러</div>
+  </div>
+
   <!-- 프롤로그 연출 화면 -->
   <div id="screen-prologue">
     <div id="prologue-text"></div>
@@ -511,8 +602,8 @@
   <div id="fade"></div>
 </div>
 
-<!-- 프롤로그 내레이션 음성(파일을 게임 폴더에 두세요: opening narration.mp3) -->
-<audio id="prologue-audio" src="opening narration.mp3" preload="auto"></audio>
+<!-- 프롤로그 내레이션 음성(파일 위치: cutscenes/opening narration.mp3) -->
+<audio id="prologue-audio" src="cutscenes/opening narration.mp3" preload="auto"></audio>
 
 <script>
 /* =====================================================================
@@ -532,7 +623,9 @@ const fade   = document.getElementById("fade");
 const menu   = document.getElementById("menu");
 const scrMain  = document.getElementById("screen-main");
 const scrSetup = document.getElementById("screen-setup");
+const scrDiff  = document.getElementById("screen-difficulty");
 const scrDeck  = document.getElementById("screen-deck");
+const scrIntro = document.getElementById("screen-intro");
 
 /* =====================================================================
    전역 우클릭 처리
@@ -600,7 +693,7 @@ function goSingle(){
   fade.classList.add("show");                 // 검게 페이드아웃
   setTimeout(()=>{
     scrMain.style.display = "none";
-    scrSetup.classList.add("show");           // 검은 화면 위 팝업
+    scrDiff.classList.add("show");            // 난이도 먼저 물어봄
     fade.classList.remove("show");            // 검은 막 걷기(팝업이 검은 배경)
   }, 1150);
 }
@@ -615,9 +708,22 @@ document.getElementById("confirm-players").addEventListener("click", ()=>{
   fade.classList.add("show");
   setTimeout(()=>{
     scrSetup.classList.remove("show");
-    scrDeck.classList.add("show");
+    scrDeck.classList.add("show");            // 덱빌딩으로
     fade.classList.remove("show");            // 페이드인으로 덱빌딩 등장
     loadDeckScreen();
+  }, 1150);
+});
+
+/* 화면 1.5 → 2 : 난이도 확인 → 페이드인 → 플레이어 수 */
+document.getElementById("confirm-difficulty").addEventListener("click", ()=>{
+  // 선택한 난이도 저장(scenario1이 혼돈 주머니 구성에 사용). 쉬움=easy, 어려움=hard.
+  const diff = document.getElementById("difficulty-select").value || "easy";
+  localStorage.setItem("arkham_difficulty", diff);
+  fade.classList.add("show");
+  setTimeout(()=>{
+    scrDiff.classList.remove("show");
+    scrSetup.classList.add("show");           // 플레이어 수 화면으로
+    fade.classList.remove("show");
   }, 1150);
 });
 
@@ -671,7 +777,7 @@ document.getElementById("weak-ok").addEventListener("click", ()=>{
   }
   weakPop.style.display="none";
   saveCompletedDeck();             // 완성 덱을 묶어서 저장
-  startPrologue();                 // 다음 화면으로
+  startIntro();                    // 헌사·경구 인트로 → 이어서 프롤로그
 });
 
 /* =====================================================================
@@ -700,9 +806,56 @@ function saveCompletedDeck(){
 }
 
 /* =====================================================================
+   헌사·경구 인트로 (모든 캠페인 공통) — 끝나면 프롤로그(나레이션)로 이어짐
+   - 헌사 서서히 등장/퇴장 → 경구 등장/퇴장 → endIntro()
+   - 아무 키·클릭이면 즉시 넘어감(skip)
+   ===================================================================== */
+let introTimers = [], introDone = false;
+function startIntro(){
+  const ded = document.getElementById("intro-dedication");
+  const epi = document.getElementById("intro-epigraph");
+  const ttl = document.getElementById("intro-title");
+  introDone = false; introTimers = [];
+  ded.classList.remove("show"); epi.classList.remove("show"); ttl.classList.remove("show");
+
+  // 덱 화면 페이드아웃 → 인트로 등장
+  fade.classList.add("show");
+  setTimeout(()=>{
+    scrDeck.classList.remove("show");
+    scrDeck.style.display = "none";
+    scrIntro.classList.add("show");
+    fade.classList.remove("show");
+    runIntro(ded, epi, ttl);
+  }, 1200);
+}
+function runIntro(ded, epi, ttl){
+  const T = (ms,fn)=> introTimers.push(setTimeout(fn, ms));
+  T(700,   ()=> ded.classList.add("show"));      // 헌사 등장
+  T(3200,  ()=> ded.classList.remove("show"));   // 헌사 퇴장
+  T(4700,  ()=> epi.classList.add("show"));      // 경구 등장
+  T(9000,  ()=> epi.classList.remove("show"));   // 경구 퇴장
+  T(10500, ()=> ttl.classList.add("show"));      // "아컴 호러" 등장(+깜빡임)
+  T(14700, ()=> ttl.classList.remove("show"));   // 타이틀 퇴장
+  T(16100, ()=> endIntro());                     // 종료 → 프롤로그
+  window.addEventListener("keydown", introSkip); // 아무 키나 누르면 스킵
+}
+function introSkip(){ endIntro(); }
+function endIntro(){
+  if(introDone) return; introDone = true;
+  introTimers.forEach(clearTimeout); introTimers = [];
+  window.removeEventListener("keydown", introSkip);
+  fade.classList.add("show");                    // 검게 덮고
+  setTimeout(()=>{
+    scrIntro.classList.remove("show");
+    scrIntro.style.display = "none";
+    startPrologue();                             // 나레이션 시작(자체 페이드 사용)
+  }, 900);
+}
+
+/* =====================================================================
    프롤로그 연출
    - 검은 화면에 흰 글씨가 손으로 쓰듯 일정 속도로 타이핑(약 1분 10초)
-   - 줄이 바뀌면 위로 누적, opening narration.mp3 동시 재생(반복X)
+   - 줄이 바뀌면 위로 누적, cutscenes/opening narration.mp3 동시 재생(반복X)
    - 시작 후 1분 20초에 페이드아웃 → 다음 장면
    - ESC 길게(2초) 누르면 원형 게이지 차오르고 → 스킵(페이드아웃)
    ===================================================================== */
@@ -876,7 +1029,7 @@ let deckLoaded = false;
 let byCode = {};               // 코드 → 카드 데이터
 let deck = {};                 // 코드 → 담은 수
 let chosenInv = null;          // 선택된 조사자 코드
-const DECK_SIZE = 30;          // 덱 완성 장수
+const DECK_SIZE = 20;          // 덱 완성 장수 (시험판: 0레벨 카드가 적어 임시로 20 — 정식 30)
 let RANDOM_WEAKNESSES = [];    // 무작위 기본 약점 풀
 let investigatorCards = [];    // 조사자 카드 목록(카드풀과 별도)
 let signatureCodes = [];       // 현재 조사자의 고유(시그니처) 카드 코드들 — 덱에 자동 포함, 30장에 안 셈
@@ -894,6 +1047,38 @@ function cleanText(t){ if(!t) return "";
     .replace(/<\/?b>|<\/?i>/g,"").replace(/\[\[|\]\]/g,""); }
 
 const FAC_KO={guardian:"수호자",seeker:"탐구자",rogue:"무법자",mystic:"신비주의자",survivor:"생존자",neutral:"중립"};
+
+/* =====================================================================
+   시험판(로랜드 전용) 덱빌딩 필터
+   - 조사자는 로랜드(01501)만 선택 가능, 나머지는 잠금
+   - 카드풀은 notz로 데이터화한 카드 중 "로랜드 덱빌딩 조건 + 0레벨"만 노출
+   ===================================================================== */
+const TRIAL_INV = "01501";        // 로랜드 뱅크스(개정판)만 선택 가능
+const TRIAL_MAX_LEVEL = 0;        // 0레벨 카드만 노출
+
+// 조사자의 deck_options(덱빌딩 조건)를 읽어, 그 카드를 덱에 넣을 수 있는지 판정
+//   예) 로랜드: 수호자·중립 0~5레벨, 탐구자 0~2레벨
+function deckEligible(c, inv){
+  const opts = inv && inv.deck_options;
+  if(!opts) return false;
+  const xp = c.xp || 0;
+  return opts.some(o=>{
+    if(!o.faction || !o.faction.includes(c.faction_code)) return false;  // 클래스 조건
+    const lv = o.level;
+    if(lv && (xp < (lv.min ?? 0) || xp > (lv.max ?? 5))) return false;    // 레벨 조건
+    return true;
+  });
+}
+
+// 선택된 조사자 기준으로 카드풀 노출 갱신 — 0레벨 + 덱빌딩 조건 충족만 보이게
+function applyPoolFilter(){
+  const inv = byCode[chosenInv];
+  document.querySelectorAll("#pool-grid .pcard").forEach(el=>{
+    const c = byCode[el.dataset.c];
+    const ok = !!c && (c.xp||0) <= TRIAL_MAX_LEVEL && deckEligible(c, inv);
+    el.style.display = ok ? "" : "none";
+  });
+}
 
 async function loadDeckScreen(){
   if(deckLoaded) return;       // 한 번만 로드
@@ -935,6 +1120,7 @@ async function loadDeckScreen(){
         const POOL_TYPES = ["asset","event","skill"];
         let pool = all.filter(c=>{
           if(!POOL_TYPES.includes(c.type_code)) return false;
+          if(!NOTZ_CODES.includes(c.code)) return false;  // 시험판: 데이터화한(notz) 카드만
           if(c.encounter_code) return false;       // 조우 세트 제외
           if(c.hidden) return false;               // 숨김(플레이스홀더) 제외
           if(c.subtype_code==="basicweakness") return false;  // 기본약점 제외
@@ -988,21 +1174,27 @@ async function loadDeckScreen(){
     const players       = cards.filter(c=>c.type_code !== "investigator")
                                .sort((a,b)=> (a.name>b.name?1:-1));
 
-    // ----- 좌측: 조사자 -----
+    // ----- 좌측: 조사자 (시험판: 로랜드만 선택, 나머지 잠금) -----
     investList.innerHTML = "";
+    // 로랜드를 맨 앞으로
+    investigators.sort((a,b)=> (a.code===TRIAL_INV?-1:0) - (b.code===TRIAL_INV?-1:0));
     investigators.forEach(c=>{
+      const locked = (c.code !== TRIAL_INV);   // 로랜드 외에는 잠금
       const el = document.createElement("div");
-      el.className = "invest-card";
+      el.className = "invest-card" + (locked ? " locked" : "");
       el.dataset.c = c.code;                    // 호버 툴팁용
       const img = c.imagesrc
         ? '<img src="'+EN_API+c.imagesrc+'" alt="">'
         : '<div class="ph">이미지 없음</div>';
-      el.innerHTML = img + '<div class="nm">'+(c.name||c.code)+'</div>';
-      el.addEventListener("click", ()=>{
-        document.querySelectorAll(".invest-card").forEach(n=>n.classList.remove("sel"));
-        el.classList.add("sel");
-        selectInvestigator(c.code);
-      });
+      el.innerHTML = img + '<div class="nm">'+(c.name||c.code)+'</div>'
+        + (locked ? '<div class="lock-tag">준비 중</div>' : '');
+      if(!locked){                              // 잠긴 카드는 클릭 자체를 막음
+        el.addEventListener("click", ()=>{
+          document.querySelectorAll(".invest-card").forEach(n=>n.classList.remove("sel"));
+          el.classList.add("sel");
+          selectInvestigator(c.code);
+        });
+      }
       investList.appendChild(el);
     });
 
@@ -1024,6 +1216,10 @@ async function loadDeckScreen(){
 
     renderPoolCounts();
     renderDeck();
+
+    // 시험판: 로랜드 자동 선택(풀이 그려진 뒤라야 필터가 적용됨)
+    const trialEl = investList.querySelector('.invest-card[data-c="'+TRIAL_INV+'"]');
+    if(trialEl){ trialEl.classList.add("sel"); selectInvestigator(TRIAL_INV); }
 
   }catch(err){
     grid.innerHTML = '<div class="loading">오류: '+err.message+'</div>';
@@ -1059,7 +1255,7 @@ function selectInvestigator(code){
   signatureCodes = parseSignatures(inv).filter(sc=>byCode[sc]);
   // 시그니처 카드를 덱에 자동 포함(고유 자산 + 고유 약점)
   signatureCodes.forEach(sc=>{ deck[sc] = 1; });
-  renderPoolCounts(); renderDeck();
+  renderPoolCounts(); renderDeck(); applyPoolFilter();
 }
 
 /* 덱 장수 — 시그니처(고유) 카드는 30장에 세지 않음 */

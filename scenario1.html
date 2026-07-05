@@ -752,7 +752,8 @@ function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.
 
 async function loadPlayerDecks(){
   try{
-    const diff = localStorage.getItem("arkham_difficulty");
+    let diff = localStorage.getItem("arkham_difficulty");
+    if(diff==="easy") diff = "normal";   // 쉬움 → 표준(normal) 주머니
     if(diff==="hard"||diff==="normal"){ chaosDifficulty = diff; renderTokens(); }
     // 플레이어 수(a) — arkham_game에서 저장. 없으면 1. 막 목표 단서수(a×2, a×3) 계산에 사용.
     playerCount = parseInt(localStorage.getItem("arkham_playercount"),10) || 1;
