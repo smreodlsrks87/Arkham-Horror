@@ -658,7 +658,8 @@
 </div><!-- /stage -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
+<script type="module">
+import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -798,17 +799,7 @@ let invDamage=0, invHorror=0, invHTrauma=0, invSTrauma=0, invResource=5, invClue
 let statBonus={willpower:0,intellect:0,combat:0,agility:0};
 
 /* 조사자 카드 + 능력치/체력/정신 배지 렌더 */
-// 카드 텍스트의 아이콘 토큰을 한글/아이콘폰트로 치환
-function cleanCardText(t){ if(!t) return "";
-  const ico=(ch)=>'<span style="font-family:\'ArkhamIcons\',serif;font-size:1.05em;">'+ch+'</span>';
-  return t.replace(/\[reaction\]/g,ico("y"))   // 반응격발 y
-    .replace(/\[action\]/g,ico("i"))           // 일반격발(행동) i
-    .replace(/\[free\]/g,ico("u"))             // 자유격발 u
-    .replace(/\[willpower\]/g,"의지").replace(/\[intellect\]/g,"지식").replace(/\[combat\]/g,"전투")
-    .replace(/\[agility\]/g,"민첩").replace(/\[wild\]/g,"★").replace(/\[elder_sign\]/g,ico("x"))
-    .replace(/\[skull\]/g,ico("n")).replace(/\[cultist\]/g,ico("b")).replace(/\[tablet\]/g,ico("v"))
-    .replace(/\[elder_thing\]/g,ico("c")).replace(/\[auto_fail\]/g,ico("z")).replace(/\[bless\]/g,"축복").replace(/\[curse\]/g,"저주")
-    .replace(/<b>|<\/b>|<i>|<\/i>/g,""); }
+// cleanText(카드텍스트 아이콘 토큰 치환)는 js/shared/card-text.js 에서 import
 
 // 세로형 조사자 카드 설정(편집기 확정 값)
 const INV_CROP = {
@@ -862,7 +853,7 @@ function renderInvestigator(){
   info.innerHTML =
     '<h4>'+(invCard.name||"조사자")+'</h4>'+
     '<div class="sub">'+[invCard.subname,invCard.faction_name].filter(Boolean).join(" · ")+'</div>'+
-    (invCard.text? '<div class="txt">'+cleanCardText(invCard.text)+'</div>':"");
+    (invCard.text? '<div class="txt">'+cleanText(invCard.text)+'</div>':"");
   document.getElementById("st-resource").textContent=invResource;
   document.getElementById("st-clue").textContent=invClue;
 }
@@ -1014,7 +1005,7 @@ function showCardInfo(el, code, side){
   const costLine = (c.cost!=null && c.cost>=0) ? '<div class="hi-cost">비용: '+c.cost+'</div>' : "";
   info.innerHTML='<h5>'+(c.name||"")+'</h5>'+costLine+
     '<div class="hi-sub">'+[c.type_name,c.faction_name].filter(Boolean).join(" · ")+'</div>'+
-    (c.text?'<div class="hi-txt">'+cleanCardText(c.text)+'</div>':"");
+    (c.text?'<div class="hi-txt">'+cleanText(c.text)+'</div>':"");
   info.classList.add("show");
   const r=el.getBoundingClientRect();
   const iw=360, ih=info.offsetHeight||180;
