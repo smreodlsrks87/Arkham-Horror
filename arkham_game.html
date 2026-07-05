@@ -601,6 +601,7 @@
 <script type="module">
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared } from "./js/shared/stage.js";   // 무대 스케일(공통)
+import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
 /* =====================================================================
    notz_player_cards.json 에 들어있는 카드번호 목록
    (지금까지 직접 데이터화한 카드들만 덱빌딩 화면에 노출)
@@ -983,38 +984,16 @@ function fadeAudioOut(audio, ms){
   }, dt);
 }
 
-/* ----- ESC 길게 눌러 스킵 (원형 게이지) ----- */
-let skipHolding=false, skipStart=0, skipRAF=null;
-const skipRing=document.getElementById("skip-ring-fg");
-const RING_LEN=88;   // 2πr (r=14)
-function enableSkip(){
-  window.addEventListener("keydown", onSkipDown);
-  window.addEventListener("keyup", onSkipUp);
-}
-function disableSkip(){
-  window.removeEventListener("keydown", onSkipDown);
-  window.removeEventListener("keyup", onSkipUp);
-  resetSkipRing();
-}
-function onSkipDown(e){
-  if(e.key!=="Escape" || skipHolding || prologueDone) return;
-  skipHolding=true; skipStart=performance.now();
-  tickSkip();
-}
-function onSkipUp(e){
-  if(e.key!=="Escape") return;
-  skipHolding=false;
-  if(skipRAF) cancelAnimationFrame(skipRAF);
-  resetSkipRing();   // 손 떼면 원 리셋
-}
-function tickSkip(){
-  if(!skipHolding) return;
-  const p=Math.min(1,(performance.now()-skipStart)/SKIP_HOLD_MS);
-  if(skipRing) skipRing.style.strokeDashoffset = RING_LEN*(1-p);   // 차오름
-  if(p>=1){ endPrologue(); return; }   // 2초 채우면 스킵
-  skipRAF=requestAnimationFrame(tickSkip);
-}
-function resetSkipRing(){ if(skipRing) skipRing.style.strokeDashoffset=RING_LEN; }
+/* ----- ESC 길게 눌러 스킵 (원형 게이지) — js/shared/skip-ring.js 사용 ----- */
+const skip = createSkipRing({
+  ringEl: document.getElementById("skip-ring-fg"),
+  holdMs: SKIP_HOLD_MS,
+  ringLen: 88,                       // 2πr (r=14)
+  isDone: ()=>prologueDone,
+  onComplete: ()=>endPrologue(),
+});
+function enableSkip(){ skip.enable(); }    // 기존 호출부(runTyping·endPrologue) 유지용 래퍼
+function disableSkip(){ skip.disable(); }
 
 /* =====================================================================
    덱빌딩 화면 — ArkhamDB 실시간 fetch

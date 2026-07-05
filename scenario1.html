@@ -661,6 +661,7 @@
 <script type="module">
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js/shared/stage.js";   // 무대 스케일·좌표변환(공통)
+import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -2590,10 +2591,7 @@ function endCutscene(skipped){
   csTimers.forEach(t=>clearTimeout(t)); csTimers=[];
   if(csEndTimer) clearTimeout(csEndTimer);
   csOk.classList.remove("show");
-  csHolding=false;                       // ESC 홀드 상태 초기화(다음 컷신 첫 입력 씹힘 방지)
-  if(csRAF) cancelAnimationFrame(csRAF);
-  disableCsSkip();
-  resetCsRing();
+  disableCsSkip();   // ESC 홀드 취소 + 링 리셋 + 리스너 해제 (공용 컴포넌트가 모두 처리)
 
   // 영상·음성 페이드아웃
   fadeCsAudioOut(900);
@@ -2615,20 +2613,16 @@ function fadeCsAudioOut(ms){
     if(i>=steps){ clearInterval(t); try{csAudio.pause();}catch(_){}} }, dt);
 }
 
-/* ESC 길게 스킵 */
-let csHolding=false, csHoldStart=0, csRAF=null;
-function enableCsSkip(){ window.addEventListener("keydown", csDown); window.addEventListener("keyup", csUp); }
-function disableCsSkip(){ window.removeEventListener("keydown", csDown); window.removeEventListener("keyup", csUp); }
-function csDown(e){ if(e.key!=="Escape"||csHolding||csDone) return; csHolding=true; csHoldStart=performance.now(); csTick(); }
-function csUp(e){ if(e.key!=="Escape") return; csHolding=false; if(csRAF) cancelAnimationFrame(csRAF); resetCsRing(); }
-function csTick(){
-  if(!csHolding) return;
-  const p=Math.min(1,(performance.now()-csHoldStart)/CS_SKIP_MS);
-  csRing.style.strokeDashoffset = CS_RING_LEN*(1-p);
-  if(p>=1){ endCutscene(true); return; }
-  csRAF=requestAnimationFrame(csTick);
-}
-function resetCsRing(){ csRing.style.strokeDashoffset=CS_RING_LEN; }
+/* ESC 길게 스킵 — js/shared/skip-ring.js 사용 */
+const csSkip = createSkipRing({
+  ringEl: csRing,
+  holdMs: CS_SKIP_MS,
+  ringLen: CS_RING_LEN,
+  isDone: ()=>csDone,
+  onComplete: ()=>endCutscene(true),
+});
+function enableCsSkip(){ csSkip.enable(); }     // 기존 호출부 유지용 래퍼
+function disableCsSkip(){ csSkip.disable(); }   // 홀드 취소 + 링 리셋 + 리스너 해제까지 처리
 
 // (테스트) 콘솔에서: playCutscene("act1b")  /  playCutscene("act2a")
 
