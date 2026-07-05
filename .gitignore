@@ -5,6 +5,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code 로컬 설정(개인 컴퓨터 전용)
+.claude/settings.local.json
+
 # 로컬 서버·의존성
 node_modules/
 __pycache__/
