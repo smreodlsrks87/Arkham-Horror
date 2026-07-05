@@ -4,23 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arkham Horror — 협력 카드게임</title>
+<link rel="stylesheet" href="css/tokens.css">   <!-- 공통 디자인 토큰(색 이름표) -->
 <style>
   /* ============================================================
      디자인 방향: 옛 존재의 공포 / 1920년대 신비주의
      - 배경은 칠흑(#05060a), 강조는 창백한 청록 글로우(영안·심령)
      - 메뉴 글씨는 가는 세리프, 자간 넓게 → 의식문 느낌
      ============================================================ */
-  :root{
-    --void:#05060a;          /* 칠흑 배경 */
-    --ink:#0a0c12;           /* 팝업·패널 바탕 */
-    --pale:#e8e6dd;          /* 본문 흰 글씨(살짝 바랜 상아) */
-    --glow:#8fd6c8;          /* 심령 청록(호버 글로우) */
-    --glow-dim:#3a5d57;      /* 청록 어둡게 */
-    --gold:#c9a84c;          /* 엘더사인 금색 액센트 */
-    --blood:#7a2d2d;         /* 피해/위험 */
-    --edge:#1c2230;          /* 테두리 */
-    --muted:#6b6f7a;         /* 비활성 회색 */
-  }
+  /* 색 토큰(--void·--gold 등)은 css/tokens.css 에서 공통 정의 */
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:#000;overflow:hidden;}
   body{
