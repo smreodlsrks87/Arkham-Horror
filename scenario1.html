@@ -660,6 +660,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script type="module">
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
+import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js/shared/stage.js";   // 무대 스케일·좌표변환(공통)
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -2651,19 +2652,8 @@ renderLog();
 addLog("시나리오 시작 — 서재에서 조사를 시작합니다.");
 // 1920×1080 무대를 화면 크기에 맞춰 스케일(비율 유지, 중앙 정렬)
 const stageEl=document.getElementById("stage");
-let stageScale=1, stageLeft=0, stageTop=0;
-function fitStage(){
-  const s=Math.min(innerWidth/1920, innerHeight/1080);
-  stageScale=s;
-  stageLeft=(innerWidth-1920*s)/2;
-  stageTop=(innerHeight-1080*s)/2;
-  stageEl.style.transform="scale("+s+")";
-  stageEl.style.left=stageLeft+"px";
-  stageEl.style.top=stageTop+"px";
-}
-// 화면(client) 좌표 → stage 내부 좌표
-function toStageX(clientX){ return (clientX-stageLeft)/stageScale; }
-function toStageY(clientY){ return (clientY-stageTop)/stageScale; }
+// fitStage·toStageX/Y·stageScale 는 js/shared/stage.js 에서 import
+function fitStage(){ fitStageShared(stageEl); }   // 무대 스케일(창 크기에 맞춤)
 fitStage();
 addEventListener("resize", fitStage);
 
