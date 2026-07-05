@@ -662,6 +662,7 @@
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js/shared/stage.js";   // 무대 스케일·좌표변환(공통)
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
+import { loadCardsJson, indexByCode, loadAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -763,13 +764,12 @@ async function loadPlayerDecks(){
     // 플레이어 수(a) — arkham_game에서 저장. 없으면 1. 막 목표 단서수(a×2, a×3) 계산에 사용.
     playerCount = parseInt(localStorage.getItem("arkham_playercount"),10) || 1;
 
-    // 카드 데이터 로드
-    let all = [];
-    try{ const res = await fetch("cards.json"); if(res.ok) all = await res.json(); }catch(e){}
-    all.forEach(c=>{ byCode[c.code]=c; });
+    // 카드 데이터 로드 (js/data/load.js)
+    const all = await loadCardsJson();
+    indexByCode(all, byCode);
 
-    // 카드 효과(작동 방식) 데이터 로드 — cards.json엔 없는 abilities/zone 등
-    try{ const r3=await fetch("notz_player_cards.json"); if(r3.ok) cardAbilities = await r3.json(); }catch(e){}
+    // 카드 효과(작동 방식) 데이터 — cards.json엔 없는 abilities/zone 등
+    cardAbilities = await loadAbilities();
 
     // 넘어온 덱 or 임의 덱
     const raw = localStorage.getItem("arkham_decks");

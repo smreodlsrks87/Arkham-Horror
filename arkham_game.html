@@ -602,6 +602,7 @@
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared } from "./js/shared/stage.js";   // 무대 스케일(공통)
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
+import { loadCardsJson, indexByCode } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 /* =====================================================================
    notz_player_cards.json 에 들어있는 카드번호 목록
    (지금까지 직접 데이터화한 카드들만 덱빌딩 화면에 노출)
@@ -1057,13 +1058,11 @@ async function loadDeckScreen(){
     // 1순위: 로컬 cards.json (광신도의 밤 전체). 없으면 ArkhamDB로 폴백.
     let cards = [];
     try{
-      const res = await fetch("cards.json");
-      if(res.ok){
-        const all = await res.json();
+      const all = await loadCardsJson();        // js/data/load.js
+      if(all.length){
 
         // (0) byCode 저장소에는 "모든" 카드를 넣는다(시그니처·약점·장소 등 참조용).
-        //     단 같은 코드 중복만 정리. 카드풀에 보이는 건 따로 거름.
-        all.forEach(c=>{ byCode[c.code]=c; });
+        indexByCode(all, byCode);                // js/data/load.js
 
         // (0-1) 무작위 기본 약점 목록 만들기(subtype_code: basicweakness, 타입 공포/적)
         //       core판 기준 8종. 같은 이름 중복 제거.
