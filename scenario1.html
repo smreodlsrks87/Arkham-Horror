@@ -2571,6 +2571,19 @@ document.addEventListener("mousedown", (e)=>{
   if(csCanProceed()){ endCutscene(false); }
 });
 
+// 알트탭 싱크: 음소거 영상은 배경(숨은 탭)에서 브라우저가 강제로 멈추지만, 음성(mp3)·
+// 타이머는 계속 흐른다. → 컷신은 정해진 시간대로 흘러가 종료되고, 복귀하는 순간 뒤처진
+// 영상을 음성 위치로 맞춰(점프) 따라잡게 해, 영상이 혼자 뒤늦게 재생되는 걸 막는다.
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="visible" && csActive){
+    try{
+      const t = csAudio.currentTime || 0;
+      csVideo.currentTime = isFinite(csVideo.duration) ? Math.min(t, csVideo.duration) : t;
+      csVideo.play?.().catch(()=>{});
+    }catch(_){}
+  }
+});
+
 function typeCutsceneText(text, totalMs){
   let i=0;
   // 총 시간이 지정되면 글자당 간격 = 총시간/글자수, 아니면 기본 속도
