@@ -45,6 +45,8 @@
     opacity:.8;text-align:center;margin-top:1px;}
   #rooms{top:20px;right:24px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
   #rooms-list{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  #rooms{ transition:opacity .3s ease; }
+  #rooms.act-locked{ opacity:.35; pointer-events:none; }   /* 조사자 단계·이동중 아니면 비활성 */
   #rooms button{font-family:inherit;font-size:13px;color:var(--pale);background:#160f1e;
     border:1px solid #2e2440;border-radius:6px;padding:8px 16px;cursor:pointer;text-align:left;width:160px;}
   #rooms button:hover{border-color:var(--glow);background:#221730;}
@@ -125,22 +127,22 @@
   .inv2-overlay .badge.hp{ background:rgba(150,30,30,.92); color:#ffe0e0; border:2px solid #ff9a9a; border-radius:8px; padding:1px 7px; }
   .inv2-overlay .badge.san{ background:rgba(40,60,140,.92); color:#e0e8ff; border:2px solid #9ab0ff; border-radius:8px; padding:1px 7px; }
   /* 조사자 한글 정보(마우스오버) */
-  .inv-info{ position:absolute; left:calc(100% + 12px); top:0; width:300px; z-index:60;
-    background:#160f1e; border:1px solid #3a2a4e; border-radius:10px; padding:14px 16px;
+  .inv-info{ position:absolute; left:calc(100% + 12px); top:0; width:360px; z-index:60;
+    background:#160f1e; border:1px solid #3a2a4e; border-radius:10px; padding:16px 18px;
     opacity:0; visibility:hidden; transition:opacity .15s; box-shadow:0 8px 24px rgba(0,0,0,.7);
-    font-size:15px; line-height:1.6; }
+    font-size:19px; line-height:1.65; }   /* 손패 호버(card-info) 크기에 맞춤 */
   .inv2:hover .inv-info{ opacity:1; visibility:visible; }
-  .inv-info h4{ margin:0 0 4px; font-size:19px; color:var(--gold); }
-  .inv-info .sub{ font-size:13px; color:var(--muted); margin-bottom:8px; }
-  .inv-info .txt{ white-space:pre-line; border-top:1px solid #2a2038; padding-top:8px; }
+  .inv-info h4{ margin:0 0 5px; font-size:23px; color:var(--gold); }
+  .inv-info .sub{ font-size:15px; color:var(--muted); margin-bottom:9px; }
+  .inv-info .txt{ white-space:pre-line; border-top:1px solid #2a2038; padding-top:9px; font-size:19px; }
   .inv-status{ display:flex; flex-direction:row; gap:22px; justify-content:center; align-items:center; padding:4px 0; }
   .st-item{ font-size:20px; color:var(--pale); display:flex; align-items:center; gap:5px; }
   .st-tok{ width:26px; height:26px; object-fit:contain; }
   .st-item b{ color:var(--gold); font-size:24px; margin-left:2px; }
   .bt-rest{ flex:1; display:flex; gap:18px; align-items:stretch; }
   /* 손패(부채꼴, 고정 폭) */
-  .hand-area{ width:620px; flex:0 0 auto; position:relative; min-height:220px; z-index:30; }
-  .hand-card{ position:absolute; bottom:10px; width:140px; height:196px; border-radius:9px; overflow:visible;
+  .hand-area{ width:784px; flex:0 0 auto; position:relative; min-height:220px; z-index:30; }   /* 조사자 옆~지도 오른쪽 끝(측정: 256~1040) */
+  .hand-card{ position:absolute; bottom:10px; width:182px; height:255px; border-radius:9px; overflow:visible;
     box-shadow:0 4px 12px rgba(0,0,0,.55); transition:transform .18s ease, box-shadow .18s;
     cursor:pointer; transform-origin:bottom center; background:#0c0a10; border:2px solid transparent; }
   .hand-card .hc-img{ width:100%; height:100%; border-radius:8px; overflow:hidden; }
@@ -149,9 +151,75 @@
   .hand-card:hover{ z-index:100; border-color:#d4b15a; box-shadow:0 0 20px rgba(212,177,90,.55), 0 8px 20px rgba(0,0,0,.6);
     animation:handFloat 1.6s ease-in-out infinite; }
   @keyframes handFloat{ 0%,100%{ transform:var(--fan) translateY(-30px); } 50%{ transform:var(--fan) translateY(-36px); } }
-  .hand-card.mull-sel{ border-color:#d4b15a; box-shadow:0 0 18px rgba(212,177,90,.6); }
+  /* 멀리건 선택 카드 — 호버와 같은 높이로 솟은 채 유지(테두리 강조) */
+  .hand-card.mull-sel{ border-color:#e8c86a; box-shadow:0 0 26px rgba(212,177,90,.8), 0 10px 24px rgba(0,0,0,.6);
+    transform:var(--fan) translateY(-30px) !important; z-index:90; }
   .hand-card.dealing{ animation:dealIn .34s ease; }
   @keyframes dealIn{ from{ transform:translateY(60px) scale(.85); opacity:0; } to{ transform:var(--fan) scale(1); opacity:1; } }
+  /* ===== 멀리건 페이즈 ===== */
+  /* 손패만 밝게 두고 나머지는 어둡게(비활성 느낌) — 지시대로 필터만 */
+  #stage.mull-active #map-area,
+  #stage.mull-active #topright-area,
+  #stage.mull-active .bt-investigator,
+  #stage.mull-active .pile-area,
+  #stage.mull-active .play-area{ filter:brightness(.34) saturate(.65); transition:filter .5s ease; pointer-events:none; }
+  /* 커밋 모드 — 손패 + 플레이자산만 밝게(자산을 클릭해 써야 하므로 play-area는 안 딤) */
+  #stage.commit-active #map-area,
+  #stage.commit-active #topright-area,
+  #stage.commit-active .bt-investigator,
+  #stage.commit-active .pile-area{ filter:brightness(.34) saturate(.65); transition:filter .5s ease; pointer-events:none; }
+  .hand-card.commit-no{ filter:brightness(.4) saturate(.5); }                                    /* 커밋 불가 손패(흐림) */
+  .hand-card.commit-ok{ border-color:#5a9ad4; box-shadow:0 0 14px rgba(90,154,212,.5); }         /* 커밋 가능(파란 테두리) */
+  .hand-card.commit-ok.mull-sel{ border-color:#e8c86a; box-shadow:0 0 24px rgba(212,177,90,.9); }  /* 커밋 선택됨(솟음+금색 테두리) */
+  .played-card.boost-ok{ box-shadow:0 0 0 2px #5a9ad4, 0 0 14px rgba(90,154,212,.6); cursor:pointer; }  /* 강화 사용 가능 */
+  /* 안내 패널(상단 중앙) */
+  #mull-hint{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:130;
+    display:none; text-align:center; padding:26px 46px; border-radius:14px; pointer-events:none;
+    background:linear-gradient(180deg,#1c1526,#140e1c); border:1px solid #6a5a3a;
+    box-shadow:0 12px 40px rgba(0,0,0,.7), inset 0 0 30px rgba(212,177,90,.06); }
+  #mull-hint.show{ display:block; animation:mullIn .5s ease; }
+  @keyframes mullIn{ from{ opacity:0; transform:translate(-50%,calc(-50% - 14px)); } to{ opacity:1; transform:translate(-50%,-50%); } }
+  #mull-hint .mh-title{ font-size:26px; font-weight:800; letter-spacing:6px; color:var(--gold); margin-bottom:12px; }
+  #mull-hint .mh-body{ font-size:17px; line-height:1.85; color:#ddd3c4; }
+  #mull-hint .mh-body b{ color:#e8c86a; font-weight:700; }
+  #mull-hint .mh-count{ margin-top:14px; font-size:16px; color:#a89a80; letter-spacing:1px; }
+  #mull-hint .mh-count b{ color:#e8c86a; font-size:20px; }
+  /* ===== 기본 행동 메뉴(우클릭, 조조전식 세로 목록) ===== */
+  #action-menu, #ability-menu{ position:absolute; z-index:150; display:none; min-width:118px; padding:6px;
+    background:linear-gradient(180deg,#1d1626,#120d1a); border:1px solid #6a5a3a; border-radius:10px;
+    box-shadow:0 12px 34px rgba(0,0,0,.7), inset 0 0 24px rgba(212,177,90,.05); }
+  /* 플레이된 카드의 uses(탄약·보급) 뱃지 */
+  .pc-uses{ position:absolute; top:-7px; right:-7px; min-width:22px; height:22px; border-radius:50%;
+    background:#2a1e12; border:1.5px solid #c8a24a; color:#f0d890; font-size:14px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.6); }
+  .am-item{ padding:9px 20px; font-size:18px; color:#e8dfc8; text-align:center; white-space:nowrap;
+    border-radius:6px; cursor:pointer; letter-spacing:2px; user-select:none; }
+  .am-item + .am-item{ margin-top:2px; }
+  .am-item:hover{ background:rgba(212,177,90,.18); color:#f6e8b6; }
+  .am-item.am-disabled{ color:#5f5768; cursor:default; }
+  .am-item.am-disabled:hover{ background:transparent; color:#5f5768; }
+  .am-divider{ height:1px; background:#4a3a5e; margin:5px 8px; }   /* 턴 종료 구분선 */
+  .am-item.am-danger{ color:#e0908a; }
+  .am-item.am-danger:hover{ background:rgba(200,80,80,.16); color:#f2b2ac; }
+  /* 자원 획득 펄스(1.5배) */
+  @keyframes stPulse{ 0%{transform:scale(1);} 35%{transform:scale(1.5);} 100%{transform:scale(1);} }
+  .st-item.st-pulse{ animation:stPulse .55s cubic-bezier(.3,1.5,.5,1); transform-origin:left center; }
+  /* ===== 능력 판정 결과 팝업(일반 팝업과 구분) ===== */
+  .popup-box.pb-test{ border:2px solid #6a5a3a; background:linear-gradient(180deg,#1a1424,#120c18); min-width:420px;
+    box-shadow:0 16px 50px rgba(0,0,0,.8), inset 0 0 44px rgba(0,0,0,.45); }
+  .popup-box.pb-ok{ border-color:#4f7f4f; box-shadow:0 16px 50px rgba(0,0,0,.8), 0 0 26px rgba(90,180,110,.28); }
+  .popup-box.pb-no{ border-color:#7f3f3f; box-shadow:0 16px 50px rgba(0,0,0,.8), 0 0 26px rgba(200,80,80,.25); }
+  .test-result{ text-align:center; }
+  .tr-head{ font-size:30px; font-weight:800; letter-spacing:2px; color:#e8dfc8; margin-bottom:14px; }
+  .tr-skill{ font-family:'ArkhamIcons',serif; font-size:34px; vertical-align:-4px; margin:0 3px; }
+  .tr-ok{ color:#7ad07a; }
+  .tr-no{ color:#e07a7a; }
+  .tr-calc{ font-size:22px; color:#d8cfc0; line-height:1.6;
+    display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
+  .tr-calc b{ font-size:25px; }
+  .tr-op{ color:#9a8faa; margin:0 2px; }
+  .tr-tv{ font-size:18px; color:#c8c0d0; margin-left:1px; }
+  .tr-extra{ margin-top:15px; font-size:18px; color:#b8aec0; border-top:1px solid #2a2038; padding-top:12px; }
   /* 카드 정보 — stage 좌표계, 항상 정방향. 읽기 목적이라 크게 */
   #card-info{ position:absolute; width:360px; background:#160f1e; border:1px solid #3a2a4e; border-radius:9px;
     padding:16px 18px; font-size:19px; line-height:1.65; color:var(--pale); box-shadow:0 8px 28px rgba(0,0,0,.75);
@@ -162,17 +230,31 @@
   #card-info .hi-cost{ font-size:18px; color:var(--gold); margin-bottom:4px; }
   #card-info .hi-sub{ font-size:15px; color:var(--muted); margin-bottom:9px; }
   #card-info .hi-txt{ white-space:pre-line; border-top:1px solid #2a2038; padding-top:9px; font-size:19px; }
+  /* 카드 확대 보기(우클릭) — 스테이지 덮는 모달 */
+  #card-zoom{ position:absolute; inset:0; z-index:500; display:none; cursor:pointer;
+    align-items:center; justify-content:center; background:rgba(0,0,0,.85); }
+  #card-zoom.show{ display:flex; }
+  .cz-card{ position:relative; height:90%; box-shadow:0 16px 70px rgba(0,0,0,.9); border-radius:18px; }
+  .cz-img{ height:100%; width:auto; display:block; border-radius:18px; }
+  /* 한글 정보: 카드 아래 텍스트박스 영역(하단 ~42%)을 덮음 → 영어 텍스트 가림 */
+  .cz-info{ position:absolute; left:0; right:0; bottom:0; height:42%; overflow:auto;
+    background:linear-gradient(180deg, rgba(18,12,24,.35), rgba(18,12,24,.97) 20%);
+    color:var(--pale); padding:20px 26px; font-size:23px; line-height:1.55;
+    border-radius:0 0 18px 18px; }
+  .cz-info h3{ margin:0 0 8px; color:var(--gold); font-size:30px; }
+  .cz-info .cz-sub{ color:var(--muted); font-size:19px; margin-bottom:8px; }
+  .cz-info .cz-txt{ white-space:pre-line; }
   /* 카드더미·버린더미 — 세로, 손패와 같은 카드 크기 */
   .pile-area{ display:flex; flex-direction:column; gap:16px; flex:0 0 auto; justify-content:center; }
-  .pile{ position:relative; width:140px; }
-  .pile-img{ width:140px; height:196px; border-radius:9px; display:block; object-fit:cover;
+  .pile{ position:relative; width:182px; }
+  .pile-img{ width:182px; height:255px; border-radius:9px; display:block; object-fit:cover;
     box-shadow:0 2px 8px rgba(0,0,0,.5); position:relative; z-index:20; }
   #deck-top{ pointer-events:none; }   /* 전체보기 버튼과 겹쳐도 클릭 통과(카드는 시각적으로 위) */
-  .pile-empty{ width:140px; height:196px; border-radius:9px; border:2px dashed #3a2f42;
+  .pile-empty{ width:182px; height:255px; border-radius:9px; border:2px dashed #3a2f42;
     display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; position:relative; z-index:3; }
   /* 쌓인 느낌 — JS로 장수에 따라 겹친 장수를 그림(빈 더미엔 없음) */
-  .pile-stack{ position:absolute; top:0; left:0; width:140px; height:196px; }
-  .pile-stack .layer{ position:absolute; width:140px; height:196px; border-radius:9px;
+  .pile-stack{ position:absolute; top:0; left:0; width:182px; height:255px; }
+  .pile-stack .layer{ position:absolute; width:182px; height:255px; border-radius:9px;
     background:#3a3048; border:1px solid #5a4a6e; box-shadow:0 1px 2px rgba(0,0,0,.4); }
   .pile-cnt{ position:absolute; top:6px; right:8px; z-index:5; background:#0e0a16; border:1px solid #4a3a5e;
     border-radius:9px; padding:1px 8px; font-size:14px; font-weight:700; color:#e8def0; text-shadow:0 1px 2px #000; }
@@ -628,6 +710,27 @@
 <!-- 카드 공용 정보(손패·플레이·더미) — stage 좌표계 -->
 <div id="card-info"></div>
 
+<!-- 멀리건 페이즈 안내 -->
+<div id="mull-hint">
+  <div class="mh-title">멀리건 페이즈</div>
+  <div class="mh-body">마음에 들지 않는 시작 손패를 교환할 수 있습니다.<br>
+    교환할 카드를 <b>좌클릭</b>으로 선택하고(다시 누르면 해제),<br>
+    다 골랐으면 <b>우클릭</b>으로 확정하세요.</div>
+  <div class="mh-count">선택 <b id="mh-n">0</b>장</div>
+</div>
+
+<!-- 기본 행동 메뉴(우클릭) / 발동 능력 메뉴(플레이 카드 클릭) -->
+<div id="action-menu"></div>
+<div id="ability-menu"></div>
+
+<!-- 카드 확대 보기(우클릭) — 스테이지 덮는 모달. 아래 텍스트박스 영역에 한글 정보 -->
+<div id="card-zoom">
+  <div class="cz-card">
+    <img class="cz-img" id="cz-img" src="" alt="">
+    <div class="cz-info" id="cz-info"></div>
+  </div>
+</div>
+
 <!-- 파멸 설명 툴팁(커서 따라다님) -->
 <div id="doom-tip">
   <div><span style="color:#e08aa8">분홍 숫자</span> : 시간의 흐름에 따른 수치입니다.</div>
@@ -664,8 +767,11 @@ import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
 import { loadCardsJson, indexByCode, loadAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 import { addLog, renderLog } from "./js/scenario/log.js";   // 게임 로그
-import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSignValue } from "./js/scenario/tokens.js";   // 혼돈 주머니
-import { S } from "./js/scenario/state.js";   // 게임 공유 상태
+import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSignValue, tokenChip } from "./js/scenario/tokens.js";   // 혼돈 주머니
+import { onEnterPlay, onLeavePlay, initialUses, activatable, conditionalTestBonus, isFastPlay } from "./js/scenario/abilities.js";   // 카드 능력 엔진
+import { commitIcons, isCommittable, resolveTest } from "./js/scenario/skilltest.js";   // 능력치 테스트 엔진
+import { S, bus } from "./js/scenario/state.js";   // 게임 공유 상태 + 이벤트버스
+import { setPhase, startInvestigatorPhase, resumeAfterCutscene, endTurnToEnemy, resumeUpkeep, PHASE_NAMES } from "./js/scenario/phases.js";   // 라운드 루프
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -780,7 +886,7 @@ async function loadPlayerDecks(){
       if(loadedDecks.length) activeInvestigator = loadedDecks[0];
     }
     if(!activeInvestigator && all.length){
-      activeInvestigator = makeRandomDeck(all);   // 테스트용 임의 덱
+      activeInvestigator = getTestDeck();   // 저장 덱 없을 때만 — 기본 테스트 덱(로랜드 23장)
     }
     if(activeInvestigator){
       invCard = S.byCode[activeInvestigator.investigator] || null;
@@ -789,6 +895,10 @@ async function loadPlayerDecks(){
       S.playerDeck = [];
       const cs = activeInvestigator.cards || {};
       Object.keys(cs).forEach(code=>{ for(let i=0;i<cs[code];i++) S.playerDeck.push(code); });
+      // 고유(시그니처) 카드 + 무작위 기본약점도 덱에 포함 — 덱빌딩이 .cards와 따로 저장함
+      // (조사자 카드 자신은 상시 카드라 덱에 안 넣음)
+      (activeInvestigator.signatures || []).forEach(code=>{ if(code) S.playerDeck.push(code); });
+      if(activeInvestigator.randomWeakness) S.playerDeck.push(activeInvestigator.randomWeakness);
       shuffle(S.playerDeck);
       renderInvestigator();
       preloadAllCardImages();   // 진입 즉시 모든 카드 이미지 캐싱(컷신 도는 동안)
@@ -858,8 +968,8 @@ function renderInvestigator(){
     '<h4>'+(invCard.name||"조사자")+'</h4>'+
     '<div class="sub">'+[invCard.subname,invCard.faction_name].filter(Boolean).join(" · ")+'</div>'+
     (invCard.text? '<div class="txt">'+cleanText(invCard.text)+'</div>':"")+
-    '<div class="inv-es" style="margin-top:6px;border-top:1px solid #2a2238;padding-top:5px;font-size:13px;">'+
-      '<span style="font-family:\'ArkhamIcons\',serif;color:#6ab0e0;font-size:16px;vertical-align:-2px;">x</span>'+
+    '<div class="inv-es" style="margin-top:9px;border-top:1px solid #2a2238;padding-top:9px;font-size:19px;">'+
+      '<span style="font-family:\'ArkhamIcons\',serif;color:#6ab0e0;font-size:24px;vertical-align:-4px;">x</span>'+
       ' = <span id="inv-es-val" style="color:#6ab0e0;font-weight:700;">–</span></div>';
   // 표식(elder sign) 값은 호버 순간 계산(pull) — 현재 위치·단서로 그 자리서 산출
   if(card) card.onmouseenter = ()=>{
@@ -979,32 +1089,54 @@ function renderHand(){
   area.innerHTML="";
   const n=S.playerHand.length;
   if(!n) return;
-  const areaW=area.clientWidth||620;
-  const cardW=140;
-  const maxGap=46;
+  const areaW=area.clientWidth||784;
+  const cardW=182;   // 카드 폭(+30%). CSS .hand-card 와 일치
   const usable=areaW-cardW-16;
-  let step = n>1 ? Math.min(cardW*0.55+maxGap, usable/(n-1)) : 0;
+  // 4장 이하: 부채꼴 대신 평평·중앙정렬(자리 널널하니 억지로 안 벌림).
+  // 5장 이상: 좌측(조사자 옆) 부채꼴, 많을수록 매끄럽게 겹침.
+  const fewCards = !mullRefilling && n <= 4;   // 멀리건 채우는 중엔 좌측 부채꼴 유지(중앙정렬 X)
+  let step;
+  if(n<=1) step = 0;
+  else if(fewCards) step = 196;                          // 평평·간격(4장 이하, 안 겹침)
+  else step = Math.min(cardW+14, usable/(n-1));          // 부채꼴
   const totalW=(n-1)*step;
-  const startX=(areaW-totalW-cardW)/2;
+  const startX = fewCards ? (areaW-totalW-cardW)/2 : -30;  // 적으면 중앙, 많으면 좌측(조사자 옆)
   const mid=(n-1)/2;
-  const maxAngle=Math.min(22, n*3);
+  const maxAngle = fewCards ? 0 : Math.min(22, n*3);       // 적으면 평평(각도 0)
   S.playerHand.forEach((code,i)=>{
     const c=S.byCode[code];
     const off = mid===0 ? 0 : (i-mid)/mid;
     const angle = off * maxAngle;
-    const lift = Math.abs(off)*Math.abs(off)*24;
+    const lift = fewCards ? 0 : Math.abs(off)*Math.abs(off)*24;   // 적으면 arc 없음
     const el=document.createElement("div");
     el.className="hand-card";
     el.style.left=(startX+i*step)+"px";
-    el.style.bottom=(110-lift)+"px";
+    el.style.bottom=(70-lift)+"px";   // 부채꼴 높이(예전 110에서 40px 낮춤)
     el.style.setProperty("--fan","rotate("+angle+"deg)");
     el.style.transform="rotate("+angle+"deg)";
     el.style.zIndex=i;
     el.dataset.idx=i;
     el.innerHTML='<div class="hc-img"><img src="'+cardFront(code)+'" alt=""></div>';
     if(mulliganMode){
-      if(mulliganSel.has(i)) el.classList.add("mull-sel");
-      el.onclick=()=>{ if(mulliganSel.has(i)) mulliganSel.delete(i); else mulliganSel.add(i); renderHand(); };
+      if(mulliganSel.has(i)) el.classList.add("mull-sel");        // 선택되어 솟은 카드
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));  // 호버 정보는 그대로
+      el.addEventListener("mouseleave", hideCardInfo);
+      el.onclick=(e)=>{   // 좌클릭: 선택 토글(솟음 유지, 재클릭 시 해제)
+        e.stopPropagation();
+        if(mulliganSel.has(i)){ mulliganSel.delete(i); el.classList.remove("mull-sel"); }
+        else{ mulliganSel.add(i); el.classList.add("mull-sel"); }
+        updateMullCount();
+      };
+    }else if(discardMode){   // 정비 4.5 손패 정리 — 클릭한 카드를 버림
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
+      el.addEventListener("mouseleave", hideCardInfo);
+      el.onclick=()=>discardOne(i);
+    }else if(commitMode){   // 커밋: 테스트 기호 있는 카드만 선택 가능
+      const ok = isCommittable(S.byCode[code], commitCfg.skill);
+      el.classList.add(ok ? "commit-ok" : "commit-no");
+      if(ok){ if(commitSel.has(i)) el.classList.add("mull-sel"); el.onclick=()=>toggleCommit(i); }
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
+      el.addEventListener("mouseleave", hideCardInfo);
     }else{
       el.addEventListener("mousedown", (e)=>startHandDrag(e, i, el));
       el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
@@ -1044,11 +1176,207 @@ function showCardInfo(el, code, side){
 }
 function hideCardInfo(){ document.getElementById("card-info").classList.remove("show"); }
 
+/* ===== 카드 확대 보기 — 커서 위 카드 우클릭 → 화면 중앙 대형 + 한글정보(텍스트박스 자리). 아무 키/클릭이면 닫기 ===== */
+let zoomOpen=false;
+function openCardZoom(code){
+  const c=S.byCode[code]; if(!c) return;
+  document.getElementById("cz-img").src=cardFront(code);
+  const meta=[c.type_name, c.faction_name, (c.cost!=null&&c.cost>=0?"비용 "+c.cost:null)].filter(Boolean).join(" · ");
+  document.getElementById("cz-info").innerHTML=
+    '<h3>'+(c.name||"")+'</h3>'+
+    '<div class="cz-sub">'+meta+'</div>'+
+    (c.traits?'<div class="cz-sub">'+c.traits+'</div>':"")+
+    (c.text?'<div class="cz-txt">'+cleanText(c.text)+'</div>':"");
+  document.getElementById("card-zoom").classList.add("show");
+  hideCardInfo(); zoomOpen=true;
+}
+function closeCardZoom(){ document.getElementById("card-zoom").classList.remove("show"); zoomOpen=false; }
+// 커서 위 카드 코드 찾기(손패=data-idx, 그 외=data-code)
+function cardCodeAt(target){
+  const el=target.closest && target.closest(".hand-card, [data-code]");
+  if(!el) return null;
+  return el.dataset.code || (el.dataset.idx!=null ? S.playerHand[+el.dataset.idx] : null);
+}
+document.addEventListener("contextmenu",(e)=>{
+  if(commitMode){ e.preventDefault(); e.stopPropagation(); confirmCommit(); return; }  // 커밋 확정. stopPropagation: window 핸들러가 방금 뜬 결과 팝업 닫는 것 방지
+  if(mulliganMode){ e.preventDefault(); doMulligan(); return; }  // 멀리건 중 우클릭 = 확정
+  if(zoomOpen){ e.preventDefault(); closeCardZoom(); return; }   // 열려있으면 우클릭도 닫기
+  const code=cardCodeAt(e.target);
+  if(code && S.byCode[code]){ e.preventDefault(); closeActionMenu(); openCardZoom(code); return; }  // 카드 위 = 확대
+  if(popupOpen()) return;                                  // 팝업 열림 → window 핸들러가 취소(액션메뉴 X)
+  if(canAct()){ e.preventDefault(); openActionMenu(e.clientX, e.clientY); }  // 그 외 = 기본 행동 메뉴
+});
+document.addEventListener("keydown",(e)=>{ if(zoomOpen){ e.preventDefault(); closeCardZoom(); } }, true);
+document.addEventListener("mousedown",(e)=>{ if(zoomOpen && e.button===0){ closeCardZoom(); } }, true);  // 좌클릭 닫기(우클릭은 contextmenu에서)
+
+/* =====================================================================
+   기본 행동 메뉴 — 우클릭으로 세로 목록(조조전식), 좌클릭 선택.
+   조건: 조작 가능(canAct) + 커서가 카드 위 아님 + 팝업 없음.
+   데이터(BASIC_ACTIONS) + 처리기 하나. 상황 안 되면 회색(disabled)/숨김(hidden).
+   ※ 맵 액션과 같은 로직을 호출 → 효과 동일. (예: 조사 = doInvestigate)
+   ===================================================================== */
+function canAct(){ return !csActive && !S.phaseBusy && S.currentPhase==="investigation" && !pawnMoving && !walkTo; }  // 이동중(방간·방내)에도 잠금
+function popupOpen(){ return document.getElementById("popup").style.display!=="none"; }
+
+// 적/상황 시스템 미구현 — 스텁(나중에 실제 판정으로 교체)
+function enemyAtLocation(){ return false; }   // 내 장소에 교전할 적
+function parleyAvailable(){ return false; }    // 협상 허용(카드/장소)
+function resignAvailable(){ return false; }    // 현재 장소 사임 가능
+
+// state: "active"(사용가능) | "disabled"(회색 표시) | "hidden"(숨김)
+const BASIC_ACTIONS = [
+  { key:"investigate", label:"조사",
+    state:()=> S.actionPoints>=1 ? "active" : "disabled",
+    run:()=>{                                        // 맵과 동일: 단서 있으면 가장 가까운 단서로 걸어가 조사
+      const list=cluesInRoom(cur);
+      if(list.length) startInvestigate(nearestClueTo(pawn.position, list));  // 걸어가 도착 시 조사(그 단서를 집음)
+      else doInvestigate(null);                       // 단서 없는 장소 → 제자리 조사
+    } },
+  { key:"resource", label:"자원 얻기",
+    state:()=> S.actionPoints>=1 ? "active" : "disabled",
+    run:()=>{ S.actionPoints--; updateAP(); S.invResource++;
+              document.getElementById("st-resource").textContent=S.invResource;
+              const item=document.getElementById("st-resource").closest(".st-item");
+              if(item){ item.classList.remove("st-pulse"); void item.offsetWidth; item.classList.add("st-pulse"); }  // 1.5배 펄스
+              playCoinSound();
+              addLog("자원 1을 얻었습니다. (보유 "+S.invResource+")"); } },
+  { key:"draw", label:"카드 뽑기",
+    state:()=> (S.actionPoints>=1 && S.playerDeck.length>0) ? "active" : "disabled",
+    run:()=>{ S.actionPoints--; updateAP(); S.playerHand.push(S.playerDeck.shift());
+              renderHand(); updatePiles(); flyLastCardFromDeck();   // 덱→손패 날아오는 연출
+              addLog("카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)"); } },
+  { key:"fight",  label:"공격", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
+  { key:"evade",  label:"회피", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
+  { key:"engage", label:"교전", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
+  { key:"parley", label:"협상", state:()=> parleyAvailable() ? "active" : "hidden", run:()=>{} },
+  { key:"resign", label:"사임", state:()=> resignAvailable() ? "active" : "hidden", run:()=>{} },
+  // 턴 종료 — 맨 아래, 구분선+붉은색, 기존 확인 팝업(onEndTurnClick) 재사용(오클릭 방지)
+  { key:"endturn", label:"턴 종료", divider:true, danger:true, state:()=>"active", run:()=> onEndTurnClick() },
+];
+
+let actionMenuOpen=false;
+function openActionMenu(clientX, clientY){
+  hideCardInfo();
+  const menu=document.getElementById("action-menu");
+  menu.innerHTML = BASIC_ACTIONS.map(a=>{
+    const st=a.state();
+    if(st==="hidden") return "";
+    const en = st==="active";
+    const div = a.divider ? '<div class="am-divider"></div>' : "";
+    const dgr = a.danger ? " am-danger" : "";
+    return div+'<div class="am-item'+dgr+(en?"":" am-disabled")+'" data-key="'+a.key+'" data-enabled="'+(en?"1":"0")+'">'+a.label+'</div>';
+  }).join("");
+  menu.style.display="block";
+  // 커서 위치(화면) → stage 좌표. 화면 밖으로 안 나가게 보정.
+  let sx=toStageX(clientX), sy=toStageY(clientY);
+  const mw=menu.offsetWidth, mh=menu.offsetHeight;
+  if(sx+mw>1912) sx=1912-mw;
+  if(sy+mh>1072) sy=1072-mh;
+  menu.style.left=Math.max(8,sx)+"px"; menu.style.top=Math.max(8,sy)+"px";
+  actionMenuOpen=true;
+}
+function closeActionMenu(){ const m=document.getElementById("action-menu"); if(m) m.style.display="none"; actionMenuOpen=false; }
+function runAction(key){ const a=BASIC_ACTIONS.find(x=>x.key===key); if(a) a.run(); }
+
+// 좌클릭: 메뉴 항목 실행 / 메뉴 밖이면 닫기(그 클릭은 삼켜 맵 오작동 방지). 맵 mousedown보다 먼저(capture).
+document.addEventListener("mousedown",(e)=>{
+  if(!actionMenuOpen) return;
+  const item = e.target.closest && e.target.closest("#action-menu .am-item");
+  if(item){
+    if(e.button===0){
+      e.preventDefault(); e.stopPropagation();
+      if(item.dataset.enabled==="1"){ const key=item.dataset.key; closeActionMenu(); runAction(key); }
+    }
+    return;   // 우클릭 등은 contextmenu가 재오픈 처리
+  }
+  if(e.button===0){ e.preventDefault(); e.stopPropagation(); closeActionMenu(); }  // 메뉴 밖 좌클릭 = 닫기
+}, true);
+
+/* =====================================================================
+   액션 이펙트·판정 표시 공용 헬퍼
+   ===================================================================== */
+const SKILL_ICON = { willpower:["a","#5a9ad4"], intellect:["f","#c98adc"], combat:["d","#d47a4a"], agility:["s","#7ac48a"] };
+
+// 덱 더미 → 손패 마지막 카드로 날아오는 FLIP 연출(딜·멀리건·드로우 공용)
+function flyLastCardFromDeck(){
+  const cards=document.querySelectorAll("#hand-area .hand-card");
+  const last=cards[cards.length-1];
+  const deck=document.getElementById("deck-pile");
+  if(!last || !deck) return;
+  const dr=deck.getBoundingClientRect(), cr=last.getBoundingClientRect();
+  const dx=toStageX(dr.left+dr.width/2)-toStageX(cr.left+cr.width/2);
+  const dy=toStageY(dr.top+dr.height/2)-toStageY(cr.top+cr.height/2);
+  const finalT=last.style.transform||"";
+  last.style.transition="none";
+  last.style.transform="translate("+dx+"px,"+dy+"px) rotate(0deg) scale(.8)";
+  last.style.opacity="0";
+  void last.offsetWidth;   // 강제 reflow
+  last.style.transition="transform .45s cubic-bezier(.2,.85,.3,1), opacity .25s";
+  last.style.transform=finalT;
+  last.style.opacity="1";
+}
+
+// 현재 말 위치에서 가장 가까운 단서 마커
+function nearestClueTo(pos, list){
+  let best=list[0], bd=Infinity;
+  list.forEach(c=>{ const dx=c.mesh.position.x-pos.x, dz=c.mesh.position.z-pos.z, d=dx*dx+dz*dz; if(d<bd){ bd=d; best=c; } });
+  return best;
+}
+
+// 동전 짤랑 — Web Audio로 즉석 합성(파일 불필요). 실제 음원 원하면 mp3로 교체 가능.
+let _sfxCtx=null;
+function playCoinSound(){
+  try{
+    _sfxCtx = _sfxCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const ctx=_sfxCtx, t0=ctx.currentTime;
+    [[1318.5,0],[1975.5,0.05]].forEach(([f,dt])=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type="triangle"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001, t0+dt);
+      g.gain.exponentialRampToValueAtTime(0.22, t0+dt+0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dt+0.22);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0+dt); o.stop(t0+dt+0.24);
+    });
+  }catch(_){}
+}
+
+// 판정 토큰 1개 → 칩(심볼=아이콘, 숫자=값 내장)
+function tokenChipFor(t){
+  if(t.type==="number") return tokenChip((t.value>=0?"+":"")+t.value);
+  return tokenChip(t.type);
+}
+
+/* 능력 판정 결과 팝업 HTML — 능력치·토큰 아이콘으로 가시성↑.
+   o = { action, skill, skillLabel, skillVal, drawn, total, target, targetLabel, success, autoFail, extra } */
+function testResultHtml(o){
+  const [ch,col]=SKILL_ICON[o.skill]||["",""];
+  const skIco = ch ? '<span class="tr-skill" style="color:'+col+'">'+ch+'</span>' : "";
+  const resCls = o.success ? "tr-ok" : "tr-no";
+  const head = '<div class="tr-head">'+o.action+' '+skIco+' <span class="'+resCls+'">'+(o.success?"성공!":"실패…")+'</span></div>';
+  let calc;
+  if(o.autoFail){
+    calc = '<div class="tr-calc">'+tokenChip("tentacle")+' <span class="tr-no">촉수 · 자동 실패</span></div>';
+  }else{
+    const chips = o.drawn.map(t=>{
+      const chip=tokenChipFor(t);
+      if(t.type==="number") return chip;                      // 숫자칩엔 값 내장
+      const v=(t.value>=0?"+":"")+t.value;
+      return chip+'<span class="tr-tv">'+v+'</span>';          // 심볼 + 값
+    }).join('<span class="tr-op">+</span>');
+    calc = '<div class="tr-calc">'+o.skillLabel+' '+o.skillVal+' <span class="tr-op">+</span> '+chips+
+           ' <span class="tr-op">=</span> <b class="'+resCls+'">'+o.total+'</b> '+(o.success?"≥":"<")+' '+o.targetLabel+' '+o.target+'</div>';
+  }
+  return '<div class="test-result">'+head+calc+(o.extra?'<div class="tr-extra">'+o.extra+'</div>':"")+'</div>';
+}
+
 /* ===== 손패 드래그 — 진짜 들고 가는 느낌 =====
    손패 밖(우측/맵)으로 놓으면 플레이, 손패 안이면 순서 바꾸기, 아니면 되돌아감 */
 let handDrag=null;
 function startHandDrag(e, idx, el){
   if(e.button!==0) return;
+  // 맵 말 조작과 동일한 잠금(canAct) — 컷신·페이즈전환·조사자 단계 아닐 땐 카드 플레이 불가
+  if(!canAct()) return;
   e.preventDefault();
   el.style.animation="none";
   el.classList.remove("dealing");
@@ -1130,13 +1458,15 @@ function tryPlayCard(idx){
   if(c.type_code==="skill"){
     showToast("기술 카드는 판정에 커밋해 사용합니다."); renderHand(); return;
   }
-  // 신속(Fast) 여부 — 우리 카드 데이터(S.cardAbilities)의 timing:fast로 판단.
-  const isFast = hasFastAbility(code);
-  const needAction = !isFast;   // fast가 아니면 행동 1 소비
+  // 신속(Fast) 키워드 — 행동 소비 없이 플레이(카드에 '신속' 있을 때만. 능력 timing:fast 와 별개).
+  const isFast = isFastPlay(code);
+  const needAction = !isFast;   // 신속이 아니면 행동 1 소비
 
   // when(반응 조건) 있는 카드는 그 상황이 왔을 때만 발동 — 손패에서 드래그로 그냥 못 냄.
   // (예: 보호의 진 = 음모 뽑을 때만. 타이밍 창/반응 시스템에서 처리 예정)
-  if(hasReactionWhen(code)){
+  // 반응(when)만으로 발동하는 카드는 이벤트만 손패에서 직접 못 냄(상황 시 발동).
+  // 자산의 when은 플레이영역에서 작동하는 촉발 능력이라 플레이 가능(예: 경비견).
+  if(c.type_code==="event" && hasReactionWhen(code)){
     showToast("이 카드는 특정 상황에서만 사용할 수 있습니다."); renderHand(); return;
   }
   // 룰: when 없는 fast 자산·이벤트도 "자기 턴(조사자 페이즈)"에만 낼 수 있다.
@@ -1163,9 +1493,10 @@ function tryPlayCard(idx){
     addLog(c.name+" 발동 (자원 -"+cost+")"+actLog+".");
     updatePiles();
   }else{
-    // 자산·조력자 등: 플레이 영역에 배치
-    S.playedCards.push(code);
-    renderPlayArea();
+    // 자산·조력자 등: 플레이 영역에 배치(uses 초기화) + 상시(constant) 능력 적용
+    S.playedCards.push({ code, uses: initialUses(code) });
+    onEnterPlay(code);            // 상시 능력치 보너스 등 반영(예: 순찰 경찰 +1 전투)
+    renderPlayArea(); renderInvestigator();
     addLog(c.name+" 플레이 (자원 -"+cost+")"+actLog+".");
   }
   renderHand();
@@ -1186,17 +1517,128 @@ S.playedCards=[];
 function renderPlayArea(){
   const area=document.getElementById("play-area");
   if(!S.playedCards.length){ area.innerHTML='<div class="play-placeholder">플레이된 자산</div>'; return; }
-  area.innerHTML=S.playedCards.map(code=>
-    '<div class="played-card'+(isThreatCard(code)?' threat-card':'')+'" data-code="'+code+'"><img src="'+cardFront(code)+'" alt=""></div>').join("");
+  area.innerHTML=S.playedCards.map((p,idx)=>{
+    const badge = p.uses ? '<span class="pc-uses">'+p.uses.count+'</span>' : "";   // 탄약·보급 등
+    return '<div class="played-card'+(isThreatCard(p.code)?' threat-card':'')+'" data-idx="'+idx+'"><img src="'+cardFront(p.code)+'" alt="">'+badge+'</div>';
+  }).join("");
   area.querySelectorAll(".played-card").forEach(el=>{
-    const code=el.dataset.code;
+    const idx=+el.dataset.idx; const code=S.playedCards[idx].code;
     el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
     el.addEventListener("mouseleave", hideCardInfo);
+    if(commitMode){ if(canBoost(idx)){ el.classList.add("boost-ok"); el.addEventListener("click", ()=>useBoostAsset(idx)); } }
+    else el.addEventListener("click", ()=>openAbilityMenu(idx, el));   // 클릭 → 발동 능력 메뉴
   });
 }
 
+/* =====================================================================
+   발동형 능력 — 플레이된 카드 클릭 → 능력 메뉴 → 발동(효과 실행 + uses 소비)
+   비전투(치유·자원·드로우)만 실제 작동. 전투·판정강화는 시스템 이후(회색).
+   ===================================================================== */
+const EFFECT_LABEL = { do_fight:"공격", heal:"치유", damage:"피해", bonus:"능력치 강화", gain_resources:"자원 얻기", draw:"카드 뽑기" };
+const STUB_EFFECTS = new Set(["do_fight","damage","bonus"]);   // 적·판정커밋 시스템 이후 실제 작동
+function abilityLabel(ab){
+  const eff = (ab.do && ab.do[0] && ab.do[0].effect) || "능력";
+  return (EFFECT_LABEL[eff] || eff) + " (" + (ab.timing==="fast" ? "신속" : "행동") + ")";
+}
+// 발동 가능? — 자기 턴 + (행동이면 AP) + 비용(자원) + uses/requires. 스텁 효과는 불가.
+function canActivateAbility(p, ab){
+  const first = ab.do && ab.do[0] && ab.do[0].effect;
+  if(STUB_EFFECTS.has(first)) return false;
+  if(S.currentPhase!=="investigation" || S.phaseBusy) return false;
+  if(ab.timing==="action" && S.actionPoints<1) return false;
+  if(ab.cost && ab.cost.resources && S.invResource < ab.cost.resources) return false;
+  if(ab.do && p.uses){ for(const eff of ab.do){ if(eff.spend && eff.spend[p.uses.type] && p.uses.count < eff.spend[p.uses.type]) return false; } }
+  if(ab.requires){ for(const k in ab.requires){ const need=parseInt((ab.requires[k]+"").replace(/[^0-9]/g,""))||1;
+    if(k==="resources"){ if(S.invResource<need) return false; } else if(p.uses && p.uses.type===k){ if(p.uses.count<need) return false; } } }
+  return true;
+}
+// 효과 실행기(비전투만 실제 동작)
+const EFFECTS = {
+  gain_resources(eff){ const v=eff.value||1; S.invResource+=v; renderInvestigator(); addLog("자원 +"+v+" (보유 "+S.invResource+")."); },
+  draw(eff){ if(S.playerDeck.length){ S.playerHand.push(S.playerDeck.shift()); renderHand(); updatePiles(); flyLastCardFromDeck(); addLog("카드 1장을 뽑았습니다."); } else addLog("덱이 비어 뽑지 못했습니다."); },
+  heal(eff){
+    const v = (eff.heal && eff.heal.value) || 1;
+    const canDmg = S.invDamage>0, canHor = S.invHorror>0;
+    const doHeal=(kind)=>{
+      if(kind==="damage"){ S.invDamage=Math.max(0,S.invDamage-v); addLog("피해 "+v+" 회복."); }
+      else { S.invHorror=Math.max(0,S.invHorror-v); addLog("공포 "+v+" 회복."); }
+      renderInvestigator();
+    };
+    if(eff.heal && eff.heal.choose_one && canDmg && canHor){
+      showPopup("무엇을 회복할까요?", [
+        {label:"피해 "+v, primary:true, act:()=>{ hidePopup(); doHeal("damage"); }},
+        {label:"공포 "+v, act:()=>{ hidePopup(); doHeal("horror"); }},
+      ]);
+    } else if(canDmg) doHeal("damage");
+    else if(canHor) doHeal("horror");
+    else addLog("회복할 피해·공포가 없습니다.");
+  },
+  damage(){ addLog("피해 효과 — 적 시스템 미구현(보류)."); },
+  do_fight(){ addLog("공격(전투 판정) — 적 시스템 미구현(보류)."); },
+  bonus(){ addLog("능력치 강화 — 판정 커밋 시스템 이후(보류)."); },
+};
+function runEffect(eff, p){
+  if(eff.spend && p.uses){ for(const k in eff.spend){ if(p.uses.type===k) p.uses.count -= eff.spend[k]; } }   // uses 소비
+  const h = EFFECTS[eff.effect];
+  if(h) h(eff, p); else addLog("(효과 '"+eff.effect+"' 미구현)");
+}
+function activateAbility(pi, ai){
+  const p = S.playedCards[pi]; if(!p) return;
+  const ab = ((S.cardAbilities[p.code]||{}).abilities || [])[ai]; if(!ab) return;
+  if(!canActivateAbility(p, ab)){ showToast("지금 발동할 수 없습니다."); return; }
+  if(ab.timing==="action"){ S.actionPoints--; updateAP(); }                        // 행동 소비
+  if(ab.cost && ab.cost.resources){ S.invResource-=ab.cost.resources; renderInvestigator(); }  // 자원 비용
+  (ab.do||[]).forEach(eff=> runEffect(eff, p));                                     // 효과
+  if(ab.cost && ab.cost.discard==="self") discardPlayed(pi);                        // 자기 버림 비용
+  else if(p.uses && p.uses.discardIfEmpty && p.uses.count<=0) discardPlayed(pi);    // uses 소진 → 버림
+  else renderPlayArea();
+}
+// 플레이된 카드 버림(→ 버린 더미) + 상시 능력 해제
+function discardPlayed(idx){
+  const p = S.playedCards[idx]; if(!p) return;
+  onLeavePlay(p.code);
+  S.playedCards.splice(idx,1);
+  S.playerDiscard.push(p.code);
+  renderPlayArea(); renderInvestigator(); updatePiles();
+  addLog((S.byCode[p.code]?S.byCode[p.code].name:p.code)+" 버림.");
+}
+
+let abilityMenuOpen=false;
+function openAbilityMenu(pi, cardEl){
+  closeActionMenu();
+  const p = S.playedCards[pi]; if(!p) return;
+  const list = activatable(p.code);
+  if(!list.length){ showToast("발동할 능력이 없습니다."); return; }
+  const menu = document.getElementById("ability-menu");
+  menu.innerHTML = list.map(({i,ab})=>{
+    const ok = canActivateAbility(p, ab);
+    return '<div class="am-item'+(ok?"":" am-disabled")+'" data-pi="'+pi+'" data-ai="'+i+'" data-en="'+(ok?1:0)+'">'+abilityLabel(ab)+'</div>';
+  }).join("");
+  menu.style.display="block";
+  const r = cardEl.getBoundingClientRect();
+  let sx=toStageX(r.left), sy=toStageY(r.top)-menu.offsetHeight-6;
+  if(sy<8) sy = toStageY(r.bottom)+6;   // 위 공간 없으면 카드 아래로
+  menu.style.left=Math.max(8,sx)+"px"; menu.style.top=Math.max(8,sy)+"px";
+  abilityMenuOpen=true;
+}
+function closeAbilityMenu(){ const m=document.getElementById("ability-menu"); if(m) m.style.display="none"; abilityMenuOpen=false; }
+// 능력 메뉴 좌클릭(capture): 항목 발동 / 카드·메뉴 밖이면 닫기
+document.addEventListener("mousedown",(e)=>{
+  if(!abilityMenuOpen) return;
+  const item = e.target.closest && e.target.closest("#ability-menu .am-item");
+  if(item){
+    if(e.button===0){ e.preventDefault(); e.stopPropagation();
+      if(item.dataset.en==="1"){ closeAbilityMenu(); activateAbility(+item.dataset.pi, +item.dataset.ai); } }
+    return;
+  }
+  const onCard = e.target.closest && e.target.closest(".played-card");
+  if(e.button===0 && !onCard) closeAbilityMenu();
+}, true);
+
 let mulliganMode=false;
 let mulliganSel=new Set();
+let mullRefilling=false;   // 멀리건 확정 후 덱→손패 채우는 연출 중(손패 좌측 정렬 유지)
+let discardMode=false;     // 정비 4.5 손패 정리 중(좌클릭=버림)
 let setAsideWeaknesses=[];   // 시작 손패 뽑는 동안 빼둔 약점(멀리건 끝나면 도로 셔플)
 
 // cards.json 기준으로 약점 여부 판별
@@ -1213,7 +1655,7 @@ function dealOpeningHand(){
   S.playerDeck = S.playerDeck.filter(c=>!isWeakness(c));
   let dealt=0;
   const dealOne=()=>{
-    if(dealt>=8){ setTimeout(openMulligan, 1200); return; }  // (임시)8장 후 1.2초 뒤 멀리건
+    if(dealt>=5){ setTimeout(openMulligan, 1200); return; }  // 시작 손패 5장(아컴 기본 규칙)
     if(!S.playerDeck.length){ return; }
     const code=S.playerDeck.shift();
     S.playerHand.push(code);
@@ -1221,7 +1663,23 @@ function dealOpeningHand(){
     renderHand(); updatePiles();
     const cards=document.querySelectorAll(".hand-card");
     const last=cards[cards.length-1];
-    if(last){ last.classList.add("dealing"); }
+    if(last){
+      // 덱 더미 위치 → 손패 슬롯으로 날아오는 FLIP 연출
+      const deck=document.getElementById("deck-pile");
+      if(deck){
+        const dr=deck.getBoundingClientRect(), cr=last.getBoundingClientRect();
+        const dx=toStageX(dr.left+dr.width/2)-toStageX(cr.left+cr.width/2);   // stage 좌표 이동량
+        const dy=toStageY(dr.top+dr.height/2)-toStageY(cr.top+cr.height/2);
+        const finalT=last.style.transform||"";   // 최종 부채꼴 회전
+        last.style.transition="none";
+        last.style.transform="translate("+dx+"px,"+dy+"px) rotate(0deg) scale(.8)";  // 시작=덱 위
+        last.style.opacity="0";
+        void last.offsetWidth;   // 강제 reflow
+        last.style.transition="transform .45s cubic-bezier(.2,.85,.3,1), opacity .25s";
+        last.style.transform=finalT;   // 손패 자리로 날아옴
+        last.style.opacity="1";
+      }
+    }
     setTimeout(dealOne, 240);
   };
   dealOne();
@@ -1229,27 +1687,79 @@ function dealOpeningHand(){
 
 function openMulligan(){
   mulliganMode=true; mulliganSel.clear(); renderHand();
-  showPopup("멀리건 — 시작 손패에서 제외할 카드를 고르세요. (0~5장, 선택한 카드는 덱에 섞고 새로 뽑습니다)", [
-    {label:"완료", primary:true, act:doMulligan},
-  ], doMulligan);   // 우클릭도 완료로 처리(먹통 방지)
+  document.getElementById("stage").classList.add("mull-active");   // 손패 외 나머지 딤
+  document.getElementById("mull-hint").classList.add("show");      // 안내 패널
+  updateMullCount();
+}
+function updateMullCount(){
+  const el=document.getElementById("mh-n");
+  if(el) el.textContent = mulliganSel.size;
 }
 
 function doMulligan(){
-  hidePopup();
+  document.getElementById("stage").classList.remove("mull-active");  // 딤 해제
+  document.getElementById("mull-hint").classList.remove("show");
   const selIdx=[...mulliganSel].sort((a,b)=>b-a);   // 뒤에서부터 제거(인덱스 안 꼬이게)
+  // 남길 카드(선택 안 한)들의 현재 화면 위치 기록 — 좌측 슬라이드 FLIP용
+  const keptOldRects=[];
+  document.querySelectorAll("#hand-area .hand-card").forEach(el=>{
+    if(!mulliganSel.has(+el.dataset.idx)) keptOldRects.push(el.getBoundingClientRect());
+  });
   const removed=[];
   selIdx.forEach(i=>{ removed.push(S.playerHand[i]); S.playerHand.splice(i,1); });
   mulliganMode=false; mulliganSel.clear();
-  renderHand();
-  if(!removed.length){ finishMulligan(); return; }
-  // 선택한 카드 수만큼 덱에서 새로 뽑고, 뺀 카드는 덱에 섞기
-  const drawCount=removed.length;
-  for(let i=0;i<drawCount && S.playerDeck.length;i++){ S.playerHand.push(S.playerDeck.shift()); }
+  if(!removed.length){ renderHand(); finishMulligan(); return; }   // 0장: 그대로 확정
+
+  mullRefilling=true;
   removed.forEach(c=>S.playerDeck.push(c));   // 뺀 카드 덱으로
   shuffle(S.playerDeck);
-  renderHand(); updatePiles();
-  addLog("멀리건: "+drawCount+"장을 교체했습니다.");
-  finishMulligan();
+  renderHand(); updatePiles();   // 남은 카드가 좌측 정렬로 재배치
+
+  // ① 남은 카드: 예전 위치 → 새 좌측 위치로 미끄러짐(몰기)
+  document.querySelectorAll("#hand-area .hand-card").forEach((el,j)=>{
+    const old=keptOldRects[j]; if(!old) return;
+    const cur=el.getBoundingClientRect();
+    const dx=toStageX(old.left+old.width/2)-toStageX(cur.left+cur.width/2);
+    const finalT=el.style.transform||"";
+    el.style.transition="none";
+    el.style.transform="translateX("+dx+"px) "+finalT;
+    void el.offsetWidth;   // 강제 reflow
+    el.style.transition="transform .4s cubic-bezier(.2,.85,.3,1)";
+    el.style.transform=finalT;
+  });
+
+  // ② 슬라이드 끝난 뒤 → 선택 수만큼 덱에서 날아와 채우기
+  const drawCount=Math.min(removed.length, S.playerDeck.length);
+  let dealt=0;
+  const flyOne=()=>{
+    if(dealt>=drawCount){
+      addLog("멀리건: "+removed.length+"장을 교체했습니다.");
+      mullRefilling=false; renderHand(); finishMulligan(); return;
+    }
+    S.playerHand.push(S.playerDeck.shift());
+    dealt++;
+    renderHand(); updatePiles();
+    const cards=document.querySelectorAll("#hand-area .hand-card");
+    const last=cards[cards.length-1];
+    if(last){
+      const deck=document.getElementById("deck-pile");
+      if(deck){
+        const dr=deck.getBoundingClientRect(), cr=last.getBoundingClientRect();
+        const dx=toStageX(dr.left+dr.width/2)-toStageX(cr.left+cr.width/2);
+        const dy=toStageY(dr.top+dr.height/2)-toStageY(cr.top+cr.height/2);
+        const finalT=last.style.transform||"";
+        last.style.transition="none";
+        last.style.transform="translate("+dx+"px,"+dy+"px) rotate(0deg) scale(.8)";
+        last.style.opacity="0";
+        void last.offsetWidth;
+        last.style.transition="transform .45s cubic-bezier(.2,.85,.3,1), opacity .25s";
+        last.style.transform=finalT;
+        last.style.opacity="1";
+      }
+    }
+    setTimeout(flyOne, 240);
+  };
+  setTimeout(flyOne, 430);   // 남은 카드 슬라이드(.4s) 끝난 뒤 채우기 시작
 }
 
 function finishMulligan(){
@@ -1267,68 +1777,142 @@ function finishMulligan(){
 }
 
 
-/* 로랜드 고정 테스트 덱 — 시그니처(권총·악몽) + 수호자/중립 30장.
-   테스트 기간 내내 같은 덱을 쓰도록 고정(무작위 X). */
-function makeRandomDeck(all){
-  const invCode="01001";
-  const inv=all.find(c=>c.code===invCode);
-  const cards={};
-  // 로랜드 시그니처: .38 특별권총(01006), 기본 약점: 악몽(01007)
-  const signature=["01006"], weakness="01007";
-  signature.forEach(c=>{ if(S.byCode[c]) cards[c]=1; });
-  if(S.byCode[weakness]) cards[weakness]=1;
-  // 코어세트 수호자/중립 대표 카드로 30장 채움(고정 목록)
-  const fixed=[
-    "01016","01016",  // 경비병
-    "01017","01017",  // .45 자동권총
-    "01018",          // 물리치료
-    "01020","01020",  // 마체테
-    "01021",          // 경찰견
-    "01086","01086",  // 비상등
-    "01087","01087",  // 45구경
-    "01088",          // 응급처치
-    "01089","01089",  // 회피
-    "01090","01090",  // 육탄전
-    "01091",          // 대비
-    "01092","01092",  // 다이너마이트 폭발
-    "01093",          // 곤경에 맞서라
-    "01094",          // 은신처
-    "01096","01096",  // 도망
-    "01088",          // 응급처치(추가)
-  ];
-  fixed.forEach(c=>{ if(S.byCode[c]) cards[c]=(cards[c]||0)+1; });
-  // 부족분은 아무 수호자/중립 카드로 30장(시그니처·약점 제외 카운트는 30)
-  const countable=()=>Object.entries(cards).filter(([c])=>c!=="01006"&&c!=="01007").reduce((a,[,n])=>a+n,0);
-  if(countable()<30){
-    const pool=all.filter(c=>["asset","event","skill"].includes(c.type_code) &&
-      (c.faction_code==="guardian"||c.faction_code==="neutral") &&
-      !c.encounter_code && !c.subtype_code && !c.restrictions && S.byCode[c.code]);
-    let i=0;
-    while(countable()<30 && i<pool.length){ const code=pool[i].code; if((cards[code]||0)<2) cards[code]=(cards[code]||0)+1; i++; }
-  }
-  return {investigator:invCode, investigatorName:(inv?inv.name:"로랜드"),
-          cards, signatures:signature, randomWeakness:weakness};
+/* 기본 테스트 덱 — 저장된 덱(arkham_decks)이 없을 때만 쓰인다(loadPlayerDecks).
+   덱빌딩 저장 구조와 동일: cards=일반 카드만 / 시그니처·기본약점은 따로 필드.
+   로랜드 표준 23장 = 수호자 코어 레벨0 10종 ×2(20장) + 고유자산·고유약점(2) + 기본약점(1). */
+function getTestDeck(){
+  // ※ 코드는 덱빌딩·notz와 동일한 개정판(01501/015xx) — 그래야 카드 능력·엘더사인이 매칭됨
+  return {
+    investigator: "01501",              // 로랜드 뱅크스(개정판, 상시 카드 — 덱에서 안 뽑음)
+    investigatorName: "로랜드 뱅크스",
+    signatures: ["01006", "01007"],     // 고유자산 .38 특제권총 + 고유약점 은폐(deck_requirements 기준)
+    randomWeakness: "01596",            // 기본약점 기억상실(개정판, notz에 정의됨)
+    cards: {                            // 수호자 notz 카드 10종 × 2 = 20장 (015xx → 능력 있음)
+      "01516":2,  // 45구경 자동 권총
+      "01517":2,  // 체력 단련
+      "01518":2,  // 순찰 경찰
+      "01519":2,  // 응급 처치
+      "01520":2,  // 마체테
+      "01521":2,  // 경비견
+      "01522":2,  // 증거!
+      "01523":2,  // 재빨리 피하다
+      "01524":2,  // 다이너마이트 폭발
+      "01525":2,  // 무자비한 일격
+      "01530":2,  // 돋보기(탐구자, 조사 중 +1 지식) — 제작·검증용
+      "01539":2,  // 추론(탐구자 기술, 조사 성공 시 추가 단서) — 제작·검증용
+    },
+  };
 }
 
-/* 조사 판정: (지식 + 토큰값) vs 은폐도. 혼돈 토큰을 뽑아 해석(js/scenario/tokens.js).
-   drawn[] = 이번 판정에 뽑힌 토큰(들)과 각 효과 — 성공/실패 후 효과 적용에 사용. */
-function investigateTest(shroud){
-  const ctx = {
-    charCode: activeInvestigator ? activeInvestigator.investigator : null,
-    myLocation: cur,
-    cluesAt: (room)=> cluesInRoom(room).length,   // pull: 그 자리서 단서 수 계산
-  };
-  const drawn = [];
-  const first = resolveToken(drawChaosToken(), ctx);
-  drawn.push(first);
-  let mod = first.value, autoFail = first.autoFail;
-  for(let i=0; i<(first.drawMore||0); i++){        // 추가 뽑기(예: 추종자 어려움)
-    const more = resolveToken(drawChaosToken(), ctx);
-    drawn.push(more); mod += more.value; if(more.autoFail) autoFail = true;
+/* =====================================================================
+   능력치 테스트 + 커밋 (엔진 = js/scenario/skilltest.js, 구동·UI = 여기)
+   cfg = { skill, difficulty, ctx, actionLabel, targetLabel, onResolve }
+   흐름: 커밋옵션 검사 → 없으면 즉시 판정 / 있으면 "커밋?" 팝업 → 커밋모드 → 판정
+   ===================================================================== */
+function skillValue(skill){ return (invCard ? (invCard["skill_"+skill]||0) : 0) + (S.statBonus[skill]||0); }
+// 커밋 가능한 손패 인덱스(테스트 기호나 만능 보유)
+function committableHand(skill){ return S.playerHand.map((c,i)=>i).filter(i=> isCommittable(S.byCode[S.playerHand[i]], skill)); }
+// 이 능력치 테스트를 올려주는 플레이 자산의 bonus 능력(비용 지불 가능한 것) 찾기
+function boostAbilityFor(p, skill){
+  const abils=(S.cardAbilities[p.code]||{}).abilities||[];
+  for(let ai=0; ai<abils.length; ai++){
+    const ab=abils[ai];
+    const eff = ab.do && ab.do.find(e=> e.effect==="bonus" && e.bonus && e.bonus[skill]);
+    if(!eff) continue;
+    const cost=(ab.cost && ab.cost.resources)||0;
+    if(cost && S.invResource < cost) continue;
+    return { ai, ab, amount:eff.bonus[skill], cost };
   }
-  const total = INTELLECT + mod;
-  const success = !autoFail && total >= shroud;
-  return { token: mod, drawn, total, shroud, success, autoFail };
+  return null;
+}
+function boostAssets(skill){ return S.playedCards.map((p,pi)=>({pi, b:boostAbilityFor(p,skill)})).filter(x=>x.b); }
+
+let commitMode=false, commitSel=new Set(), commitCfg=null, commitAssetBonus=0;
+
+function startSkillTest(cfg){
+  const hand = committableHand(cfg.skill);
+  const assets = boostAssets(cfg.skill);
+  if(!hand.length && !assets.length){ resolveTestNow(cfg, 0); return; }   // 커밋 옵션 없음 → 즉시 판정
+  showPopup('<span class="hl">'+cfg.actionLabel+'</span> 판정 — 커밋하거나 도움을 받으시겠습니까?<br>손패 기호·강화 자산으로 판정값을 올릴 수 있습니다.', [
+    {label:"아니오(바로 판정)", act:()=>{ hidePopup(); resolveTestNow(cfg, 0); }},
+    {label:"예(커밋)", primary:true, act:()=>{ hidePopup(); enterCommit(cfg); }},
+  ], ()=>{ hidePopup(); setTimeout(()=>resolveTestNow(cfg, 0), 0); });   // 우클릭 = 커밋 없이 판정(행동력 이미 소모 → 헛되지 않게 진행). setTimeout: 같은 우클릭이 결과 팝업 닫는 것 방지
+}
+function enterCommit(cfg){
+  commitMode=true; commitSel.clear(); commitCfg=cfg; commitAssetBonus=0;
+  document.getElementById("stage").classList.add("commit-active");   // 손패·플레이자산만 밝게
+  const hint=document.getElementById("mull-hint");
+  hint.innerHTML =
+    '<div class="mh-title">'+cfg.actionLabel+' 판정 — 커밋</div>'+
+    '<div class="mh-body">테스트 기호가 있는 <b>손패</b>(파란 테두리)·강화 <b>자산</b>을 <b>좌클릭</b>해 추가.<br>다 골랐으면 <b>우클릭</b>으로 판정.</div>'+
+    '<div class="mh-count">추가 보너스 <b id="cm-b">+0</b></div>';
+  hint.classList.add("show");
+  renderHand(); renderPlayArea(); updateCommitBonus();
+}
+function updateCommitBonus(){
+  let icons=0; commitSel.forEach(i=> icons += commitIcons(S.byCode[S.playerHand[i]], commitCfg.skill));
+  const el=document.getElementById("cm-b"); if(el) el.textContent = "+" + (icons + commitAssetBonus);
+}
+function toggleCommit(i){
+  if(!commitMode) return;
+  if(commitSel.has(i)) commitSel.delete(i); else commitSel.add(i);
+  renderHand(); updateCommitBonus();
+}
+function canBoost(pi){ return !!(commitMode && S.playedCards[pi] && boostAbilityFor(S.playedCards[pi], commitCfg.skill)); }
+function useBoostAsset(pi){
+  const p=S.playedCards[pi]; if(!p||!commitMode) return;
+  const b=boostAbilityFor(p, commitCfg.skill); if(!b){ return; }
+  if(b.cost){ S.invResource-=b.cost; renderInvestigator(); }
+  commitAssetBonus += b.amount;
+  addLog((S.byCode[p.code]?S.byCode[p.code].name:p.code)+" 사용 — "+commitCfg.actionLabel+" +"+b.amount+(b.cost?" (자원 -"+b.cost+")":"")+".");
+  renderPlayArea(); updateCommitBonus();
+}
+function confirmCommit(){
+  if(!commitMode) return;
+  const cfg=commitCfg;
+  const idxs=[...commitSel].sort((a,b)=>b-a);
+  let icons=0; const committed=[];
+  idxs.forEach(i=> icons += commitIcons(S.byCode[S.playerHand[i]], cfg.skill));
+  const bonus = icons + commitAssetBonus;
+  idxs.forEach(i=>{ const code=S.playerHand.splice(i,1)[0]; committed.push(code); S.playerDiscard.push(code); });   // 커밋 카드 버림(코드 기록)
+  commitMode=false; commitSel.clear();
+  document.getElementById("stage").classList.remove("commit-active");
+  document.getElementById("mull-hint").classList.remove("show");
+  renderHand(); renderPlayArea(); updatePiles();
+  if(bonus) addLog("커밋 보너스 +"+bonus+".");
+  resolveTestNow(cfg, bonus, committed);
+}
+function resolveTestNow(cfg, extraBonus, committed){
+  const base = skillValue(cfg.skill) + conditionalTestBonus(cfg.skill, cfg.testType) + (extraBonus||0);   // 조건부 자산(돋보기=조사 중 +1 지식) 포함
+  const r = resolveTest(base, cfg.difficulty, cfg.ctx);
+  r.committed = committed || [];   // 커밋된 카드 코드(판정후 효과용)
+  r.testType = cfg.testType;
+  r.location = cfg.location;
+  cfg.onResolve(r);
+}
+// 장소에서 단서 1개 발견(남은 게 있을 때만). 추론 등이 사용 — 없는데 새로 만들지 않음.
+function discoverClueAt(roomKey){
+  const list = cluesInRoom(roomKey);
+  if(list.length){ const m=list[0]; m.mesh.visible=false; m.collected=true; changeClue(1); updateLocInfo(); return true; }
+  return false;
+}
+// 커밋된 카드의 판정후 효과(예: 추론 = 조사 성공 시 그 장소 추가 단서). 팝업에 덧붙일 문구 배열 반환.
+function applyCommittedTestEffects(r){
+  const extra = [];
+  (r.committed||[]).forEach(code=>{
+    ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
+      if(ab.timing!=="on_commit_resolve") return;
+      if(ab.condition==="investigate_success" && !(r.success && r.testType==="investigate")) return;
+      (ab.do||[]).forEach(eff=>{
+        if(eff.effect==="discover_clue"){
+          const loc = r.location || cur, name = S.byCode[code] ? S.byCode[code].name : code;
+          if(discoverClueAt(loc)){ addLog(name+": "+ROOMS[loc].name+"에서 추가 단서 1개 발견."); extra.push("("+name+") 추가 단서 1개"); }
+          else addLog(name+": 추가로 발견할 단서가 없습니다.");
+        }
+      });
+    });
+  });
+  return extra;
 }
 
 const groups={};
@@ -1587,6 +2171,7 @@ const ADJ={ study:[], hallway:["parlor","attic","cellar"], parlor:["hallway"], a
    연결된 장소 버튼 — 현재 방에서 갈 수 있는 곳만 노출
    ===================================================================== */
 const roomsList=document.getElementById("rooms-list");
+const roomsPanel=document.getElementById("rooms");   // 연결장소 패널(조작 불가 시 흐림·비활성)
 /* 잠긴 방 호버 툴팁 */
 let lockTipEl=null;
 function showLockTip(btn){
@@ -1651,6 +2236,7 @@ function buildPath(from, to){
    ===================================================================== */
 let pawnMoving=null;
 function requestMove(k){
+  if(!canAct()) return;               // 조사자 단계·이동중 아닐 때만(비조사자 단계 이동 방지)
   if(!ADJ[cur].includes(k)) return;   // 연결 안 됨
   if(ROOMS[k].locked){                // 장벽으로 막힌 방
     showPopup('<span class="warn">들어갈 수 없습니다.</span><br>'+ROOMS[k].name+' 앞이 불타는 장벽으로 막혀 있습니다.',
@@ -1770,7 +2356,7 @@ function advanceAgenda(){
     // 묶음 시작 전에 "b 컷신 후 처리"를 예약할 수 없어 → 묶음 함수에 afterFirst 훅을 쓴다.
     playCutsceneSequence(ids, ()=>{
       // 묶음 전체 종료 → 조사자 단계로 복귀(도중에 파멸이 찼던 것이므로 단계 재개, 잠금 해제)
-      resumeInvestigationAfterCutscene();
+      resumeAfterCutscene();
     }, 2000, ()=>{
       // afterFirst: 첫 컷신(Xb) 끝난 직후 실행 — 파멸 초기화·임계치 상승
       clearAllDoom();
@@ -1793,21 +2379,87 @@ function clearAllDoom(){
   updateDoom();
 }
 
-/* 신화 단계 시작 — 의제 파멸 +1 후 진행 확인 */
-// --- 페이즈 ---
-const PHASES = ["mythos","investigation","enemy","upkeep"];
-const PHASE_NAMES={mythos:"신화 단계",investigation:"조사자 단계",enemy:"적 단계",upkeep:"정비 단계"};
+// --- 페이즈 (틀: js/scenario/phases.js가 루프·타이밍 소유. 각 단계 게임효과는 아래 bus 구독) ---
 S.currentPhase = "investigation";
-function setPhase(ph){
-  S.currentPhase = ph;
+S.phasePaused = false;   // 신화 단계에서 의제 진행(컷신) 시 루프 일시정지
+
+// 페이즈 뱃지·버튼 UI (옛 setPhase의 DOM 부분)
+bus.on("phase:changed", (ph)=>{
   const badge=document.getElementById("phase-badge");
   badge.setAttribute("data-ph", ph);
   badge.textContent = PHASE_NAMES[ph]||ph;
-  // 차례 종료 버튼은 조사자 단계에만 보임
   document.getElementById("end-turn-btn").style.display = (ph==="investigation") ? "block" : "none";
-  // 이야기 진행 버튼도 조사자 단계에만 — 다른 단계로 넘어가면 숨김(눌려도 실행 안 되게)
   if(ph!=="investigation") hideAdvanceButton();
-  else if(advanceReady) showAdvanceButton();   // 조사자 단계 복귀 시, 조건 충족 상태면 다시 표시
+  else if(advanceReady) showAdvanceButton();
+});
+// 조사자 단계 시작 — 행동력 리셋은 정비 4.2에서 함(여기선 표시 갱신·안내만)
+bus.on("phase:investigation", ()=>{
+  updateAP();
+  addLog("조사자 단계 — 당신의 차례입니다.");
+});
+// 적 단계 — 전투 보류(빈 훅)
+bus.on("phase:enemy", ()=>{
+  addLog("적 단계 — (적·전투 미구현: 이후 3.2 사냥꾼 이동, 3.3 교전 공격).");
+});
+// 정비 단계 — 4.2~4.5 (비전투)
+bus.on("phase:upkeep", ()=> doUpkeep());
+// 신화 단계 — 1.2 파멸+1, 1.3 임계(1.4 조우 뽑기는 보류)
+bus.on("phase:mythos", ()=>{
+  agendaDoom += 1; updateDoom();
+  addLog("신화 단계 — 의제에 파멸 +1 (현재 "+totalDoom()+"/"+doomThreshold+").");
+  S.phasePaused = checkAgendaAdvance();   // 진행 시 루프 멈춤 → 컷신 후 resumeAfterCutscene가 복귀
+});
+// 정비 단계 실제 처리(비전투)
+function doUpkeep(){
+  // 4.2 행동 리셋
+  S.actionPoints = MAX_AP; updateAP();
+  addLog("정비 — 행동을 리셋했습니다. (행동력 "+MAX_AP+")");
+  // 4.3 소진 카드 준비 = 발동(소진) 시스템 이후
+  if(S.playerDeck.length){   // 4.4 카드 1장 뽑기 + 자원 1
+    S.playerHand.push(S.playerDeck.shift());
+    renderHand(); updatePiles(); flyLastCardFromDeck();
+    addLog("정비 — 카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)");
+  }else addLog("정비 — 덱이 비어 카드를 뽑지 못했습니다.");   // TODO: 빈 덱 규칙
+  S.invResource += 1;
+  document.getElementById("st-resource").textContent = S.invResource;
+  addLog("정비 — 자원 1을 얻었습니다. (보유 "+S.invResource+")");
+  // 4.5 손패 8장 확인 — 초과 시 버리기(정리 끝날 때까지 라운드 멈춤)
+  const excess = S.playerHand.length - 8;
+  if(excess > 0){
+    S.phasePaused = true;   // phases.js upkeep이 여기서 멈춤 → finishDiscard가 resumeUpkeep 호출
+    addLog("정비 — 손패 "+S.playerHand.length+"장. "+excess+"장을 버려야 합니다.");
+    enterDiscard();
+  }
+}
+
+/* 정비 4.5 — 손패 8장 초과분 버리기(좌클릭으로 한 장씩). 멀리건과 같은 딤/안내 재사용. */
+function enterDiscard(){
+  discardMode = true;
+  document.getElementById("stage").classList.add("mull-active");   // 손패 외 딤
+  const hint = document.getElementById("mull-hint");
+  hint.innerHTML =
+    '<div class="mh-title">손패 정리</div>'+
+    '<div class="mh-body">손패가 8장을 넘습니다.<br>버릴 카드를 <b>좌클릭</b>하세요.</div>'+
+    '<div class="mh-count">더 버릴 카드 <b id="dc-n">'+(S.playerHand.length-8)+'</b>장</div>';
+  hint.classList.add("show");
+  renderHand();
+}
+function discardOne(i){
+  if(!discardMode) return;
+  const code = S.playerHand.splice(i,1)[0];
+  S.playerDiscard.push(code);
+  addLog("정비 — "+(S.byCode[code]?S.byCode[code].name:code)+" 버림.");
+  renderHand(); updatePiles();
+  const left = S.playerHand.length - 8;
+  const el = document.getElementById("dc-n"); if(el) el.textContent = Math.max(0, left);
+  if(left <= 0) finishDiscard();
+}
+function finishDiscard(){
+  discardMode = false;
+  document.getElementById("stage").classList.remove("mull-active");
+  document.getElementById("mull-hint").classList.remove("show");
+  addLog("정비 — 손패 정리 완료. (손패 "+S.playerHand.length+"장)");
+  resumeUpkeep();   // 신화 단계로 진행
 }
 
 /* =====================================================================
@@ -1816,9 +2468,7 @@ function setPhase(ph){
    차례 종료 → 적 → 정비 → 신화 → 조사자 → ...
    지금은 적/정비/신화 로직은 자리만. 각 단계 잠깐 머물며 로그 남기고 넘어감.
    ===================================================================== */
-S.phaseBusy = true;   // 입력 잠금 — 기본 잠금. 조사자 단계 정식 시작 때만 풀림.
-                        // (시작~도입컷신, 막 전환 틈 등 "내 턴 아닌 구간"은 전부 잠긴 채가 기본)
-const PHASE_HOLD = 1200; // 각 자동 페이즈에 머무는 시간(ms)
+S.phaseBusy = true;   // 입력 잠금 — 기본 잠금(시작~도입컷신·막 전환 틈). 조사자 단계 정식 시작 때만 풀림.
 
 // 차례 종료 버튼 클릭
 function onEndTurnClick(){
@@ -1828,68 +2478,12 @@ function onEndTurnClick(){
     : "차례를 종료하시겠습니까?";
   showPopup(msg, [
     {label:"취소", act:hidePopup},
-    {label:"종료", primary:true, act:()=>{ hidePopup(); runEnemyPhase(); }},
+    {label:"종료", primary:true, act:()=>{ hidePopup(); endTurnToEnemy(); }},
   ]);
 }
 
-// 적 단계 — 지금은 적 미구현. 자리만 두고 로그 후 정비로.
-function runEnemyPhase(){
-  S.phaseBusy = true;
-  setPhase("enemy");
-  addLog("적 단계 — (적 미구현: 이후 사냥꾼 이동·교전 공격 처리 예정)");
-  // TODO: 사냥꾼 이동 → 대표 조사자부터 순서대로 교전 적 공격 처리
-  setTimeout(runUpkeepPhase, PHASE_HOLD);
-}
-
-// 정비 단계 — 표시만. 로직(회복·드로우·손패)은 다음 단계에서.
-function runUpkeepPhase(){
-  setPhase("upkeep");
-  addLog("정비 단계 — (회복·카드 뽑기·손패 확인: 이후 구현 예정)");
-  // TODO(정비 순서):
-  //  1) 조사자 카드 사용 가능 윈도우
-  //  2) 행동력 회복
-  //  3) 모든 소진된 카드(적 포함) 회복(ready)
-  //  4) 각 조사자 덱 맨 위에서 1장 뽑고 자원 1 획득
-  //  5) 손패 8장 초과 시 팝업으로 초과분 버리기 → 버린 더미로
-  setTimeout(runMythosPhase, PHASE_HOLD);
-}
-
-// 신화 단계 — 파멸 +1 → 임계치 확인 → (조우 처리 자리) → 조사자 단계로
-function runMythosPhase(){
-  setPhase("mythos");
-  agendaDoom += 1;
-  updateDoom();
-  addLog("신화 단계 — 의제에 파멸 +1 (현재 "+totalDoom()+"/"+doomThreshold+").");
-  // 파멸 임계치 확인 — 넘으면 의제 진행(구슬 참 2초 → agendaXb 컷신 묶음).
-  const advanced = checkAgendaAdvance();
-  // TODO: 대표 조사자부터 순서대로 조우 1장씩 처리
-  if(advanced){
-    // 의제가 진행되면 조사자 단계 전환은 하지 않는다.
-    // (advanceAgenda의 컷신 묶음이 끝난 뒤 resumeInvestigationAfterCutscene가 복귀시킴)
-    // → 이렇게 안 하면 컷신(2초 후) 전에 조사자 단계가 돼서 그 틈에 조작이 가능해짐.
-    return;
-  }
-  setTimeout(()=>{ startInvestigatorPhase(); }, PHASE_HOLD);
-}
-
-// 조사자 단계 시작 — 행동력 회복, 입력 잠금 해제
-function startInvestigatorPhase(){
-  setPhase("investigation");
-  S.actionPoints = MAX_AP;
-  updateAP();
-  S.phaseBusy = false;
-  addLog("조사자 단계 — 행동력이 회복되었습니다.");
-}
-// 컷신(의제 전진 등)이 끝났을 때 조사자 단계로 복귀시킨다.
-// - 이미 조사자 단계 도중이었으면: 단계 재시작 없이 잠금만 해제(행동력 유지).
-// - 다른 단계(신화 등)에서 전진한 것이면: 조사자 단계를 정식 시작(행동력 회복).
-function resumeInvestigationAfterCutscene(){
-  if(S.currentPhase==="investigation"){
-    S.phaseBusy = false;              // 조사자 단계 도중 → 잠금만 해제(행동력 리셋 X)
-  }else{
-    startInvestigatorPhase();       // 신화 등에서 전진 → 조사자 단계 정식 시작(행동력 회복·잠금 해제)
-  }
-}
+// (페이즈 진행 함수 runEnemyPhase/runUpkeepPhase/runMythosPhase/startInvestigatorPhase/
+//  resumeInvestigationAfterCutscene 는 js/scenario/phases.js로 이관 — 위 bus 구독으로 게임효과 처리)
 
 /* =====================================================================
    조우덱 — 뽑을 더미 / 버린 더미
@@ -1992,7 +2586,7 @@ function advanceToMansion(){
   // 막 전진 묶음: [act1b, act2a]. 첫 컷신(act1b) 후 저택 등장·복도 이동,
   // 묶음 전체가 끝나면 조사자 단계로 복귀(잠금 해제). 사이 간격 2초.
   playCutsceneSequence(["act1b","act2a"], ()=>{
-    resumeInvestigationAfterCutscene();   // 묶음 끝 → 조작 잠금 해제
+    resumeAfterCutscene();   // 묶음 끝 → 조작 잠금 해제
     beginAct(2);                           // 2막 시작 — 복도에서 단서(a×3) 목표로 전환
     // 저택 첫 진입 — 이동 방법 안내(맵 우상단 장소 클릭 → 행동력 1 소비 이동)
     showPopup('맵의 우측 상단에 연결된 장소를 클릭하면 <span class="hl">행동력 1</span>을 소비하여 선택한 장소로 이동할 수 있습니다.',
@@ -2016,7 +2610,7 @@ function advanceToAct3(){
   addLog("이야기 진행 — 복도에서 단서 "+removed+"개를 소비했습니다.");
   // 막 전진 묶음: [act2b, act3a]. 묶음 끝 → 조사자 단계 복귀 + 3막 시작.
   playCutsceneSequence(["act2b","act3a"], ()=>{
-    resumeInvestigationAfterCutscene();
+    resumeAfterCutscene();
     beginAct(3);   // 구울 사제를 쓰러뜨려라
   }, 2000);
 }
@@ -2158,7 +2752,9 @@ advanceBtn.onclick = ()=>{
    ===================================================================== */
 const popup=document.getElementById("popup");
 let popupCancelAct=null;   // 우클릭 시 실행할 동작(없으면 그냥 닫기)
-function showPopup(msgHtml, buttons, onCancel){
+function showPopup(msgHtml, buttons, onCancel, boxClass){
+  const box=document.querySelector("#popup .popup-box");
+  if(box) box.className = "popup-box" + (boxClass ? " "+boxClass : "");   // 판정 등 특수 팝업 스타일
   document.getElementById("popup-msg").innerHTML=msgHtml;
   const bb=document.getElementById("popup-btns"); bb.innerHTML="";
   buttons.forEach(b=>{
@@ -2291,46 +2887,60 @@ function askInvestigate(cm){
     [{label:"취소", act:hidePopup},
      {label:"조사", primary:true, act:()=>{ hidePopup(); doInvestigate(cm); }}]);
 }
+// cm=단서 마커(맵에서 그 단서 클릭). cm=null이면 현재 장소 조사(메뉴) — 단서 없어도 판정.
 function doInvestigate(cm){
-  // 최종 방어선: 컷신 중·입력 잠금 중·조사자 단계 아니면 조사 실행 안 함
-  if(csActive || S.phaseBusy || S.currentPhase!=="investigation"){ hidePopup(); return; }
+  if(!canAct()){ hidePopup(); return; }
+  if(S.actionPoints<=0){   // 메뉴에서 직접 호출될 수 있어 AP 가드
+    showPopup('<span class="warn">행동력이 없습니다.</span><br>조사하려면 행동력이 필요합니다.',
+      [{label:"확인", primary:true, act:hidePopup}]); return;
+  }
   S.actionPoints--; updateAP();
-  // 판정: (지식+토큰값) vs 은폐도
-  const r=investigateTest(ROOMS[cur].shroud);
-
-  // 뽑은 토큰들의 추가효과 적용(실패 시 공포 등). 구울 의존 효과는 적 시스템 미구현 → 보류.
-  let horror=0;
+  startSkillTest({                       // 지식 테스트 vs 은폐도 (커밋 윈도우 → 판정)
+    skill:"intellect", testType:"investigate", location:cur, difficulty:ROOMS[cur].shroud,
+    ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(room)=>cluesInRoom(room).length },
+    actionLabel:"조사", targetLabel:"은폐",
+    onResolve:(r)=> applyInvestigateResult(cm, r),
+  });
+}
+// 조사 판정 결과 적용(단서 획득·결과 팝업)
+function applyInvestigateResult(cm, r){
+  let horror=0;   // 실패 시 토큰 추가효과(공포). 구울 의존은 적 미구현 → 보류.
   r.drawn.forEach(t=>{
     if(!r.success && t.onFail){
       if(t.onFail.horror) horror += t.onFail.horror;
       if(t.onFail.spawnGhoul) addLog("토큰 효과: 조우덱서 구울 등장 — 적 시스템 미구현(보류).");
     }
-    // t.ifGhoul(내 장소 구울 있으면 피해/공포)은 구울 0이라 지금은 미발동
   });
   if(horror){ S.invHorror += horror; renderInvestigator(); addLog("혼돈 토큰 효과로 공포 +"+horror+"."); }
 
-  // 표시용 토큰 요약
-  const NM={skull:"해골",cultist:"추종자",tablet:"석판"};
-  const label=(t)=> t.type==="tentacle" ? "촉수(자동실패)"
-    : t.type==="eldersign" ? "표식("+(t.value>=0?"+":"")+t.value+")"
-    : NM[t.type] ? NM[t.type]+"("+(t.value>=0?"+":"")+t.value+")"
-    : (t.value>=0?"+":"")+t.value;
-  const tokStr=r.drawn.map(label).join(" + ");
-  const modStr=(r.token>=0?"+":"")+r.token;
+  const base = { action:"조사", skill:"intellect", skillLabel:"지식", skillVal:r.base,
+                 drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"은폐",
+                 success:r.success, autoFail:r.autoFail };
+  const boxCls = "pb-test " + (r.success ? "pb-ok" : "pb-no");
 
   if(r.success){
-    cm.mesh.visible=false; cm.collected=true;   // 맵 단서 1개 제거
-    changeClue(1);                                // 조사자 단서 +1 (화면 갱신·막 조건 체크 자동)
-    addLog(ROOMS[cur].name+"에서 단서 1개 획득 (조사 성공). 현재 단서 "+S.invClue+"개.");
-    updateLocInfo();
-    showPopup('조사 성공! <span class="hl">'+tokStr+'</span> · 지식 '+INTELLECT+' '+modStr+' = '+r.total+' ≥ 은폐 '+r.shroud+'<br>단서 1개를 획득했습니다. (보유 '+S.invClue+'개)',
-      [{label:"확인", primary:true, act:()=>{ hidePopup(); maybeShowAdvanceTip(); }}]);
+    // ① 메인 단서 먼저 수거(추론 등 추가효과보다 먼저 — 단서 1개뿐이면 조사가 우선)
+    const marker = cm || cluesInRoom(cur)[0];   // 메뉴 조사면 현재 장소 단서 하나
+    let mainExtra;
+    if(marker){
+      marker.mesh.visible=false; marker.collected=true;   // 맵 단서 1개 제거
+      changeClue(1);                                // 조사자 단서 +1
+      addLog(ROOMS[cur].name+"에서 단서 1개 획득 (조사 성공). 현재 단서 "+S.invClue+"개.");
+      updateLocInfo();
+      mainExtra = '단서 1개를 획득했습니다. (보유 '+S.invClue+'개)';
+    }else{
+      addLog(ROOMS[cur].name+" 조사 성공 — 이 장소엔 단서가 없습니다.");
+      mainExtra = '이 장소엔 획득할 단서가 없습니다.';
+    }
+    // ② 커밋 카드 판정후 효과(추론 = 조사 성공 시 추가 단서) — 메인 수거 뒤
+    const commitLines = applyCommittedTestEffects(r);
+    const gotClue = !!marker || commitLines.length>0;
+    const extra = mainExtra + (commitLines.length ? ' '+commitLines.join(' ') : '');
+    showPopup(testResultHtml({...base, extra}),
+      [{label:"확인", primary:true, act:()=>{ hidePopup(); if(gotClue) maybeShowAdvanceTip(); }}], null, boxCls);
   }else{
-    const reason = r.autoFail
-      ? '<span class="warn">촉수 — 자동 실패</span>'
-      : '<span class="warn">'+tokStr+'</span> · 지식 '+INTELLECT+' '+modStr+' = '+r.total+' < 은폐 '+r.shroud;
-    showPopup('조사 실패… '+reason+(horror?'<br>공포 '+horror+' 획득.':'')+'<br>단서를 얻지 못했습니다.',
-      [{label:"확인", primary:true, act:hidePopup}]);
+    showPopup(testResultHtml({...base, extra:'단서를 얻지 못했습니다.'+(horror?' 공포 '+horror+' 획득.':'')}),
+      [{label:"확인", primary:true, act:hidePopup}], null, boxCls);
   }
 }
 
@@ -2356,6 +2966,7 @@ function updateTags(){
 
 function animate(){
   requestAnimationFrame(animate);
+  if(roomsPanel) roomsPanel.classList.toggle("act-locked", !canAct());   // 조사자 단계·이동중 아니면 연결장소 흐림
   if(pawnMoving){
     // 경유점 경로를 구간별로 따라감 (더 느리게: 0.018→0.011)
     pawnMoving.t += 0.011;

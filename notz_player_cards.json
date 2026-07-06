@@ -1,4 +1,28 @@
 {
+ "01530": {
+  "fast": true,
+  "slot": "hand",
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": {
+     "bonus": { "intellect": 1 },
+     "condition": "while_investigating"
+    }
+   }
+  ]
+ },
+ "01539": {
+  "abilities": [
+   {
+    "timing": "on_commit_resolve",
+    "condition": "investigate_success",
+    "do": [
+     { "effect": "discover_clue", "value": 1, "target": "test_location" }
+    ]
+   }
+  ]
+ },
  "01501": {
   "abilities": [
    {
@@ -49,9 +73,6 @@
   ]
  },
  "01516": {
-  "signals": [
-   "action"
-  ],
   "uses": {
    "type": "ammo",
    "count": 4
@@ -78,9 +99,6 @@
   ]
  },
  "01517": {
-  "signals": [
-   "fast"
-  ],
   "abilities": [
    {
     "timing": "fast",
@@ -121,9 +139,6 @@
   ]
  },
  "01518": {
-  "signals": [
-   "fast"
-  ],
   "abilities": [
    {
     "timing": "constant",
@@ -151,9 +166,6 @@
   ]
  },
  "01519": {
-  "signals": [
-   "action"
-  ],
   "uses": {
    "type": "supply",
    "count": 3,
@@ -182,9 +194,6 @@
   ]
  },
  "01520": {
-  "signals": [
-   "action"
-  ],
   "abilities": [
    {
     "timing": "action",
@@ -205,9 +214,6 @@
   ]
  },
  "01521": {
-  "signals": [
-   "reaction"
-  ],
   "abilities": [
    {
     "timing": "reaction",
@@ -224,9 +230,7 @@
   ]
  },
  "01522": {
-  "signals": [
-   "fast"
-  ],
+  "fast": true,
   "abilities": [
    {
     "timing": "fast",
@@ -246,9 +250,7 @@
   ]
  },
  "01523": {
-  "signals": [
-   "fast"
-  ],
+  "fast": true,
   "abilities": [
    {
     "timing": "fast",
@@ -315,9 +317,6 @@
   ]
  },
  "01527": {
-  "signals": [
-   "fast"
-  ],
   "abilities": [
    {
     "timing": "constant",
@@ -347,9 +346,6 @@
   ]
  },
  "01528": {
-  "signals": [
-   "fast"
-  ],
   "abilities": [
    {
     "timing": "constant",
@@ -380,9 +376,6 @@
   ]
  },
  "01529": {
-  "signals": [
-   "action"
-  ],
   "uses": {
    "type": "ammo",
    "count": 2
@@ -421,9 +414,6 @@
   ]
  },
  "01558": {
-  "signals": [
-   "fast"
-  ],
   "uses": {
    "type": "secret",
    "count": 4,
@@ -466,9 +456,6 @@
   ]
  },
  "01562": {
-  "signals": [
-   "fast"
-  ],
   "abilities": [
    {
     "timing": "fast",
@@ -509,10 +496,6 @@
   ]
  },
  "01563": {
-  "signals": [
-   "fast",
-   "forced"
-  ],
   "abilities": [
    {
     "timing": "forced",
@@ -567,6 +550,7 @@
   ]
  },
  "01565": {
+  "fast": true,
   "can_cancel": "on_draw_effect",
   "abilities": [
    {
@@ -588,9 +572,6 @@
      }
     ]
    }
-  ],
-  "signals": [
-   "fast"
   ]
  },
  "01566": {
@@ -698,9 +679,6 @@
   ]
  },
  "01571": {
-  "signals": [
-   "reaction"
-  ],
   "uses": {
    "type": "charge",
    "count": 4,
@@ -726,9 +704,6 @@
   ]
  },
  "01683": {
-  "signals": [
-   "action"
-  ],
   "uses": {
    "type": "supply",
    "count": 4,
@@ -754,9 +729,7 @@
   ]
  },
  "01684": {
-  "signals": [
-   "fast"
-  ],
+  "fast": true,
   "abilities": [
    {
     "timing": "fast",
@@ -778,9 +751,6 @@
   ]
  },
  "01690": {
-  "signals": [
-   "fast"
-  ],
   "uses": {
    "type": "charge",
    "count": 3

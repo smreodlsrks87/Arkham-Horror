@@ -257,6 +257,33 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
   → text의 "폭로" 문자열 검색을 아예 쓰지 않으므로 충돌 원천 차단.
 - cards.json은 "이게 폭로다"를 사람이 읽는 텍스트로만 갖고, 엔진 판단은 우리 on_draw로 한다.
 
+---
+
+## M. 능력치 테스트 · 커밋 · 신속 · 슬롯 (돋보기 01530에서 추가)
+
+| 키/값 | 영어 | 뜻 | 상태 |
+|---|---|---|---|
+| 신속(키워드) | fast:true | 최상위 플래그. 행동 소비 없이 플레이. 능력의 timing:fast 와 **별개** | ✅ |
+| 슬롯 | slot:"hand" | 착용 슬롯(hand/arcane/body/accessory/ally/tarot). **지금은 기록만, 개수 제한 미구현** | 🔲(데이터만) |
+| 조사중 | condition:"while_investigating" | 상시 보너스가 조사(지식 판정) 중에만 적용 | ✅ |
+| 테스트유형 | testType | 판정 종류(investigate 등) — 조건부 보너스 매칭용 | ✅ |
+
+**커밋(commit):** 손패 카드를 소비하면 그 카드 좌상단 기호(cards.json `skill_*`) 중 **테스트 능력치 기호 + 만능(`skill_wild`)** 수만큼 판정에 +. 커밋 가능 = `skill_[능력치]>0 || skill_wild>0` (skilltest.js). 커밋한 카드는 판정 후 버린 더미로.
+
+**상시 보너스 2종:**
+- **무조건**(condition 없음/`is_equipped`) → 플레이 시 `S.statBonus` 반영(순찰경찰 +1 전투, 밀란 +1 지식).
+- **조건부**(`while_investigating` 등) → statBonus에 안 넣고, 테스트가 `conditionalTestBonus(skill, testType)`로 계산(돋보기).
+
+**커밋 카드의 판정후 효과 (추론 01539):**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| timing:"on_commit_resolve" | 커밋한 카드가 **판정 결과 난 뒤** 발동 | ✅ |
+| condition:"investigate_success" | 성공 + 조사(testType:investigate)일 때만 | ✅ |
+| effect:"discover_clue" | 대상 장소 단서 1개 발견. **남은 단서 있을 때만**(없으면 새로 안 만듦) | ✅ |
+| target:"test_location" | 판정 대상 장소(cfg.location) — 연결 장소 조사 카드 대비 | ✅ |
+
+- 기술(skill) 카드는 type_code로 이미 "커밋 전용"(손패 플레이 불가) → commit_only 플래그 불필요.
+
 **🔑 타이밍 창(반응 카드 처리) — 흐름 확정, 구현은 나중:**
 - **취소 가능이 기본값.** 취소 불가인 예외 카드에만 `no_cancel:true`를 붙인다.
   (모든 카드에 cancelable:true 도배 X — 낭비)
