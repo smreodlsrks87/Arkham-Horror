@@ -663,6 +663,7 @@ import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아�
 import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js/shared/stage.js";   // 무대 스케일·좌표변환(공통)
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
 import { loadCardsJson, indexByCode, loadAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
+import { addLog, renderLog } from "./js/scenario/log.js";   // 게임 로그
 const _noop=0;
 /* 게임 전역 UX — 탭 포커스 이동 방지, 버튼 엔터 오작동 방지, 이미지 드래그 방지 */
 window.addEventListener("keydown",(e)=>{
@@ -2008,20 +2009,7 @@ function setChaosDifficulty(diff){
   }
 })();
 
-let gameLog = [];
-function addLog(text){
-  const now=new Date();
-  const t=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
-  gameLog.push({t, text});          // 최신이 아래로 쌓임
-  if(gameLog.length>200) gameLog.shift();
-  renderLog();
-}
-function renderLog(){
-  const box=document.getElementById("log-lines");
-  if(!gameLog.length){ box.innerHTML='<div class="lg-empty">기록이 없습니다.</div>'; return; }
-  box.innerHTML = gameLog.map(l=>'<div class="lg"><span class="lg-t">'+l.t+'</span>'+l.text+'</div>').join("");
-  box.scrollTop = box.scrollHeight;   // 자동으로 최신(맨 아래)으로 스크롤
-}
+// 게임 로그(addLog·renderLog)는 js/scenario/log.js 에서 import
 
 /* 악마 이미지 위치·크기 조절창 — 확정하면 아래 출력값을 CSS(.doom-devil)에 넣고 조절창 제거 */
 
