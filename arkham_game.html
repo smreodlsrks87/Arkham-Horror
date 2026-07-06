@@ -506,10 +506,12 @@
       <div class="field">
         <label>Difficulty</label>
         <select id="difficulty-select" disabled>
-          <option value="easy" selected>쉬움</option>
+          <option value="easy">쉬움</option>
+          <option value="normal" selected>보통</option>
           <option value="hard">어려움</option>
+          <option value="expert">전문가</option>
         </select>
-        <div class="hint">테스트 빌드 — 쉬움 고정</div>
+        <div class="hint">테스트 빌드 — 보통 고정</div>
       </div>
       <button class="btn" id="confirm-difficulty">확인</button>
     </div>
@@ -714,7 +716,7 @@ document.getElementById("confirm-players").addEventListener("click", ()=>{
 /* 화면 1.5 → 2 : 난이도 확인 → 페이드인 → 플레이어 수 */
 document.getElementById("confirm-difficulty").addEventListener("click", ()=>{
   // 선택한 난이도 저장(scenario1이 혼돈 주머니 구성에 사용). 쉬움=easy, 어려움=hard.
-  const diff = document.getElementById("difficulty-select").value || "easy";
+  const diff = document.getElementById("difficulty-select").value || "normal";
   localStorage.setItem("arkham_difficulty", diff);
   fade.classList.add("show");
   setTimeout(()=>{
