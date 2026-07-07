@@ -257,6 +257,46 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
   → text의 "폭로" 문자열 검색을 아예 쓰지 않으므로 충돌 원천 차단.
 - cards.json은 "이게 폭로다"를 사람이 읽는 텍스트로만 갖고, 엔진 판단은 우리 on_draw로 한다.
 
+**은폐 01507(로랜드 고유약점)에서 추가된 용어:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| on_draw:"put_into_play" | 폭로 = 뽑을 때 손패 아닌 **플레이(위협영역)로 배치**. zone:"threat"와 함께 씀(01598·01507·01600) | ✅ 런타임 |
+| uses:{type:"clue",count:3} | 카드 위 단서를 **총알처럼 카운터**로 관리(우상단 숫자). 실제 단서토큰 안 씀 | ✅ |
+| reaction when:"you_would_discover_clue" | 단서를 **발견하려는 순간** 가로채는 반응(대체 효과). auto 없음 → 팝업으로 물어봄(선택) | ✅ 본조사분 |
+| effect:"redirect_discover_to_uses" | 발견할 단서 수만큼 **이 카드 uses에서 제거**(조사자 획득 X, **맵 단서는 유지** — "발견 대신"). 0이어도 **버려지지 않음** | ✅ |
+| 발견 개수 = 실제 발견분 | 0개 장소=0 제거 / 추론 등 추가발견은 합산(있는 단서 수가 상한). ※추론 합산은 확장 예정 | 🔲 추론합산 |
+| timing:"forced" + when:"scenario_end" | 강제 효과 · 시나리오 종료 시점(종료 시스템 필요) | 🔲 종료훅 |
+| condition:"uses_remaining" | 이 카드 uses(단서)가 1개 이상 남았을 때만 | 🔲 |
+| effect:"mental_trauma" value:1 target:"owner" | **소유자(owner)**에게 정신적 트라우마 N(수량 무관 1). ※약점 소유주 표현은 `owner`로 통일(bearer_investigator는 적약점 전용) | 🔲 종료훅 |
+
+**심기증 01600(기본약점)에서 추가:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| timing:"forced" when:"after_damage_on_owner" | **소유자(조사자)가** 피해 받은 후 발동. 조력자 소화로 조사자 0이면 발동 X | 🔲 피해훅 |
+| effect:"horror" value direct:true | 공포 N. direct=조력자 할당 불가(바로 조사자 정신). EFFECTS.horror | ✅(효과) 🔲(강제훅) |
+| cost:{action:2} | 발동에 **행동 2** 소비. activate/canActivate가 cost.action 읽음(없으면 timing:action=1) | ✅ |
+| cost:{discard:"self"} + zone:threat | 같은 장소 **타 조사자도** 행동 2로 버릴 수 있음(위협영역 일반규칙) | ✅ |
+
+> ⚠️ 은폐·심기증의 **강제(forced)**는 종료훅/피해훅 대기. 폭로 배치·단서 가로채기·행동2 버림·직접공포 효과는 동작.
+
+**편집증 01597 / 정신병 01599에서 추가:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| on_draw:"resolve_and_discard" | 폭로: do 효과 실행 후 **자신은 버린 더미로**(편집증·기억상실). handleOnDraw가 처리 | ✅ |
+| effect:"lose_all_resources" | 자원을 전부 0으로(편집증). ※정비 4.4는 drawCards로 뽑아 폭로 발동 → 자원 0 후 +1=1 | ✅ |
+| when:"after_horror_on_owner" | 정신병 = 심기증의 반대(공포 받은 후 **직접 피해** 1). damage_investigator direct:true | 🔲 공포훅 |
+
+> 🔧 검증 중 수정: 귀신들리다(01598) 버리기가 미구현 `discard` 효과 → `cost:{discard:"self"}`로 통일(심기증·정신병과 동일).
+
+**기억상실 01596 손패 버리기(구현 완료):**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| effect:"discard" target:"hand" keep:1 | 손패 keep장만 남기고 버림. **약점은 임의로 못 버림** → 우선 남김 | ✅ |
+| (약점 규칙) | 손에 약점 1장=자동 남김 / 약점 2+=약점 중 택1 남기고 나머지 전부 버림 / 약점 0=아무 1장 택1 | ✅ |
+| on_draw drawCards 경유 | 정비 4.4·턴 "카드 뽑기" 행동 모두 `drawCards`로 → 폭로(on_draw) 발동 | ✅ |
+
+**은폐 리다이렉트 정정:** 반응은 "발견을 **대신**"하는 대체효과 → 사용 시 **단서 획득 0**(초과분도 못 가짐, 맵 단서 전부 유지). 은폐 잔량만큼만 버림.
+
 ---
 
 ## M. 능력치 테스트 · 커밋 · 신속 · 슬롯 (돋보기 01530에서 추가)
@@ -279,10 +319,52 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 |---|---|---|
 | timing:"on_commit_resolve" | 커밋한 카드가 **판정 결과 난 뒤** 발동 | ✅ |
 | condition:"investigate_success" | 성공 + 조사(testType:investigate)일 때만 | ✅ |
+| condition:"test_success" | **모든 종류** 판정 성공 시(조사·전투·회피…). 배짱/통찰력/제압/손재주의 "성공 시 드로우" | ✅ |
 | effect:"discover_clue" | 대상 장소 단서 1개 발견. **남은 단서 있을 때만**(없으면 새로 안 만듦) | ✅ |
+| effect:"draw" (do 안) | 카드 뽑기. `draw_to:"committer"`=커밋한 사람이 뽑음(멀티 대비, 1인은 동일인). EFFECTS.draw와 동일 연출 | ✅ |
 | target:"test_location" | 판정 대상 장소(cfg.location) — 연결 장소 조사 카드 대비 | ✅ |
 
 - 기술(skill) 카드는 type_code로 이미 "커밋 전용"(손패 플레이 불가) → commit_only 플래그 불필요.
+
+**커밋 매수 제한 — 배짱·통찰력·제압·손재주·뜻밖의 용기(01589~01593):**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| commit_limit:1 | "능력 테스트당 최대 N장 소모". **카드(코드) 단위** — 배짱 2장이면 1장만 커밋 가능(나머지 비활성). 배짱+뜻밖의용기는 서로 다른 코드라 각각 1장 OK | ✅ |
+| (아이콘) | 제공 기호는 cards.json(skill_willpower 등)에서 이미 계산 — notz는 매수제한·성공효과만 담당 | ✅ |
+
+**반응(Reaction) — 밀란 01533:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| timing:"reaction" + when | 조건 시점에 발동(when="after_investigate_success" 등) | ✅ |
+| 반응은 원칙적으로 선택(may) | 비용·단점 있으면 확인 팝업, **순수 이득(자원 등)은 자동 적용** | — |
+| slot:"ally" | 조력자 슬롯(기록만, 개수 제한 미구현) | 🔲 |
+| 상시 vs 조건부 지식 | 밀란=무조건 +1(모든 지식판정) / 돋보기=조사중만. condition 유무로 구분 | ✅ |
+| timing:"on_play" | 이벤트 플레이 시 즉시 실행하는 do 효과(직감=단서 발견). when 있는 이벤트는 반응이라 손패 직접 플레이 불가(증거!) | ✅ |
+| effect:"skill_substitute" | 이번 라운드 from 능력치 판정을 to로 대체 가능(정신력=전투·민첩→지식). optional=매 판정 확인 팝업 | ✅ |
+| duration:"this_round" | 라운드 끝(다음 신화 시작)까지 지속. S.roundEffects에 담김, 신화 때 비움 | ✅ |
+| ability.test + on_success/on_failure | 능력이 판정을 굴려 성공/실패별 효과(의학 서적=지식(2)→치유/피해) | ✅ |
+| ability.label | 발동 메뉴 표시 라벨("치유 판정" 등) | ✅ |
+| effect:"damage_investigator" | 대상 조사자(target:"chosen" 등)에게 피해 N. **target_choice로 대상 지정**(1인이라 자기 자신, 멀티면 선택 UI) | ✅ |
+| target_choice / target:"chosen" | 능력의 대상 지정. 1인용은 자기 자신으로 자동 해석 → 효과가 그 대상에 적용 | ✅ |
+| cost:{exhaust:true} | 발동 비용으로 카드 소진(90° 눕힘). 이미 소진이면 재사용 불가. **상시 보너스는 소진 중에도 적용**. 정비 4.3에 준비(ready) | ✅ |
+| effect:"look_top_draw" | 덱 맨 위 count장 확인 → (filter 특성) 1장 뽑기(여럿이면 팝업) → 나머지 넣고 셔플(낡은 지식의 서·비술 입문자) | ✅ |
+| effect:"attach_to_location" | 이벤트를 현재 장소에 부착(SVG 바리케이드 마커 + 소유자 숨김 저장). discard_when:"investigator_leaves"=벗어나면 소유자 버린더미, blocks:"non_elite_enemy_movement"=비정예 적 이동 차단(적 훅 canEnemyEnterLocation) | ✅(적 부분 훅) |
+| 특성 필터 trait | **영어 real_traits**로 매칭(Spell·Tome). 한글 traits 아님. search_deck·look_top_draw 공통 키 | ✅ |
+
+**무기·도구 — 단도 01586 / 손전등 01587 / 로랜드의 .38 01506 / 비상 물자 01588:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| **능력치 최소 0** | (능력치+커밋+보너스+토큰)이 음수여도 0으로 계산. 은폐0이면 0≥0 성공. 촉수는 autoFail이라 별개로 실패. resolveTest에서 `Math.max(0, …)` | ✅ |
+| action_type:"investigate" | 능력이 **정식 조사 판정**을 수행(손전등). 현재 장소 은폐 대비 지식 판정 → 성공 시 단서 수거 | ✅ |
+| difficulty_mod:-2 | 이 판정에서 난이도(은폐) 가감. 하한 0. difficultyBreak로 팝업에 "0 (2−2)" 분해 표시 | ✅ |
+| uses:{type:"supply",count:3} | 소모품(보급) 카운터. cost로 소비. **소진돼도 자동 버림 X**(discard_if_empty 없음 → 장착 유지, 능력만 비활성) | ✅ |
+| cost:{supply:1}/{ammo:1} | uses 토큰 소비 비용. `cost[p.uses.type]`만큼 count 감소(손전등=보급) | ✅ |
+| cost:{discard:"self"} | 발동 비용으로 이 카드를 버림(단도 둘째 능력) | ✅ |
+| effect:"do_fight" | 전투(공격). bonus·extra_damage. **전투/적 시스템 전까지 스텁**(능력 회색·발동 불가) | 🔲(스텁) |
+| bonus_if:{cond,bonus} | do_fight의 조건부 보너스 — cond 참이면 bonus로 교체(로랜드=clue_at_your_location 시 전투+1→+3). 스텁이라 구조만 | 🔲 |
+| effect:"search_deck" | 덱에서 card_type·trait 맞는 카드 검색 → 팝업 선택 → 손패 + 셔플(연구 사서) | ✅ |
+| when:"after_this_enters_play" | 이 카드가 플레이영역에 들어온 직후 반응(연구 사서, auto:true) | ✅ |
+| heal:{damage:N} / {horror:N} | 피해/공포만 회복(의학 서적) vs choose_one(응급처치=선택) | ✅ |
 
 **🔑 타이밍 창(반응 카드 처리) — 흐름 확정, 구현은 나중:**
 - **취소 가능이 기본값.** 취소 불가인 예외 카드에만 `no_cancel:true`를 붙인다.
@@ -307,3 +389,51 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 - `on_draw:resolve_and_discard` → 뽑을 때 효과 실행 후 버린더미로
 - `keep:N + choice:keep + ui:popup_pick` → 손패 목록 팝업, N장 남기고 버리기
 - 타이밍 창 → 손패의 can_cancel 카드로 on_draw 효과 취소 (취소 불가는 no_cancel 표시)
+
+---
+
+## N. 조우 카드 (notz_encounter_cards.json — 적·음모, 시나리오1에서 추가)
+
+> **별도 파일:** 조우 카드(적·음모·장소 등)의 "어떻게 작동하는가"는 `notz_encounter_cards.json`에 담는다.
+> 코드가 플레이어(015xx)와 안 겹쳐서(011xx~016xx) 로드 시 `S.cardAbilities`에 그대로 병합.
+> **능력치는 cards.json에서 읽음** — 적: `health`(체력)·`enemy_fight`(전투)·`enemy_evade`(회피)·`enemy_damage`(피해)·`enemy_horror`(공포, 없으면0)·`quantity`(장수). 특수사항 없는 적(구울 하수인)은 **항목 자체를 안 만든다.**
+
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| keywords:["hunter"] | 키워드 배열(사냥꾼 등). text의 "Hunter." 검색 대신 데이터로 | 🔲 적엔진 |
+| prey:"lowest_health" | 먹잇감 — **교전 상대를 정할 때** 기준. 1명이면 자동 교전, **2명 이상일 때만** 이 기준으로 택1. 이미 교전 중이면 발동 안 함 | 🔲 적엔진 |
+| revelation_test:{skill,difficulty} | 폭로 시 굴리는 능력 테스트(움켜쥐는 손=민첩3). on_draw:resolve_and_discard와 함께 | 🔲 조우엔진 |
+| on_success/on_failure:[…] | 폭로 테스트 성공/실패별 효과 | 🔲 |
+| damage:{value:"fail_by"} | **fail_by** = 난이도−능력값(능력값 최소0 적용 → 난이도 이하). **success_by** = 능력값−난이도. min/max로 clamp(산탄총=최소1·최대5, 움켜쥐는 손=clamp 없음). 산탄총(01529)과 **공통 규약** | 🔲 |
+
+**fail_by/success_by 검증(산탄총 01529 참조):** 로직 이상 없음. 차이 = `r.total`(이미 최소0 clamp)와 `r.difficulty`로 계산 → `fail_by=max(0, diff−total)`, `success_by=max(0, total−diff)`. 능력값이 아무리 낮아도 fail_by가 난이도를 못 넘음(값이 0 밑으로 안 감). 두 카드가 같은 규약 사용.
+
+**엄습하는 공포 세트(01163~01165)에서 추가:**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| damage/value: "fail_by" (문자열) | 동적 차이값. 숫자=고정, "fail_by"/"success_by"=차이(clamp 없음), {value:"fail_by",min,max}=clamp(산탄총). 세 형태 허용 | 🔲 조우엔진 |
+| effect:"action_surcharge" | 지정 행동(actions:[move/fight/evade])에 추가 행동력. per:"round_first"=라운드 첫 1회. 공포에 얼어붙다 | 🔲 |
+| effect:"cannot_play" card_types:[…] | 위협영역에 있는 동안 해당 유형 플레이 금지(시끄러운 소음=자산·이벤트). ※커밋·발동·기본행동은 가능 | 🔲 |
+| forced when:"end_of_turn"/"end_of_round" | 강제 발동 시점. 공포에얼어붙다=턴 종료 테스트 후 성공 시 버림 / 시끄러운소음=라운드 종료 시 버림 | 🔲 |
+| ability.test + on_success:[discard self] | 강제 테스트 성공 시 자신 버림(공포에 얼어붙다) | 🔲 |
+
+**버림 더미 라우팅(구현됨):** `discardToOrigin(code)` — **조우(faction:mythos)=조우 버림 더미(encounterDiscard), 그 외(약점 등 플레이어)=플레이어 버림(S.playerDiscard).** discardPlayed·폭로 버림 모두 이걸 경유. (판별: 조우=mythos, 플레이어 약점=neutral)
+
+**한글 텍스트 오버라이드 + 고대의 악(01166):**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| text_ko | **표시용 한글 텍스트.** cards.json 수정 금지라, 영문뿐인 조우 카드는 notz의 text_ko로 툴팁·확대뷰 출력. `cardTextOf(code)` = text_ko ‖ cards.json text | ✅ |
+| effect:"place_doom" target:"agenda" | 의제에 파멸 N(agendaDoom=좌측·턴파멸과 같은 칸, 영구). 우측 fieldDoom은 카드 위 파멸(카드 떠나면 사라짐) | ✅(효과) |
+| effect:"check_agenda_advance" | 파멸이 임계값 이상이면 의제 진행. 원래 신화 1.3에만 돌지만 고대의 악은 뽑을 때 실행 | ✅(효과) 🔲(조우드로우 연동) |
+| per:"first_of_group_per_round" | actions 그룹 중 **매 라운드 첫 1회에만** 적용(공포에 얼어붙다=이동/전투/회피 중 가장 먼저 1회). ※per:round_first에서 개명(중의성 제거) | 🔲 |
+
+**한글 오버라이드 판정 + 조우덱 구성 + 나머지 조우(01116/01118/01119/01167/01168):**
+| 키/값 | 뜻 | 상태 |
+|---|---|---|
+| text_ko 필요 판정 | cards.json `text`에 **한글이 없으면(영문)** text_ko 작성. 카드명·특성은 항상 한글이라 본문만 판정. 대상은 사실상 core 조우 카드 | ✅ |
+| 조우덱 구성 | `buildEncounterDeck()` — cards.json에서 `SCENARIO1_SETS`(torch·rats·ghouls·striking_fear·ancient_evils·**chilling_cold**)의 enemy·treachery를 quantity만큼. 구울 사제(01116)는 set aside 제외. **데이터 로드 후** boot에서 구성 | ✅ |
+| spawn:"attic"/"cellar" | 등장 지정 장소(식인귀·냉기구울) | 🔲 적엔진 |
+| keywords:["retaliate"] | 보복(구울 사제) | 🔲 |
+| prey:"highest_combat" | 먹잇감=전투 최고(구울 사제) | 🔲 |
+| discard_owned_asset + fallback | 통제 자산 1 버림, 못 버리면 fallback(피해2). 으스스한 한기 | 🔲 |
+| on_draw:"attach_to_location" + shroud_mod + limit_per_location + discard_when:"attached_location_investigated" | 자욱한 안개 — 장소 부착·은폐+2·장소당1·성공 조사 시 버림 | 🔲 |

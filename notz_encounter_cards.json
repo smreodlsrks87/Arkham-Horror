@@ -1,0 +1,192 @@
+{
+ "01159": {
+  "keywords": [
+   "hunter"
+  ],
+  "text_ko": "사냥꾼."
+ },
+ "01161": {
+  "prey": "lowest_health",
+  "text_ko": "먹잇감 - 남은 체력이 가장 낮은 조사자."
+ },
+ "01162": {
+  "on_draw": "resolve_and_discard",
+  "abilities": [
+   {
+    "revelation_test": {
+     "skill": "agility",
+     "difficulty": 3
+    },
+    "on_failure": [
+     {
+      "effect": "damage_investigator",
+      "target": "owner",
+      "damage": "fail_by"
+     }
+    ]
+   }
+  ],
+  "text_ko": "폭로 - 민첩(3)을 판정합니다. 실패한 정도 1점마다 피해를 1씩 받습니다."
+ },
+ "01163": {
+  "on_draw": "resolve_and_discard",
+  "abilities": [
+   {
+    "revelation_test": {
+     "skill": "willpower",
+     "difficulty": 3
+    },
+    "on_failure": [
+     {
+      "effect": "horror",
+      "target": "owner",
+      "value": "fail_by"
+     }
+    ]
+   }
+  ],
+  "text_ko": "폭로 - 의지(3)를 판정합니다. 실패한 정도 1점마다 공포를 1씩 받습니다."
+ },
+ "01164": {
+  "on_draw": "put_into_play",
+  "zone": "threat",
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": "action_surcharge",
+    "actions": [
+     "move",
+     "fight",
+     "evade"
+    ],
+    "amount": 1,
+    "per": "first_of_group_per_round"
+   },
+   {
+    "timing": "forced",
+    "when": "end_of_turn",
+    "test": {
+     "skill": "willpower",
+     "difficulty": 3
+    },
+    "on_success": [
+     {
+      "effect": "discard",
+      "target": "self"
+     }
+    ]
+   }
+  ],
+  "text_ko": "폭로 - ‘공포에 얼어붙다’를 당신의 위협 영역에 놓습니다.\n매 라운드 처음으로 이동·전투·회피 중 하나를 할 때, 그 행동은 행동력이 1 더 듭니다.\n강제 - 당신의 턴이 끝날 때: 의지(3)를 판정합니다. 성공하면 ‘공포에 얼어붙다’를 버립니다."
+ },
+ "01165": {
+  "on_draw": "put_into_play",
+  "zone": "threat",
+  "abilities": [
+   {
+    "timing": "constant",
+    "effect": "cannot_play",
+    "card_types": [
+     "asset",
+     "event"
+    ]
+   },
+   {
+    "timing": "forced",
+    "when": "end_of_round",
+    "do": [
+     {
+      "effect": "discard",
+      "target": "self"
+     }
+    ]
+   }
+  ],
+  "text_ko": "폭로 - ‘시끄러운 소음’을 당신의 위협 영역에 놓습니다. 당신은 자산과 이벤트를 플레이할 수 없습니다.\n강제 - 라운드가 끝날 때: ‘시끄러운 소음’을 버립니다."
+ },
+ "01166": {
+  "on_draw": "resolve_and_discard",
+  "text_ko": "폭로 - 현재 의제에 파멸을 1 놓습니다. (파멸이 임계값 이상이면 의제가 진행됩니다.)",
+  "abilities": [
+   {
+    "do": [
+     {
+      "effect": "place_doom",
+      "value": 1,
+      "target": "agenda"
+     },
+     {
+      "effect": "check_agenda_advance"
+     }
+    ]
+   }
+  ]
+ },
+ "01116": {
+  "keywords": [
+   "hunter",
+   "retaliate"
+  ],
+  "prey": "highest_combat",
+  "text_ko": "먹잇감 - 전투가 가장 높은 조사자.\n사냥꾼. 보복."
+ },
+ "01118": {
+  "spawn": "attic",
+  "text_ko": "등장 - 다락방."
+ },
+ "01119": {
+  "spawn": "cellar",
+  "text_ko": "등장 - 지하실."
+ },
+ "01167": {
+  "on_draw": "resolve_and_discard",
+  "text_ko": "폭로 - 의지(4)를 판정합니다. 실패하면, 당신이 통제하는 자산 1개를 선택해 버립니다(버릴 수 없다면 대신 피해를 2 받습니다).",
+  "abilities": [
+   {
+    "revelation_test": {
+     "skill": "willpower",
+     "difficulty": 4
+    },
+    "on_failure": [
+     {
+      "effect": "discard_owned_asset",
+      "count": 1,
+      "fallback": [
+       {
+        "effect": "damage_investigator",
+        "damage": 2,
+        "target": "owner"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "01168": {
+  "on_draw": "attach_to_location",
+  "location": "your_location",
+  "limit_per_location": 1,
+  "shroud_mod": 2,
+  "discard_when": "attached_location_investigated",
+  "text_ko": "폭로 - 당신의 장소에 부착합니다. 장소당 1개 제한.\n부착된 장소는 은폐가 +2 됩니다.\n강제 - 부착된 장소를 성공적으로 조사한 후: 자욱한 안개를 버립니다."
+ },
+ "01107": {
+  "text_ko": "강제 - 적 단계가 끝날 때: 교전하지 않은 각 구울 적은 거실 쪽으로 1 장소 이동합니다.\n강제 - 라운드가 끝날 때: 복도나 거실에 있는 구울 적 1마리당 이 의제에 파멸을 1 놓습니다."
+ },
+ "01109": {
+  "text_ko": "목표 - 라운드가 끝날 때, 복도에 있는 조사자들은 한 무리로서 필요한 수의 단서를 소비해 진행할 수 있습니다."
+ },
+ "01110": {
+  "text_ko": "목표 - 구울 사제가 처치되면 진행합니다."
+ },
+ "01113": {
+  "text_ko": "강제 - 다락방에 들어온 후: 공포를 1 받습니다."
+ },
+ "01114": {
+  "text_ko": "강제 - 지하실에 들어온 후: 피해를 1 받습니다."
+ },
+ "01115": {
+  "text_ko": "행동 - 포기. \"이건 나한테 너무 벅차!\" 당신은 정문으로 뛰쳐나가 공황에 빠져 도망칩니다.\n리타 챈들러가 어떤 조사자에게도 통제되지 않는 동안 그녀는 다음 능력을 얻습니다 — 행동: 협상. 지식(4)을 판정합니다. 성공하면 리타 챈들러를 통제합니다."
+ }
+}

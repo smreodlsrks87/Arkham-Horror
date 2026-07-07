@@ -30,6 +30,8 @@ export function resolveTest(base, difficulty, ctx){
     const more = resolveToken(drawChaosToken(), ctx);
     drawn.push(more); mod += more.value; if(more.autoFail) autoFail = true;
   }
-  const total = base + mod;
+  // 능력치는 최소 0 — 토큰 페널티로 (능력치+커밋+보너스+토큰)이 음수가 돼도 0으로 계산.
+  // 예: 지식2 + 토큰(-5) = -3 → 0. 은폐0이면 0>=0 성공(단, 촉수=autoFail이면 실패).
+  const total = Math.max(0, base + mod);
   return { drawn, tokenMod: mod, base, total, difficulty, success: !autoFail && total >= difficulty, autoFail };
 }

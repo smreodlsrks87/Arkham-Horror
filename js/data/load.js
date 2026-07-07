@@ -28,3 +28,13 @@ export async function loadAbilities(){
   }catch(_){}
   return {};
 }
+
+// notz_encounter_cards.json 로드 → 조우(적·음모) 작동방식(keywords·prey·revelation 등). 실패하면 {}.
+// 플레이어 코드(015xx)와 조우 코드(011xx~016xx)가 겹치지 않아 cardAbilities에 그대로 병합해 쓴다.
+export async function loadEncounterAbilities(){
+  try{
+    const res = await fetch("notz_encounter_cards.json");
+    if(res.ok) return await res.json();
+  }catch(_){}
+  return {};
+}

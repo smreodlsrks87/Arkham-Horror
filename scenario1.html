@@ -43,6 +43,49 @@
     text-shadow:0 2px 8px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.9);}
   .tag3d .floor{display:block;font-size:10px;letter-spacing:.15em;text-transform:uppercase;
     opacity:.8;text-align:center;margin-top:1px;}
+  .barricade-marker{position:absolute;z-index:7;transform:translate(-50%,-50%);pointer-events:none;
+    text-align:center;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6));}
+  .barricade-marker .bm-label{font-size:12px;font-weight:700;color:#f0d090;letter-spacing:2px;
+    text-shadow:0 1px 3px #000,0 0 4px #000;margin-top:-4px;}
+  /* 한 장소 여러 부착물 = 가운데 정렬로 가로 배열(버프바처럼) */
+  .barricade-marker .bm-row{display:flex;gap:8px;justify-content:center;align-items:flex-end;}
+  .barricade-marker .bm-item{display:flex;flex-direction:column;align-items:center;}
+  #loc-info .li-mod{color:#8ec5ff;font-weight:700;}   /* 은폐 수정치 (+2) */
+  /* 적 마커 — 방 위 가로 배열(카드 미니 + HP) */
+  .enemy-marker{position:absolute;z-index:8;transform:translate(-50%,-50%);pointer-events:none;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.7));}
+  .enemy-marker .em-row{display:flex;gap:6px;justify-content:center;align-items:flex-end;}
+  .enemy-marker .em-item{position:relative;width:52px;}
+  .enemy-marker .em-item img{width:52px;border-radius:4px;border:2px solid #a33;}
+  .enemy-marker .em-item.em-eng img{border-color:#e05050;box-shadow:0 0 8px rgba(224,60,60,.7);}   /* 교전 중 = 붉은 광 */
+  .enemy-marker .em-item.em-exh{opacity:.55;}
+  .enemy-marker .em-item.em-exh img{transform:rotate(90deg) scale(.8);}   /* 소진(회피됨) = 눕힘 */
+  .enemy-marker .em-hp{position:absolute;right:-5px;top:-7px;background:#7a1f1f;color:#ffe0e0;font-size:11px;
+    font-weight:700;padding:1px 5px;border-radius:9px;border:1px solid #d66;}
+  /* 조우 공개 연출 — 덱에서 날아와 중앙 표시(확대뷰보다 작게) 후 목적지로 날아감 */
+  .enc-reveal{position:absolute;z-index:1200;display:flex;flex-direction:column;align-items:center;gap:10px;
+    transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;
+    transition:left .6s cubic-bezier(.2,.85,.3,1), top .6s cubic-bezier(.2,.85,.3,1), opacity .45s;}
+  .enc-reveal img{width:250px;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.85),0 0 26px rgba(154,60,60,.45);
+    transition:width .6s cubic-bezier(.2,.85,.3,1);}
+  .enc-reveal .er-info{width:360px;background:rgba(14,10,20,.94);border:1px solid #3a2a4a;border-radius:8px;
+    padding:12px 15px;transition:opacity .3s;}
+  .enc-reveal .er-info h5{margin:0 0 6px;font-size:19px;color:var(--gold);letter-spacing:.04em;}
+  .enc-reveal .er-info .er-txt{font-size:15px;line-height:1.55;color:#e8e0f0;white-space:pre-line;}
+  .enc-reveal.er-out img{width:64px;}                          /* 목적지로 날아갈 때 축소 */
+  .enc-reveal.er-out .er-info{opacity:0;}
+  .enc-reveal .er-hint{font-size:11px;color:var(--muted);letter-spacing:.15em;margin-top:2px;}
+  .enc-reveal-dim{position:absolute;inset:0;z-index:1199;background:rgba(0,0,0,.55);cursor:pointer;
+    animation:erDimIn .4s ease;}
+  @keyframes erDimIn{from{opacity:0}to{opacity:1}}
+  /* 일러스트 카드 선택 팝업 — 텍스트만 뜨던 선택을 카드 썸네일 가로 배열로 */
+  .cpick-pop .cpick-title{font-size:16px;margin-bottom:14px;color:var(--gold);}
+  .cpick-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:640px;margin-bottom:6px;}
+  .cpick{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;width:112px;
+    transition:transform .12s ease;border-radius:8px;padding:6px;}
+  .cpick:hover{transform:translateY(-5px);background:rgba(154,127,192,.18);}
+  .cpick img{width:100px;border-radius:6px;box-shadow:0 3px 8px rgba(0,0,0,.6);}
+  .cpick span{font-size:12px;color:#e8e0f0;text-align:center;line-height:1.3;}
   #rooms{top:20px;right:24px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
   #rooms-list{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
   #rooms{ transition:opacity .3s ease; }
@@ -192,6 +235,7 @@
   .pc-uses{ position:absolute; top:-7px; right:-7px; min-width:22px; height:22px; border-radius:50%;
     background:#2a1e12; border:1.5px solid #c8a24a; color:#f0d890; font-size:14px; font-weight:700;
     display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.6); }
+  .played-card.pc-exhausted{ transform:rotate(90deg); transition:transform .25s ease; }   /* 소진(눕힘) */
   .am-item{ padding:9px 20px; font-size:18px; color:#e8dfc8; text-align:center; white-space:nowrap;
     border-radius:6px; cursor:pointer; letter-spacing:2px; user-select:none; }
   .am-item + .am-item{ margin-top:2px; }
@@ -765,7 +809,7 @@
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js/shared/stage.js";   // 무대 스케일·좌표변환(공통)
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
-import { loadCardsJson, indexByCode, loadAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
+import { loadCardsJson, indexByCode, loadAbilities, loadEncounterAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 import { addLog, renderLog } from "./js/scenario/log.js";   // 게임 로그
 import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSignValue, tokenChip } from "./js/scenario/tokens.js";   // 혼돈 주머니
 import { onEnterPlay, onLeavePlay, initialUses, activatable, conditionalTestBonus, isFastPlay } from "./js/scenario/abilities.js";   // 카드 능력 엔진
@@ -878,6 +922,10 @@ async function loadPlayerDecks(){
 
     // 카드 효과(작동 방식) 데이터 — cards.json엔 없는 abilities/zone 등
     S.cardAbilities = await loadAbilities();
+    Object.assign(S.cardAbilities, await loadEncounterAbilities());   // 조우(적·음모) 작동방식 병합(코드 겹침 없음)
+
+    encounterDeck = buildEncounterDeck();   // ★ 조우덱은 여기서(S.byCode 로드 후) 구성 — top-level 초기화는 로드 전이라 빈 덱
+    updateEncounterUI();
 
     // 넘어온 덱 or 임의 덱
     const raw = localStorage.getItem("arkham_decks");
@@ -1132,9 +1180,11 @@ function renderHand(){
       el.addEventListener("mouseleave", hideCardInfo);
       el.onclick=()=>discardOne(i);
     }else if(commitMode){   // 커밋: 테스트 기호 있는 카드만 선택 가능
-      const ok = isCommittable(S.byCode[code], commitCfg.skill);
+      const selected = commitSel.has(i);
+      // 기호 있음 + (이미 선택했거나 / 매수제한에 안 걸림). 같은 카드 1장 커밋되면 나머지는 비활성.
+      const ok = isCommittable(S.byCode[code], commitCfg.skill) && (selected || !commitLimitReached(code, i));
       el.classList.add(ok ? "commit-ok" : "commit-no");
-      if(ok){ if(commitSel.has(i)) el.classList.add("mull-sel"); el.onclick=()=>toggleCommit(i); }
+      if(ok){ if(selected) el.classList.add("mull-sel"); el.onclick=()=>toggleCommit(i); }
       el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
       el.addEventListener("mouseleave", hideCardInfo);
     }else{
@@ -1147,13 +1197,17 @@ function renderHand(){
 }
 
 // 공용 카드 정보 — 카드 위(stage 좌표)에 정방향. side="left"면 카드 왼쪽에.
+// 표시용 카드 텍스트 — notz의 text_ko(직접 번역)가 있으면 그걸, 없으면 cards.json text.
+// cards.json은 수정 금지라, 영문뿐인 조우 카드는 notz_encounter_cards.json의 text_ko로 한글 출력.
+function cardTextOf(code){ return (S.cardAbilities[code]||{}).text_ko || (S.byCode[code]||{}).text || ""; }
 function showCardInfo(el, code, side){
   const c=S.byCode[code]; const info=document.getElementById("card-info");
   if(!c){ return; }
   const costLine = (c.cost!=null && c.cost>=0) ? '<div class="hi-cost">비용: '+c.cost+'</div>' : "";
+  const txt = cardTextOf(code);
   info.innerHTML='<h5>'+(c.name||"")+'</h5>'+costLine+
     '<div class="hi-sub">'+[c.type_name,c.faction_name].filter(Boolean).join(" · ")+'</div>'+
-    (c.text?'<div class="hi-txt">'+cleanText(c.text)+'</div>':"");
+    (txt?'<div class="hi-txt">'+cleanText(txt)+'</div>':"");
   info.classList.add("show");
   const r=el.getBoundingClientRect();
   const iw=360, ih=info.offsetHeight||180;
@@ -1186,7 +1240,7 @@ function openCardZoom(code){
     '<h3>'+(c.name||"")+'</h3>'+
     '<div class="cz-sub">'+meta+'</div>'+
     (c.traits?'<div class="cz-sub">'+c.traits+'</div>':"")+
-    (c.text?'<div class="cz-txt">'+cleanText(c.text)+'</div>':"");
+    (cardTextOf(code)?'<div class="cz-txt">'+cleanText(cardTextOf(code))+'</div>':"");
   document.getElementById("card-zoom").classList.add("show");
   hideCardInfo(); zoomOpen=true;
 }
@@ -1219,7 +1273,7 @@ function canAct(){ return !csActive && !S.phaseBusy && S.currentPhase==="investi
 function popupOpen(){ return document.getElementById("popup").style.display!=="none"; }
 
 // 적/상황 시스템 미구현 — 스텁(나중에 실제 판정으로 교체)
-function enemyAtLocation(){ return false; }   // 내 장소에 교전할 적
+function enemyAtLocation(){ return (S.enemies||[]).some(e=>e.room===cur); }   // 내 장소의 적(교전 여부 무관)
 function parleyAvailable(){ return false; }    // 협상 허용(카드/장소)
 function resignAvailable(){ return false; }    // 현재 장소 사임 가능
 
@@ -1242,12 +1296,16 @@ const BASIC_ACTIONS = [
               addLog("자원 1을 얻었습니다. (보유 "+S.invResource+")"); } },
   { key:"draw", label:"카드 뽑기",
     state:()=> (S.actionPoints>=1 && S.playerDeck.length>0) ? "active" : "disabled",
-    run:()=>{ S.actionPoints--; updateAP(); S.playerHand.push(S.playerDeck.shift());
-              renderHand(); updatePiles(); flyLastCardFromDeck();   // 덱→손패 날아오는 연출
+    run:()=>{ S.actionPoints--; updateAP(); drawCards(1);   // drawCards로 뽑아야 폭로(on_draw) 발동
               addLog("카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)"); } },
-  { key:"fight",  label:"공격", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
-  { key:"evade",  label:"회피", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
-  { key:"engage", label:"교전", state:()=> enemyAtLocation() ? (S.actionPoints>=1?"active":"disabled") : "disabled", run:()=>{} },
+  { key:"fight",  label:"공격", state:()=> enemyAtLocation() ? (S.actionPoints>=1+actionSurchargeFor("fight")?"active":"disabled") : "disabled",
+    run:()=>{ const x=actionSurchargeFor("fight"); markSurcharge("fight"); S.actionPoints-=(1+x); updateAP(); startFightAction({ label:"공격(맨손)" }); } },   // 맨손 = 보너스 0·피해 1(무기는 카드 능력으로)
+  { key:"evade",  label:"회피", state:()=> (S.enemies||[]).some(e=>e.room===cur&&e.engaged) ? (S.actionPoints>=1+actionSurchargeFor("evade")?"active":"disabled") : "disabled",
+    run:()=>{ const x=actionSurchargeFor("evade"); markSurcharge("evade"); S.actionPoints-=(1+x); updateAP(); startEvadeAction(); } },
+  { key:"engage", label:"교전", state:()=> (S.enemies||[]).some(e=>e.room===cur&&!e.engaged) ? (S.actionPoints>=1?"active":"disabled") : "disabled",
+    run:()=>{ const en=(S.enemies||[]).find(e=>e.room===cur&&!e.engaged); if(!en) return;
+              S.actionPoints--; updateAP(); en.engaged=true; en.exhausted=false; renderEnemyMarkers();
+              addLog(enemyCard(en).name+"과(와) 교전했습니다. (행동)"); } },
   { key:"parley", label:"협상", state:()=> parleyAvailable() ? "active" : "hidden", run:()=>{} },
   { key:"resign", label:"사임", state:()=> resignAvailable() ? "active" : "hidden", run:()=>{} },
   // 턴 종료 — 맨 아래, 구분선+붉은색, 기존 확인 팝업(onEndTurnClick) 재사용(오클릭 방지)
@@ -1364,8 +1422,11 @@ function testResultHtml(o){
       const v=(t.value>=0?"+":"")+t.value;
       return chip+'<span class="tr-tv">'+v+'</span>';          // 심볼 + 값
     }).join('<span class="tr-op">+</span>');
+    // 은폐 등 난이도가 감소했으면 "0 (2−2)"로 분해 표시(손전등 등)
+    let tgt = o.targetLabel+' '+o.target;
+    if(o.targetBreak && o.targetBreak.mod){ const m=o.targetBreak.mod; tgt += ' <span class="tr-op">('+o.targetBreak.base+(m<0?'−'+(-m):'+'+m)+')</span>'; }
     calc = '<div class="tr-calc">'+o.skillLabel+' '+o.skillVal+' <span class="tr-op">+</span> '+chips+
-           ' <span class="tr-op">=</span> <b class="'+resCls+'">'+o.total+'</b> '+(o.success?"≥":"<")+' '+o.targetLabel+' '+o.target+'</div>';
+           ' <span class="tr-op">=</span> <b class="'+resCls+'">'+o.total+'</b> '+(o.success?"≥":"<")+' '+tgt+'</div>';
   }
   return '<div class="test-result">'+head+calc+(o.extra?'<div class="tr-extra">'+o.extra+'</div>':"")+'</div>';
 }
@@ -1444,6 +1505,22 @@ function reorderHand(fromIdx, dropX){
   renderHand();
 }
 
+// 슬롯 시스템 — 슬롯은 cards.json real_slot가 원천(무엇인가). 손·비전 2칸, 나머지 1칸. Tarot은 후속 확장(NOTZ 없음).
+const SLOT_CAP = { "Hand":2, "Arcane":2, "Ally":1, "Accessory":1, "Body":1 };
+const SLOT_KO  = { "Hand":"손", "Arcane":"비전", "Ally":"조력자", "Accessory":"장신구", "Body":"몸" };
+function slotInfo(code){   // {type,count} 또는 null(무슬롯). "Hand x2"=양손(2칸).
+  const rs = ((S.byCode[code]||{}).real_slot || (S.byCode[code]||{}).slot || "").trim();
+  if(!rs) return null;
+  const m = rs.match(/x\s*(\d+)/i);
+  return { type: rs.replace(/\s*x\s*\d+/i,"").trim(), count: m?parseInt(m[1]):1 };
+}
+function slotUsed(type){ let u=0; S.playedCards.forEach(p=>{ const s=slotInfo(p.code); if(s&&s.type===type) u+=s.count; }); return u; }
+// 시끄러운 소음 등 constant cannot_play가 이 유형 플레이를 막나
+function cannotPlayType(type){
+  return S.playedCards.some(p=> ((S.cardAbilities[p.code]||{}).abilities||[]).some(ab=> ab.timing==="constant" && ab.effect==="cannot_play" && (ab.card_types||[]).includes(type)));
+}
+function killByIndices(idxs){ [...idxs].sort((a,b)=>b-a).forEach(i=> discardPlayed(i)); }   // 인덱스 큰 것부터 버려 안 꼬이게
+
 // 카드 플레이 시도 — 자원 확인 → 이벤트=발동, 자산/조력자=플레이영역
 function tryPlayCard(idx){
   const code=S.playerHand[idx];
@@ -1481,25 +1558,61 @@ function tryPlayCard(idx){
     showToast("자원이 부족합니다. (필요 "+cost+", 보유 "+S.invResource+")");
     renderHand(); return;   // 손패로 되돌아감
   }
-  // 자원·행동 차감
-  S.invResource -= cost;
-  if(needAction){ S.actionPoints-=1; updateAP(); }
-  renderInvestigator();
-  S.playerHand.splice(idx,1);
-  const actLog = needAction ? "" : " [신속]";
-  if(c.type_code==="event"){
-    // 이벤트: 발동 후 버린 더미로
-    S.playerDiscard.push(code);
-    addLog(c.name+" 발동 (자원 -"+cost+")"+actLog+".");
-    updatePiles();
-  }else{
-    // 자산·조력자 등: 플레이 영역에 배치(uses 초기화) + 상시(constant) 능력 적용
-    S.playedCards.push({ code, uses: initialUses(code) });
-    onEnterPlay(code);            // 상시 능력치 보너스 등 반영(예: 순찰 경찰 +1 전투)
-    renderPlayArea(); renderInvestigator();
-    addLog(c.name+" 플레이 (자원 -"+cost+")"+actLog+".");
+  // 시끄러운 소음 등 "자산·이벤트 플레이 불가" 위협 카드가 깔려 있으면 차단(커밋·발동·행동은 가능)
+  if((c.type_code==="asset"||c.type_code==="event") && cannotPlayType(c.type_code)){
+    showToast("지금은 자산·이벤트를 플레이할 수 없습니다. (시끄러운 소음)"); renderHand(); return;
   }
-  renderHand();
+  // 슬롯 검사(자산) — 차지 슬롯이 부족하면 기존 카드 버리고 플레이할지 물어봄
+  const sl = slotInfo(code);
+  if(sl){
+    const cap=SLOT_CAP[sl.type]||1, used=slotUsed(sl.type), needFree=used+sl.count-cap;
+    if(needFree>0){
+      renderHand();   // ★ 드래그로 stage에 뜬 카드를 손패로 되돌림(팝업 뜨는 동안 그 자리에 굳는 것 방지)
+      const nm=(cc)=>S.byCode[cc]?S.byCode[cc].name:cc;
+      const occ=S.playedCards.map((p,i)=>({i,units:slotInfo(p.code).count,code:p.code})).filter(x=>slotInfo(x.code).type===sl.type);
+      const solos=occ.filter(o=>o.units>=needFree);
+      if(solos.length>=2 && needFree<used){   // 한 장만 버려도 되는 선택지 여럿 → 어느 걸 버릴지 고르기(예: 한손 2개 중)
+        showPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. 버리고 <b>'+nm(code)+'</b>을(를) 플레이할 카드를 고르세요.',
+          solos.map(o=>({label:nm(o.code)+" 버리기", act:()=>{ hidePopup(); discardPlayed(o.i); doPlay(); }}))
+            .concat([{label:"취소", act:()=>{ hidePopup(); renderHand(); }}]));
+        return;
+      }
+      const sorted=[...occ].sort((a,b)=>b.units-a.units); let freed=0; const kill=[];   // 아니면 최소 집합(양손=한손 2개 다) 버림
+      for(const o of sorted){ if(freed>=needFree) break; kill.push(o.i); freed+=o.units; }
+      showPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. <b>'+kill.map(i=>nm(S.playedCards[i].code)).join(", ")+'</b>을(를) 버리고 <b>'+nm(code)+'</b>을(를) 플레이하시겠습니까?', [
+        {label:"아니오", act:()=>{ hidePopup(); renderHand(); }},
+        {label:"예(버리고 플레이)", primary:true, act:()=>{ hidePopup(); killByIndices(kill); doPlay(); }},
+      ]);
+      return;
+    }
+  }
+  doPlay();
+
+  function doPlay(){
+    // 자원·행동 차감
+    S.invResource -= cost;
+    if(needAction){ S.actionPoints-=1; updateAP(); }
+    renderInvestigator();
+    S.playerHand.splice(idx,1);
+    const actLog = needAction ? "" : " [신속]";
+    if(c.type_code==="event"){
+      // 이벤트: 즉시 효과(on_play) 실행. 부착 이벤트(바리케이드)면 붙고, 아니면 버린 더미로.
+      addLog(c.name+" 발동 (자원 -"+cost+")"+actLog+".");
+      let attached=false;
+      ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{ if(ab.timing!=="on_play") return;
+        (ab.do||[]).forEach(eff=>{ if(eff.effect==="attach_to_location"){ attachToLocation(code, cur, eff); attached=true; } else runEffect(eff, null); }); });
+      if(!attached) S.playerDiscard.push(code);
+      updatePiles();
+    }else{
+      // 자산·조력자 등: 플레이 영역에 배치(uses 초기화) + 상시(constant) 능력 적용
+      S.playedCards.push({ code, uses: initialUses(code) });
+      onEnterPlay(code);            // 상시 능력치 보너스 등 반영(예: 순찰 경찰 +1 전투)
+      renderPlayArea(); renderInvestigator();
+      addLog(c.name+" 플레이 (자원 -"+cost+")"+actLog+".");
+      triggerEnterPlayReaction(code);   // 등장 반응(연구 사서 = 덱에서 서적 검색)
+    }
+    renderHand();
+  }
 }
 
 // 화면에 잠깐 뜨는 안내(토스트)
@@ -1519,7 +1632,7 @@ function renderPlayArea(){
   if(!S.playedCards.length){ area.innerHTML='<div class="play-placeholder">플레이된 자산</div>'; return; }
   area.innerHTML=S.playedCards.map((p,idx)=>{
     const badge = p.uses ? '<span class="pc-uses">'+p.uses.count+'</span>' : "";   // 탄약·보급 등
-    return '<div class="played-card'+(isThreatCard(p.code)?' threat-card':'')+'" data-idx="'+idx+'"><img src="'+cardFront(p.code)+'" alt="">'+badge+'</div>';
+    return '<div class="played-card'+(isThreatCard(p.code)?' threat-card':'')+(p.exhausted?' pc-exhausted':'')+'" data-idx="'+idx+'"><img src="'+cardFront(p.code)+'" alt="">'+badge+'</div>';
   }).join("");
   area.querySelectorAll(".played-card").forEach(el=>{
     const idx=+el.dataset.idx; const code=S.playedCards[idx].code;
@@ -1534,9 +1647,10 @@ function renderPlayArea(){
    발동형 능력 — 플레이된 카드 클릭 → 능력 메뉴 → 발동(효과 실행 + uses 소비)
    비전투(치유·자원·드로우)만 실제 작동. 전투·판정강화는 시스템 이후(회색).
    ===================================================================== */
-const EFFECT_LABEL = { do_fight:"공격", heal:"치유", damage:"피해", bonus:"능력치 강화", gain_resources:"자원 얻기", draw:"카드 뽑기" };
-const STUB_EFFECTS = new Set(["do_fight","damage","bonus"]);   // 적·판정커밋 시스템 이후 실제 작동
+const EFFECT_LABEL = { do_fight:"공격", heal:"치유", damage:"피해", bonus:"능력치 강화", gain_resources:"자원 얻기", draw:"카드 뽑기", look_top_draw:"덱 위 카드 뽑기", search_deck:"덱 검색" };
+const STUB_EFFECTS = new Set(["damage","bonus"]);   // 남은 스텁(다이너마이트 광역 등). do_fight는 전투 엔진으로 실동작
 function abilityLabel(ab){
+  if(ab.label) return ab.label + " (" + (ab.timing==="fast" ? "신속" : "행동") + ")";   // 명시 라벨(의학 서적=치유 판정)
   const eff = (ab.do && ab.do[0] && ab.do[0].effect) || "능력";
   return (EFFECT_LABEL[eff] || eff) + " (" + (ab.timing==="fast" ? "신속" : "행동") + ")";
 }
@@ -1544,41 +1658,144 @@ function abilityLabel(ab){
 function canActivateAbility(p, ab){
   const first = ab.do && ab.do[0] && ab.do[0].effect;
   if(STUB_EFFECTS.has(first)) return false;
+  if(first==="do_fight" && !enemyAtLocation()) return false;   // 무기 공격은 내 장소에 적이 있어야
   if(S.currentPhase!=="investigation" || S.phaseBusy) return false;
-  if(ab.timing==="action" && S.actionPoints<1) return false;
+  const apNeed = (ab.cost && ab.cost.action) ? ab.cost.action : (ab.timing==="action" ? 1 : 0);   // 행동 비용(심기증 버리기=2)
+  if(apNeed && S.actionPoints < apNeed) return false;
   if(ab.cost && ab.cost.resources && S.invResource < ab.cost.resources) return false;
+  if(ab.cost && ab.cost.exhaust && p.exhausted) return false;   // 이미 소진이면 소진 능력 못 씀
   if(ab.do && p.uses){ for(const eff of ab.do){ if(eff.spend && eff.spend[p.uses.type] && p.uses.count < eff.spend[p.uses.type]) return false; } }
   if(ab.requires){ for(const k in ab.requires){ const need=parseInt((ab.requires[k]+"").replace(/[^0-9]/g,""))||1;
     if(k==="resources"){ if(S.invResource<need) return false; } else if(p.uses && p.uses.type===k){ if(p.uses.count<need) return false; } } }
   return true;
 }
+// 공용 카드 뽑기 — 덱→손패 연출 포함. 모든 드로우가 이 한 곳을 거치게(애니메이션 누락 방지). 실제 뽑은 수 반환.
+function drawCards(n){
+  let drew=0, toHand=0;
+  for(let k=0;k<(n||1);k++){
+    if(!S.playerDeck.length) break;
+    const code=S.playerDeck.shift(); drew++;
+    if(handleOnDraw(code)) continue;      // 폭로가 별도 처리(위협영역 배치 등) → 손패 안 감
+    S.playerHand.push(code); toHand++;
+  }
+  if(drew){ renderHand(); updatePiles(); if(toHand) flyLastCardFromDeck(); }
+  return drew;
+}
+// 폭로(on_draw) 처리 — 손패에 안 넣고 별도 처리했으면 true. (put_into_play는 다른 약점과도 공용)
+function handleOnDraw(code){
+  const nd=(S.cardAbilities[code]||{}).on_draw;
+  if(!nd) return false;
+  const name=S.byCode[code]?S.byCode[code].name:code;
+  if(nd==="put_into_play"){                 // 폭로: 위협영역에 배치 + uses(은폐=단서 카운터)
+    const uses=initialUses(code);
+    S.playedCards.push({ code, uses });
+    onEnterPlay(code);                       // 상시 보너스(귀신들리다 -1 등)
+    renderPlayArea();
+    addLog("폭로 — "+name+"이(가) 위협영역에 놓였습니다"+(uses?" (단서 "+uses.count+"개).":". "));
+    return true;
+  }
+  if(nd==="resolve_and_discard"){           // 폭로: 효과 실행 후 자신은 버린 더미로(편집증 등)
+    ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=> (ab.do||[]).forEach(eff=> runEffect(eff, null)));
+    discardToOrigin(code); updatePiles();   // 조우 음모=조우 버림, 플레이어 약점=플레이어 버림
+    addLog("폭로 — "+name+" 효과 처리 후 버렸습니다.");
+    return true;
+  }
+  addLog("폭로("+nd+") — "+name+" (해당 폭로 처리 미구현, 일단 손패로).");
+  return false;
+}
 // 효과 실행기(비전투만 실제 동작)
 const EFFECTS = {
   gain_resources(eff){ const v=eff.value||1; S.invResource+=v; renderInvestigator(); addLog("자원 +"+v+" (보유 "+S.invResource+")."); },
-  draw(eff){ if(S.playerDeck.length){ S.playerHand.push(S.playerDeck.shift()); renderHand(); updatePiles(); flyLastCardFromDeck(); addLog("카드 1장을 뽑았습니다."); } else addLog("덱이 비어 뽑지 못했습니다."); },
+  draw(eff){ const got=drawCards(eff.value||1); addLog(got?("카드 "+got+"장을 뽑았습니다."):"덱이 비어 뽑지 못했습니다."); },
   heal(eff){
-    const v = (eff.heal && eff.heal.value) || 1;
-    const canDmg = S.invDamage>0, canHor = S.invHorror>0;
-    const doHeal=(kind)=>{
-      if(kind==="damage"){ S.invDamage=Math.max(0,S.invDamage-v); addLog("피해 "+v+" 회복."); }
-      else { S.invHorror=Math.max(0,S.invHorror-v); addLog("공포 "+v+" 회복."); }
-      renderInvestigator();
-    };
-    if(eff.heal && eff.heal.choose_one && canDmg && canHor){
-      showPopup("무엇을 회복할까요?", [
-        {label:"피해 "+v, primary:true, act:()=>{ hidePopup(); doHeal("damage"); }},
-        {label:"공포 "+v, act:()=>{ hidePopup(); doHeal("horror"); }},
-      ]);
-    } else if(canDmg) doHeal("damage");
-    else if(canHor) doHeal("horror");
-    else addLog("회복할 피해·공포가 없습니다.");
+    const h = eff.heal || {};
+    if(h.choose_one){   // 피해/공포 선택(응급처치)
+      const v = h.value||1, canDmg=S.invDamage>0, canHor=S.invHorror>0;
+      const doHeal=(k)=>{ if(k==="damage"){ S.invDamage=Math.max(0,S.invDamage-v); addLog("피해 "+v+" 회복."); } else { S.invHorror=Math.max(0,S.invHorror-v); addLog("공포 "+v+" 회복."); } renderInvestigator(); };
+      if(canDmg&&canHor) showPopup("무엇을 회복할까요?", [{label:"피해 "+v, primary:true, act:()=>{ hidePopup(); doHeal("damage"); }},{label:"공포 "+v, act:()=>{ hidePopup(); doHeal("horror"); }}]);
+      else if(canDmg) doHeal("damage"); else if(canHor) doHeal("horror"); else addLog("회복할 피해·공포가 없습니다.");
+    } else if(h.damage){   // 피해만(의학 서적)
+      const v=Math.min(h.damage, S.invDamage); if(v>0){ S.invDamage-=v; renderInvestigator(); addLog("피해 "+v+" 회복."); } else addLog("회복할 피해가 없습니다.");
+    } else if(h.horror){
+      const v=Math.min(h.horror, S.invHorror); if(v>0){ S.invHorror-=v; renderInvestigator(); addLog("공포 "+v+" 회복."); } else addLog("회복할 공포가 없습니다.");
+    }
   },
   damage(){ addLog("피해 효과 — 적 시스템 미구현(보류)."); },
   do_fight(){ addLog("공격(전투 판정) — 적 시스템 미구현(보류)."); },
   bonus(){ addLog("능력치 강화 — 판정 커밋 시스템 이후(보류)."); },
+  discover_clue(eff){ const want=(eff&&eff.value)||1, n=Math.min(want, cluesInRoom(cur).length);   // 직감 등 직접 발견 — 은폐 있으면 discoverClues가 가로챔
+    if(n<=0){ addLog(ROOMS[cur].name+"에 발견할 단서가 없습니다."); return; }
+    discoverClues(n, cur); },
+  skill_substitute(eff){ S.roundEffects.push({ kind:"skill_substitute", from:eff.from||[], to:eff.to, auto:eff.auto===true, duration:eff.duration||"this_round" });
+    addLog("이번 라운드 동안 "+(eff.from||[]).map(s=>SKILL_KO[s]||s).join("·")+" 판정을 "+(SKILL_KO[eff.to]||eff.to)+"으로 대체할 수 있습니다."); },
+  damage_investigator(eff){ const v=eff.damage||1; S.invDamage+=v; renderInvestigator(); addLog("피해 "+v+"를 받았습니다. (총 "+S.invDamage+")"); },   // target: 고른 조사자(1인이라 자기 자신)
+  horror(eff){ const v=eff.value||1; S.invHorror+=v; renderInvestigator(); addLog((eff.direct?"직접 ":"")+"공포 "+v+"를 받았습니다. (총 "+S.invHorror+")"); },   // 직접 공포=조력자 할당 불가(심기증). 강제 훅은 피해 시스템 뒤
+  search_deck(eff){ searchDeckToHand(eff); },
+  look_top_draw(eff){ lookTopDraw(eff); },
+  lose_all_resources(){ const had=S.invResource; S.invResource=0; renderInvestigator(); addLog("폭로: 자원을 모두 잃었습니다. ("+had+" → 0)"); },   // 편집증
+  do_fight(eff, p){   // 무기 공격(45구총·마체테·단도·로랜드 권총…) — 보너스·추가피해·조건부(bonus_if=전투, conditional=피해)
+    startFightAction({ bonus:(eff.bonus&&eff.bonus.combat)||0, extraDamage:eff.extra_damage||0,
+      conditional:eff.conditional, bonusIf:eff.bonus_if, label:(p&&S.byCode[p.code]?S.byCode[p.code].name:"공격") });
+  },
+  discard(eff){ if(eff.target==="hand") memoryLossDiscard(eff.keep||1); },   // 기억상실=손패 keep장만 남기고 버림(약점 우선 남김)
+  place_doom(eff){ if(eff.target==="agenda"){ agendaDoom += (eff.value||1); updateDoom(); addLog("파멸 +"+(eff.value||1)+" — 의제 (현재 "+totalDoom()+"/"+doomThreshold+")."); } },   // 고대의 악
+  check_agenda_advance(){ checkAgendaAdvance(); },   // 임계값 이상이면 의제 진행(신화 1.3 밖에서도 — 고대의 악)
 };
+// 기억상실: 손패에서 keepN장(기본1)만 남기고 나머지 버림. 약점은 임의로 못 버리므로 우선 남긴다.
+function memoryLossDiscard(keepN){
+  if(S.playerHand.length <= keepN){ addLog("기억상실: 버릴 카드가 없습니다."); return; }
+  const wIdx = S.playerHand.map((code,i)=> isWeakness(code)?i:-1).filter(i=>i>=0);
+  if(wIdx.length===1) keepOneDiscardRest(wIdx[0]);   // 약점 1장 → 자동으로 그걸 남김
+  else if(wIdx.length>=2) promptKeepOne(wIdx, "기억상실 — 손에 남길 <b>약점</b>을 고르세요 (나머지 전부 버림)");   // 약점 2+ → 약점 중 택1
+  else promptKeepOne(S.playerHand.map((_,i)=>i), "기억상실 — 손에 남길 카드 1장을 고르세요 (나머지 전부 버림)");   // 약점 없음 → 아무 1장
+}
+function keepOneDiscardRest(keepIdx){
+  const keep=S.playerHand[keepIdx];
+  const dumped=S.playerHand.filter((_,i)=>i!==keepIdx);
+  dumped.forEach(c=>S.playerDiscard.push(c));
+  S.playerHand=[keep];
+  renderHand(); updatePiles();
+  addLog("기억상실: "+(S.byCode[keep]?S.byCode[keep].name:keep)+"만 남기고 "+dumped.length+"장 버렸습니다.");
+}
+function promptKeepOne(idxs, title){
+  showPopup(title, idxs.map(i=>({ label:(S.byCode[S.playerHand[i]]?S.byCode[S.playerHand[i]].name:S.playerHand[i]), act:()=>{ hidePopup(); keepOneDiscardRest(i); } })));
+}
+// 덱에서 조건(유형·특성) 맞는 카드 검색 → 팝업 선택 → 손패 + 셔플 (연구 사서)
+function searchDeckToHand(eff){
+  const uniq = [...new Set(S.playerDeck.filter(code=>{ const c=S.byCode[code]; return c && (!eff.card_type || c.type_code===eff.card_type) && (!eff.trait || (c.real_traits||"").includes(eff.trait)); }))];   // 영어 특성(Tome 등)
+  if(!uniq.length){ addLog("덱에서 조건에 맞는 카드를 찾지 못했습니다."); shuffle(S.playerDeck); updatePiles(); return; }
+  showPopup("덱에서 손에 들 <span class='hl'>"+(eff.trait||"")+"</span> 카드를 고르세요.",
+    uniq.map(code=>({ label:(S.byCode[code]?S.byCode[code].name:code), act:()=>{ hidePopup(); pickFromDeck(code); } })));
+}
+function pickFromDeck(code){
+  const i = S.playerDeck.indexOf(code);
+  if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); }
+  shuffle(S.playerDeck);
+  renderHand(); updatePiles(); flyLastCardFromDeck();
+  addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 덱에서 찾아 손에 들었습니다. 덱을 섞었습니다.");
+}
+// 덱 맨 위 count장을 보고 (filter 있으면 그중) 1장 골라 뽑음. 나머지는 덱에 넣고 셔플 (낡은 지식의 서·비술 입문자)
+function lookTopDraw(eff){
+  const n = eff.count||3;
+  const top = S.playerDeck.slice(0, n);
+  if(!top.length){ addLog("덱이 비어 있습니다."); return; }
+  const drawable = eff.trait ? top.filter(code=>{ const c=S.byCode[code]; return c && (c.real_traits||"").includes(eff.trait); }) : top;   // 영어 특성(Spell 등)
+  if(!drawable.length){ addLog("덱 맨 위 "+n+"장 중 조건에 맞는 카드가 없습니다."); shuffle(S.playerDeck); updatePiles(); return; }
+  const pick=(code)=>{ const i=S.playerDeck.indexOf(code); if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); } shuffle(S.playerDeck); renderHand(); updatePiles(); flyLastCardFromDeck(); addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 뽑았습니다. 나머지는 덱에 넣고 섞었습니다."); };
+  if(drawable.length===1) pick(drawable[0]);
+  else showPopup("덱 맨 위 "+n+"장 중에서 뽑을 카드를 고르세요.", drawable.map(code=>({ label:(S.byCode[code]?S.byCode[code].name:code), act:()=>{ hidePopup(); pick(code); } })));
+}
+// 카드가 플레이영역에 들어온 직후 반응(연구 사서 = 덱 검색). auto만 자동.
+function triggerEnterPlayReaction(code){
+  ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
+    if(ab.timing==="reaction" && ab.when==="after_this_enters_play"){
+      if(ab.auto){ (ab.do||[]).forEach(eff=> runEffect(eff, null)); }
+      else addLog((S.byCode[code]?S.byCode[code].name:code)+" 등장 반응 — 확인 후 발동(확인 UI 이후).");
+    }
+  });
+}
 function runEffect(eff, p){
-  if(eff.spend && p.uses){ for(const k in eff.spend){ if(p.uses.type===k) p.uses.count -= eff.spend[k]; } }   // uses 소비
+  if(eff.spend && p && p.uses){ for(const k in eff.spend){ if(p.uses.type===k) p.uses.count -= eff.spend[k]; } }   // uses 소비(플레이 자산만)
   const h = EFFECTS[eff.effect];
   if(h) h(eff, p); else addLog("(효과 '"+eff.effect+"' 미구현)");
 }
@@ -1586,21 +1803,64 @@ function activateAbility(pi, ai){
   const p = S.playedCards[pi]; if(!p) return;
   const ab = ((S.cardAbilities[p.code]||{}).abilities || [])[ai]; if(!ab) return;
   if(!canActivateAbility(p, ab)){ showToast("지금 발동할 수 없습니다."); return; }
-  if(ab.timing==="action"){ S.actionPoints--; updateAP(); }                        // 행동 소비
+  const apCost = (ab.cost && ab.cost.action) ? ab.cost.action : (ab.timing==="action" ? 1 : 0);   // 행동 비용(기본 1, cost.action이면 그 값=심기증 버리기 2)
+  if(apCost){ S.actionPoints-=apCost; updateAP(); }
   if(ab.cost && ab.cost.resources){ S.invResource-=ab.cost.resources; renderInvestigator(); }  // 자원 비용
-  (ab.do||[]).forEach(eff=> runEffect(eff, p));                                     // 효과
+  if(ab.cost && ab.cost.exhaust){ p.exhausted=true; }                              // 소진(90° 눕힘)
+  if(ab.cost && p.uses && ab.cost[p.uses.type]){ p.uses.count -= ab.cost[p.uses.type]; }  // 소모품·탄약 등 uses 소비(손전등=보급1)
+  if(ab.action_type==="investigate"){                                              // 손전등: 장막 수정 조사(현재 장소)
+    const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
+    const shroud = effShroud(cur), mod = ab.difficulty_mod||0;   // 안개 등 수정치 포함
+    startSkillTest({ skill:"intellect", testType:"investigate", location:cur,
+      difficulty: Math.max(0, shroud+mod), difficultyBreak:{ base:shroud, mod },   // 은폐 하한 0 + 표시용(0=2-2)
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(room)=>cluesInRoom(room).length },
+      actionLabel:"조사("+name+")", targetLabel:"은폐",
+      onResolve:(r)=> applyInvestigateResult(null, r) });
+    renderPlayArea();
+    return;
+  }
+  if(ab.test){                                                                     // 능력이 판정을 굴림(의학 서적)
+    const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
+    startSkillTest({ skill:ab.test.skill, testType:"ability", difficulty:ab.test.difficulty,
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(room)=>cluesInRoom(room).length },
+      actionLabel:name, targetLabel:"난이도",
+      onResolve:(r)=> applyAbilityTestResult(ab, p, name, r) });
+    renderPlayArea();
+    return;
+  }
+  (ab.do||[]).forEach(eff=> runEffect(eff, p));                                     // 즉시 효과
   if(ab.cost && ab.cost.discard==="self") discardPlayed(pi);                        // 자기 버림 비용
   else if(p.uses && p.uses.discardIfEmpty && p.uses.count<=0) discardPlayed(pi);    // uses 소진 → 버림
   else renderPlayArea();
+}
+// 능력 판정 결과 → 성공/실패 효과 적용 + 결과 팝업
+function applyAbilityTestResult(ab, p, name, r){
+  (r.success ? (ab.on_success||[]) : (ab.on_failure||[])).forEach(eff=> runEffect(eff, p));
+  const base = { action:name, skill:ab.test.skill, skillLabel:SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base,
+                 drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
+  showPopup(testResultHtml({...base, extra: r.success ? "성공 — 효과 적용." : "실패 — 효과 적용."}),
+    [{label:"확인", primary:true, act:hidePopup}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
 }
 // 플레이된 카드 버림(→ 버린 더미) + 상시 능력 해제
 function discardPlayed(idx){
   const p = S.playedCards[idx]; if(!p) return;
   onLeavePlay(p.code);
   S.playedCards.splice(idx,1);
-  S.playerDiscard.push(p.code);
+  discardToOrigin(p.code);   // 조우=조우 버림 더미, 플레이어(약점 포함)=플레이어 버림 더미
   renderPlayArea(); renderInvestigator(); updatePiles();
   addLog((S.byCode[p.code]?S.byCode[p.code].name:p.code)+" 버림.");
+}
+// 카드를 "원래 소속" 버림 더미로. 조우(faction:mythos)=조우 버림, 그 외(약점 등 플레이어)=플레이어 버림.
+function isEncounterCard(code){ return (S.byCode[code]||{}).faction_code === "mythos"; }
+function discardToOrigin(code){
+  if(isEncounterCard(code)){ encDiscard(code); }
+  else S.playerDiscard.push(code);
+}
+// 조우 버림 더미는 {code,name,imagesrc} 객체(맨 위 앞면 표시용)
+function encDiscard(code){
+  const c=S.byCode[code]||{};
+  encounterDiscard.push({ code, name:c.name||code, imagesrc:c.imagesrc });
+  if(typeof updateEncounterUI==="function") updateEncounterUI();
 }
 
 let abilityMenuOpen=false;
@@ -1640,6 +1900,7 @@ let mulliganSel=new Set();
 let mullRefilling=false;   // 멀리건 확정 후 덱→손패 채우는 연출 중(손패 좌측 정렬 유지)
 let discardMode=false;     // 정비 4.5 손패 정리 중(좌클릭=버림)
 let setAsideWeaknesses=[];   // 시작 손패 뽑는 동안 빼둔 약점(멀리건 끝나면 도로 셔플)
+let mulliganAside=[];        // 멀리건으로 뺀 카드 — 새로 뽑는 동안 덱에서 제외했다가 뽑기 끝난 뒤 도로 셔플
 
 // cards.json 기준으로 약점 여부 판별
 function isWeakness(code){
@@ -1711,8 +1972,7 @@ function doMulligan(){
   if(!removed.length){ renderHand(); finishMulligan(); return; }   // 0장: 그대로 확정
 
   mullRefilling=true;
-  removed.forEach(c=>S.playerDeck.push(c));   // 뺀 카드 덱으로
-  shuffle(S.playerDeck);
+  mulliganAside=removed;   // 뺀 카드는 "새로 뽑을 후보"에서 제외 — 뽑기가 끝난 뒤(finishMulligan) 약점과 함께 덱에 셔플
   renderHand(); updatePiles();   // 남은 카드가 좌측 정렬로 재배치
 
   // ① 남은 카드: 예전 위치 → 새 좌측 위치로 미끄러짐(몰기)
@@ -1763,12 +2023,14 @@ function doMulligan(){
 }
 
 function finishMulligan(){
-  // 멀리건 확정 → 빼뒀던 약점을 덱에 도로 넣고 섞는다
-  if(setAsideWeaknesses.length){
-    setAsideWeaknesses.forEach(c=>S.playerDeck.push(c));
+  // 멀리건 확정 → 교체로 뺀 카드 + 빼뒀던 약점을 덱에 도로 넣고 한 번에 섞는다(뽑기가 끝난 뒤라 다시 안 뽑힘)
+  const back = mulliganAside.concat(setAsideWeaknesses);
+  if(back.length){
+    back.forEach(c=>S.playerDeck.push(c));
     shuffle(S.playerDeck);
-    addLog("약점 "+setAsideWeaknesses.length+"장을 덱에 섞었습니다.");
-    setAsideWeaknesses=[];
+    if(mulliganAside.length) addLog("교체한 "+mulliganAside.length+"장을 덱에 도로 섞었습니다.");
+    if(setAsideWeaknesses.length) addLog("약점 "+setAsideWeaknesses.length+"장을 덱에 섞었습니다.");
+    mulliganAside=[]; setAsideWeaknesses=[];
   }
   updatePiles();
   addLog("시작 손패가 준비되었습니다. ("+S.playerHand.length+"장)");
@@ -1785,7 +2047,7 @@ function getTestDeck(){
   return {
     investigator: "01501",              // 로랜드 뱅크스(개정판, 상시 카드 — 덱에서 안 뽑음)
     investigatorName: "로랜드 뱅크스",
-    signatures: ["01006", "01007"],     // 고유자산 .38 특제권총 + 고유약점 은폐(deck_requirements 기준)
+    signatures: ["01506", "01507"],     // 고유자산 .38 특제권총(01506) + 고유약점 은폐(01507) — 개정판, notz 매칭
     randomWeakness: "01596",            // 기본약점 기억상실(개정판, notz에 정의됨)
     cards: {                            // 수호자 notz 카드 10종 × 2 = 20장 (015xx → 능력 있음)
       "01516":2,  // 45구경 자동 권총
@@ -1800,6 +2062,25 @@ function getTestDeck(){
       "01525":2,  // 무자비한 일격
       "01530":2,  // 돋보기(탐구자, 조사 중 +1 지식) — 제작·검증용
       "01539":2,  // 추론(탐구자 기술, 조사 성공 시 추가 단서) — 제작·검증용
+      "01533":1,  // 밀란 크리스토퍼 박사(조력자, 상시+1지식·조사성공후 자원) — 제작·검증용
+      "01537":2,  // 직감에 따라 움직이다(신속 이벤트, 내 장소 단서 발견) — 제작·검증용
+      "01536":2,  // 정신력에 달린 문제(신속 이벤트, 이번 라운드 전투·민첩→지식 대체) — 제작·검증용
+      "01534":2,  // 초지각(자원1 소비 → 이번 테스트 +지식/+민첩) — 제작·검증용
+      "01535":2,  // 의학 서적(행동: 지식2 판정 → 성공 치유/실패 피해, 서적 특성) — 제작·검증용
+      "01532":1,  // 연구 사서(조력자, 등장 시 덱에서 서적 자산 검색) — 제작·검증용
+      "01531":2,  // 낡은 지식의 서(행동·소진: 맨위 3장 중 1장 뽑기) — 제작·검증용
+      "01538":2,  // 바리케이드(장소 부착, 비정예 적 진입 차단, 벗어나면 버림) — 제작·검증용
+      "01589":2,  // 배짱(중립 기술, 의지2, 성공 시 드로우, 테스트당 1장) — 제작·검증용
+      "01590":2,  // 통찰력(중립 기술, 지식2, 성공 시 드로우, 테스트당 1장) — 제작·검증용
+      "01591":2,  // 제압(중립 기술, 전투2, 성공 시 드로우, 테스트당 1장) — 제작·검증용
+      "01592":2,  // 손재주(중립 기술, 민첩2, 성공 시 드로우, 테스트당 1장) — 제작·검증용
+      "01593":2,  // 뜻밖의 용기(중립 기술, 만능2, 테스트당 1장, 효과 없음) — 제작·검증용
+      "01586":2,  // 단도(중립 무기, 전투 능력 2개·둘째는 버림·전투스텁) — 제작·검증용
+      "01587":2,  // 손전등(중립 도구, 보급3, 조사 시 장막-2) — 제작·검증용
+      "01588":2,  // 비상 물자(중립 이벤트, 자원 3 획득) — 제작·검증용
+      "01600":1,  // 심기증(기본약점, 폭로→위협영역, 피해 시 직접공포1, 행동2 버림) — 제작·검증용
+      "01597":1,  // 편집증(기본약점, 폭로: 자원 전부 잃음) — 제작·검증용
+      "01599":1,  // 정신병(기본약점, 폭로→위협영역, 공포 시 직접피해1, 행동2 버림) — 제작·검증용
     },
   };
 }
@@ -1809,6 +2090,8 @@ function getTestDeck(){
    cfg = { skill, difficulty, ctx, actionLabel, targetLabel, onResolve }
    흐름: 커밋옵션 검사 → 없으면 즉시 판정 / 있으면 "커밋?" 팝업 → 커밋모드 → 판정
    ===================================================================== */
+const SKILL_KO = { willpower:"의지", intellect:"지식", combat:"전투", agility:"민첩" };
+S.roundEffects = [];   // 이번 라운드 지속 효과(정신력에 달린 문제 등). 라운드 시작(신화) 때 비움.
 function skillValue(skill){ return (invCard ? (invCard["skill_"+skill]||0) : 0) + (S.statBonus[skill]||0); }
 // 커밋 가능한 손패 인덱스(테스트 기호나 만능 보유)
 function committableHand(skill){ return S.playerHand.map((c,i)=>i).filter(i=> isCommittable(S.byCode[S.playerHand[i]], skill)); }
@@ -1830,6 +2113,19 @@ function boostAssets(skill){ return S.playedCards.map((p,pi)=>({pi, b:boostAbili
 let commitMode=false, commitSel=new Set(), commitCfg=null, commitAssetBonus=0;
 
 function startSkillTest(cfg){
+  // 라운드 대체 효과(정신력에 달린 문제): 전투/민첩 판정을 지식으로 대체할지 먼저 확인(강제 X)
+  const sub = S.roundEffects.find(e=> e.kind==="skill_substitute" && e.from.includes(cfg.skill));
+  if(sub){
+    if(sub.auto){ startSkillTestInner({...cfg, skill:sub.to}); return; }   // auto=강제 대체(안 물어봄)
+    showPopup(SKILL_KO[cfg.skill]+' 판정을 <span class="hl">'+SKILL_KO[sub.to]+'</span>으로 대체하시겠습니까?<br>(정신력에 달린 문제)', [
+      {label:"아니오("+SKILL_KO[cfg.skill]+")", act:()=>{ hidePopup(); startSkillTestInner(cfg); }},
+      {label:"예("+SKILL_KO[sub.to]+")", primary:true, act:()=>{ hidePopup(); startSkillTestInner({...cfg, skill:sub.to}); }},
+    ]);
+    return;
+  }
+  startSkillTestInner(cfg);
+}
+function startSkillTestInner(cfg){
   const hand = committableHand(cfg.skill);
   const assets = boostAssets(cfg.skill);
   if(!hand.length && !assets.length){ resolveTestNow(cfg, 0); return; }   // 커밋 옵션 없음 → 즉시 판정
@@ -1853,9 +2149,20 @@ function updateCommitBonus(){
   let icons=0; commitSel.forEach(i=> icons += commitIcons(S.byCode[S.playerHand[i]], commitCfg.skill));
   const el=document.getElementById("cm-b"); if(el) el.textContent = "+" + (icons + commitAssetBonus);
 }
+// "능력 테스트당 최대 N장" — 같은 코드 카드가 이미 한도만큼 커밋됐는지(카드 단위 제한). exceptIdx는 자기 자신 제외.
+function commitLimitReached(code, exceptIdx){
+  const lim = (S.cardAbilities[code]||{}).commit_limit || 0;
+  if(!lim) return false;
+  let cnt=0; commitSel.forEach(j=>{ if(j!==exceptIdx && S.playerHand[j]===code) cnt++; });
+  return cnt >= lim;
+}
 function toggleCommit(i){
   if(!commitMode) return;
-  if(commitSel.has(i)) commitSel.delete(i); else commitSel.add(i);
+  if(commitSel.has(i)){ commitSel.delete(i); }
+  else{
+    if(commitLimitReached(S.playerHand[i], i)){ showToast("이 카드는 능력 테스트당 1장만 커밋할 수 있습니다."); return; }
+    commitSel.add(i);
+  }
   renderHand(); updateCommitBonus();
 }
 function canBoost(pi){ return !!(commitMode && S.playedCards[pi] && boostAbilityFor(S.playedCards[pi], commitCfg.skill)); }
@@ -1883,32 +2190,43 @@ function confirmCommit(){
   resolveTestNow(cfg, bonus, committed);
 }
 function resolveTestNow(cfg, extraBonus, committed){
-  const base = skillValue(cfg.skill) + conditionalTestBonus(cfg.skill, cfg.testType) + (extraBonus||0);   // 조건부 자산(돋보기=조사 중 +1 지식) 포함
+  const base = skillValue(cfg.skill) + conditionalTestBonus(cfg.skill, cfg.testType) + (cfg.extraTestBonus||0) + (extraBonus||0);   // 조건부 자산(돋보기) + 무기 보너스(do_fight) + 커밋
   const r = resolveTest(base, cfg.difficulty, cfg.ctx);
   r.committed = committed || [];   // 커밋된 카드 코드(판정후 효과용)
   r.testType = cfg.testType;
   r.location = cfg.location;
+  r.difficultyBreak = cfg.difficultyBreak;   // 은폐 감소 표시용(손전등 등)
   cfg.onResolve(r);
 }
-// 장소에서 단서 1개 발견(남은 게 있을 때만). 추론 등이 사용 — 없는데 새로 만들지 않음.
-function discoverClueAt(roomKey){
-  const list = cluesInRoom(roomKey);
-  if(list.length){ const m=list[0]; m.mesh.visible=false; m.collected=true; changeClue(1); updateLocInfo(); return true; }
-  return false;
-}
 // 커밋된 카드의 판정후 효과(예: 추론 = 조사 성공 시 그 장소 추가 단서). 팝업에 덧붙일 문구 배열 반환.
-function applyCommittedTestEffects(r){
-  const extra = [];
+// 커밋 후처리 조건 통과 여부 (조건 없으면 통과)
+function commitCondOK(cond, r){
+  if(cond==="investigate_success") return r.success && r.testType==="investigate";
+  if(cond==="test_success") return r.success;                 // 모든 판정 성공(배짱·통찰력·제압·손재주)
+  return true;
+}
+// 추론 등 커밋 카드가 성공 시 추가로 "발견"하는 단서 총수(은폐 리다이렉트 합산용 — 실제 수거는 discoverClues가 일괄)
+function committedBonusClues(r){
+  let n=0;
   (r.committed||[]).forEach(code=>{
     ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
-      if(ab.timing!=="on_commit_resolve") return;
-      if(ab.condition==="investigate_success" && !(r.success && r.testType==="investigate")) return;
+      if(ab.timing==="on_commit_resolve" && commitCondOK(ab.condition, r))
+        (ab.do||[]).forEach(eff=>{ if(eff.effect==="discover_clue") n += (eff.value||1); });
+    });
+  });
+  return n;
+}
+// 배짱 등 커밋 카드의 성공 시 드로우(단서와 무관). 팝업 문구 배열 반환.
+function applyCommittedDraws(r){
+  const extra=[];
+  (r.committed||[]).forEach(code=>{
+    ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
+      if(ab.timing!=="on_commit_resolve" || !commitCondOK(ab.condition, r)) return;
+      const name=S.byCode[code]?S.byCode[code].name:code;
       (ab.do||[]).forEach(eff=>{
-        if(eff.effect==="discover_clue"){
-          const loc = r.location || cur, name = S.byCode[code] ? S.byCode[code].name : code;
-          if(discoverClueAt(loc)){ addLog(name+": "+ROOMS[loc].name+"에서 추가 단서 1개 발견."); extra.push("("+name+") 추가 단서 1개"); }
-          else addLog(name+": 추가로 발견할 단서가 없습니다.");
-        }
+        if(eff.effect==="draw"){ const got=drawCards(eff.value||1);   // draw_to:committer(1인=활성 조사자)
+          if(got){ addLog(name+": 카드 "+got+"장을 뽑았습니다. (성공)"); extra.push("("+name+") 카드 "+got+"장"); }
+          else addLog(name+": 덱이 비어 뽑지 못했습니다."); }
       });
     });
   });
@@ -2253,7 +2571,10 @@ function requestMove(k){
      {label:"이동", primary:true, act:()=>{ hidePopup(); doMove(k); }}]);
 }
 function doMove(k){
-  S.actionPoints--; updateAP();
+  const extra = actionSurchargeFor("move");
+  if(S.actionPoints < 1+extra){ showToast("행동력이 부족합니다."+(extra?" (공포에 얼어붙다: 이번 라운드 첫 이동은 행동 2)":"")); return; }
+  markSurcharge("move");
+  S.actionPoints -= (1+extra); updateAP();
   walkTo=null;                          // 방내 걷기 취소
   overview=false;                       // 전체보기였어도 줌인으로 전환해 따라감
   wantYaw=Math.PI*1.22; wantPitch=0.78; // 방 보기 각도
@@ -2355,8 +2676,9 @@ function advanceAgenda(){
     // 첫 컷신(Xb)이 끝난 직후 파멸 처리를 해야 하므로, playCutscene 콜백 대신
     // 묶음 시작 전에 "b 컷신 후 처리"를 예약할 수 없어 → 묶음 함수에 afterFirst 훅을 쓴다.
     playCutsceneSequence(ids, ()=>{
-      // 묶음 전체 종료 → 조사자 단계로 복귀(도중에 파멸이 찼던 것이므로 단계 재개, 잠금 해제)
-      resumeAfterCutscene();
+      // 묶음 전체 종료 → (신화 1.3 진행이면) 1.4 조우 뽑기 후 재개 / 아니면 바로 조사자 단계 복귀
+      if(S.pendingEncounter){ S.pendingEncounter=false; drawEncounterPhase(); }
+      else resumeAfterCutscene();
     }, 2000, ()=>{
       // afterFirst: 첫 컷신(Xb) 끝난 직후 실행 — 파멸 초기화·임계치 상승
       clearAllDoom();
@@ -2397,30 +2719,35 @@ bus.on("phase:investigation", ()=>{
   updateAP();
   addLog("조사자 단계 — 당신의 차례입니다.");
 });
-// 적 단계 — 전투 보류(빈 훅)
+// 적 단계 — 3.2 사냥꾼 이동 → 교전 확인 → 3.3 교전 적 공격
 bus.on("phase:enemy", ()=>{
-  addLog("적 단계 — (적·전투 미구현: 이후 3.2 사냥꾼 이동, 3.3 교전 공격).");
+  addLog("적 단계 — 사냥꾼 이동·교전 적 공격.");
+  runEnemyPhase();
 });
 // 정비 단계 — 4.2~4.5 (비전투)
 bus.on("phase:upkeep", ()=> doUpkeep());
 // 신화 단계 — 1.2 파멸+1, 1.3 임계(1.4 조우 뽑기는 보류)
 bus.on("phase:mythos", ()=>{
+  S.roundEffects = S.roundEffects.filter(e=> e.duration !== "this_round");   // 라운드 지속 효과(this_round) 만료. (this_turn/this_phase는 각 시점에서 걸러 확장)
   agendaDoom += 1; updateDoom();
+  processForcedThreat("end_of_round");   // 이전 라운드 종료 강제(시끄러운 소음 버림)
+  S.surchargeUsed = false;               // 라운드 첫 이동/전투/회피 추가소모 리셋
   addLog("신화 단계 — 의제에 파멸 +1 (현재 "+totalDoom()+"/"+doomThreshold+").");
-  S.phasePaused = checkAgendaAdvance();   // 진행 시 루프 멈춤 → 컷신 후 resumeAfterCutscene가 복귀
+  if(checkAgendaAdvance()){ S.phasePaused = true; S.pendingEncounter = true; return; }   // 1.3 의제 진행 → 컷신 끝난 뒤 1.4 조우
+  drawEncounterPhase();   // 1.4 조우 뽑기 (폭로 테스트 필요하면 내부에서 phasePaused=true → 완료 후 재개)
 });
 // 정비 단계 실제 처리(비전투)
 function doUpkeep(){
   // 4.2 행동 리셋
   S.actionPoints = MAX_AP; updateAP();
   addLog("정비 — 행동을 리셋했습니다. (행동력 "+MAX_AP+")");
-  // 4.3 소진 카드 준비 = 발동(소진) 시스템 이후
-  if(S.playerDeck.length){   // 4.4 카드 1장 뽑기 + 자원 1
-    S.playerHand.push(S.playerDeck.shift());
-    renderHand(); updatePiles(); flyLastCardFromDeck();
-    addLog("정비 — 카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)");
-  }else addLog("정비 — 덱이 비어 카드를 뽑지 못했습니다.");   // TODO: 빈 덱 규칙
-  S.invResource += 1;
+  // 4.3 소진 카드 준비(ready) — 자산 + 적(회피로 소진된 적도 준비됨)
+  S.playedCards.forEach(p=> p.exhausted=false); renderPlayArea();
+  S.enemies.forEach(e=> e.exhausted=false); renderEnemyMarkers();
+  // 4.4 카드 1장 뽑기(+자원 1). drawCards로 뽑아야 폭로(on_draw)가 발동 — 예: 편집증 뽑으면 여기서 자원 0.
+  if(drawCards(1)) addLog("정비 — 카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)");
+  else addLog("정비 — 덱이 비어 카드를 뽑지 못했습니다.");   // TODO: 빈 덱 규칙
+  S.invResource += 1;   // 자원 획득은 뽑기 뒤 → 편집증으로 0이 됐어도 +1 = 1로 마감
   document.getElementById("st-resource").textContent = S.invResource;
   addLog("정비 — 자원 1을 얻었습니다. (보유 "+S.invResource+")");
   // 4.5 손패 8장 확인 — 초과 시 버리기(정리 끝날 때까지 라운드 멈춤)
@@ -2458,6 +2785,7 @@ function finishDiscard(){
   discardMode = false;
   document.getElementById("stage").classList.remove("mull-active");
   document.getElementById("mull-hint").classList.remove("show");
+  renderHand();   // ★ 버림 모드 리스너 → 일반(드래그 플레이) 리스너로 다시 그림. 안 하면 다음 턴 손패가 안 나감.
   addLog("정비 — 손패 정리 완료. (손패 "+S.playerHand.length+"장)");
   resumeUpkeep();   // 신화 단계로 진행
 }
@@ -2478,7 +2806,7 @@ function onEndTurnClick(){
     : "차례를 종료하시겠습니까?";
   showPopup(msg, [
     {label:"취소", act:hidePopup},
-    {label:"종료", primary:true, act:()=>{ hidePopup(); endTurnToEnemy(); }},
+    {label:"종료", primary:true, act:()=>{ hidePopup(); processForcedThreat("end_of_turn", ()=> endTurnToEnemy()); }},   // 공포에 얼어붙다 등 턴종료 강제 먼저
   ]);
 }
 
@@ -2492,6 +2820,22 @@ function onEndTurnClick(){
 let encounterDeck = [];    // 뽑을 조우 카드들(객체 배열: {code,name,imagesrc})
 let encounterDiscard = []; // 버린 조우 카드들
 const EN_IMG = "https://arkhamdb.com";   // 조우 카드 앞면 이미지 베이스
+
+// 시나리오1(회합의 밤) 조우덱 구성 — 규칙서 세트 6개(회합·쥐떼·구울·엄습하는공포·태고의악·으스스한한기)
+const SCENARIO1_SETS = ["torch","rats","ghouls","striking_fear","ancient_evils","chilling_cold"];
+const ENC_SET_ASIDE = new Set(["01116"]);   // 구울 사제 = 따로 빼둠(의제로 등장). 리타(자산)는 적/음모 아니라 자동 제외.
+function buildEncounterDeck(){
+  const deck=[];
+  Object.keys(S.byCode).forEach(function(code){
+    const c=S.byCode[code];
+    if(c.pack_code!=="core" || !SCENARIO1_SETS.includes(c.encounter_code)) return;
+    if(c.type_code!=="enemy" && c.type_code!=="treachery") return;   // 조우덱=적+음모(장소·막·의제 제외)
+    if(ENC_SET_ASIDE.has(code)) return;
+    for(let i=0;i<(c.quantity||1);i++) deck.push({ code:code, name:c.name, imagesrc:c.imagesrc });
+  });
+  shuffle(deck);
+  return deck;
+}
 
 function updateEncounterUI(){
   document.getElementById("enc-draw-num").textContent = encounterDeck.length;
@@ -2766,13 +3110,28 @@ function showPopup(msgHtml, buttons, onCancel, boxClass){
   popup.style.display="flex";
 }
 function hidePopup(){ popup.style.display="none"; popupCancelAct=null; }
+// 일러스트 카드 선택 팝업 — 카드명만 텍스트로 뜨던 선택을, 카드 썸네일 가로 배열로. onPick(code) 호출.
+function showCardPickPopup(title, codes, onPick, opts){
+  opts = opts || {};
+  const grid = codes.map((c,i)=>'<div class="cpick" data-code="'+c+'" data-i="'+i+'"><img src="'+cardFront(c)+'" alt=""><span>'+((S.byCode[c]||{}).name||c)+'</span></div>').join("");
+  const html = '<div class="cpick-title">'+title+'</div><div class="cpick-row">'+grid+'</div>';
+  const cancel = opts.cancelable ? ()=>{ hidePopup(); if(opts.onCancel) opts.onCancel(); } : null;
+  showPopup(html, cancel ? [{label:"취소", act:cancel}] : [], cancel, "cpick-pop");
+  document.querySelectorAll("#popup-msg .cpick").forEach(el=>{
+    el.onclick = ()=>{ hidePopup(); onPick(el.dataset.code, +el.dataset.i); };   // 같은 코드 여럿(쥐 떼×2) 구분용 인덱스
+  });
+}
 
 /* 카메라 포커스 */
 let overview=false;
+S.shroudMod = S.shroudMod || {};   // 장소별 은폐 수정치(자욱한 안개 등) {roomKey:+2}
+function effShroud(key){ return (ROOMS[key].shroud||0) + (S.shroudMod[key]||0); }   // 실제 은폐값(수정치 반영)
 function updateLocInfo(){
   const R=ROOMS[cur];
   const remain=cluesInRoom(cur).length;   // 아직 안 가져간 단서 수
-  document.getElementById("loc-info").textContent="은폐도 "+R.shroud+" · 남은 단서 "+remain;
+  const mod=S.shroudMod[cur]||0;
+  const shroudTxt = R.shroud + (mod?' <span class="li-mod">(+'+mod+')</span>':'');   // 원래값 옆에 (+2)
+  document.getElementById("loc-info").innerHTML="은폐도 "+shroudTxt+" · 남은 단서 "+remain;
 }
 function focusRoom(k){
   cur=k; overview=false;
@@ -2896,11 +3255,86 @@ function doInvestigate(cm){
   }
   S.actionPoints--; updateAP();
   startSkillTest({                       // 지식 테스트 vs 은폐도 (커밋 윈도우 → 판정)
-    skill:"intellect", testType:"investigate", location:cur, difficulty:ROOMS[cur].shroud,
+    skill:"intellect", testType:"investigate", location:cur, difficulty:effShroud(cur),   // 은폐 수정치(안개 +2) 반영
     ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(room)=>cluesInRoom(room).length },
     actionLabel:"조사", targetLabel:"은폐",
     onResolve:(r)=> applyInvestigateResult(cm, r),
   });
+}
+// 특정 시점(when)의 반응 발동.
+//   ab.auto:true  → 순수 이득이라 자동 발동(밀란 자원 등)
+//   그 외         → 룰상 선택(may)이므로 "사용?" 확인 후 발동(확인 UI는 이후 — 지금은 안내만)
+// 반환: 자동 적용분의 팝업 덧붙일 문구.
+function triggerReactions(when){
+  const extra=[];
+  S.playedCards.forEach(p=>{
+    ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
+      if(ab.timing!=="reaction" || ab.when!==when) return;
+      const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
+      if(ab.auto){
+        (ab.do||[]).forEach(eff=>{
+          if(eff.effect==="gain_resources"){ const v=eff.value||1; S.invResource+=v; renderInvestigator();
+            addLog(name+" 반응: 자원 +"+v+" (보유 "+S.invResource+")."); extra.push("("+name+") 자원 +"+v); }
+          else addLog(name+" 반응("+eff.effect+") — 미구현.");
+        });
+      }else{
+        addLog(name+" 반응 사용 가능 — 확인 후 발동(확인 UI 이후 구현).");   // TODO: 선택 반응 확인 팝업
+      }
+    });
+  });
+  return extra;
+}
+// 은폐 등 "단서 발견 가로채기" 반응을 가진, 위협영역의 카드(단서 남음) 찾기
+function coverUpRedirect(){
+  return S.playedCards.find(p=>{
+    if(!p.uses || p.uses.count<=0) return false;
+    return ((S.cardAbilities[p.code]||{}).abilities||[]).some(ab=> ab.timing==="reaction" && ab.when==="you_would_discover_clue");
+  }) || null;
+}
+// 방에서 단서 n개 실제 수거(맵서 제거) + 조사자 단서 증가. 획득 수 반환.
+function gainRoomClues(n, roomKey, prefer){
+  let g=0; let list=cluesInRoom(roomKey);
+  if(prefer && !prefer.collected && list.includes(prefer)) list=[prefer].concat(list.filter(m=>m!==prefer));   // 클릭한 단서 먼저 수거
+  for(let i=0;i<n && i<list.length;i++){ list[i].mesh.visible=false; list[i].collected=true; g++; }
+  if(g){ changeClue(g); addLog(ROOMS[roomKey].name+"에서 단서 "+g+"개 획득 (현재 "+S.invClue+"개)."); updateLocInfo(); }
+  return g;
+}
+// ★ 모든 단서 발견의 단일 경로 — 은폐(you_would_discover_clue) 있으면 "대신 은폐서 제거" 물어봄.
+//   n = 발견하려는 수(호출부가 이미 '있는 단서 수'로 상한 적용). done(gained, redirected).
+function discoverClues(n, roomKey, done, prefer){
+  done = done || function(){};
+  const cover = (roomKey===cur && n>0) ? coverUpRedirect() : null;   // 내 위치에서만 가로챔
+  if(!cover){ done(gainRoomClues(n, roomKey, prefer), 0); return; }
+  const cn = S.byCode[cover.code] ? S.byCode[cover.code].name : cover.code;
+  const maxR = Math.min(n, cover.uses.count);   // 은폐서 버릴 수 있는 실제 수(잔량 상한)
+  showPopup(cn+': 단서 <b>'+n+'개</b> 발견을 <span class="hl">대신</span>해 은폐서 '+maxR+'개를 버리시겠습니까?<br>(선택 시 <b>단서 획득 0</b> · 맵 단서는 모두 유지 · 은폐 남은 '+cover.uses.count+'개)', [
+    {label:"아니오(단서 "+n+"개 획득)", act:()=>{ hidePopup(); done(gainRoomClues(n, roomKey, prefer), 0); }},
+    {label:"예(은폐서 "+maxR+"개 버림)", primary:true, act:()=>{ hidePopup();
+      cover.uses.count -= maxR; renderPlayArea();
+      addLog(cn+": 단서 "+n+"개 발견을 대신해 은폐서 "+maxR+"개 버림 (남은 "+cover.uses.count+"). 맵 단서 유지, 획득 0.");
+      done(0, maxR);   // 발견 전체가 대체됨 — 초과분도 획득 X(맵에 그대로 남음)
+    }},
+  ]);
+}
+// 조사 성공 처리 — 본 조사(1)+추론 발견을 합산해 있는 단서 상한으로 자른 뒤, discoverClues로 일괄(은폐 리다이렉트 포함).
+function resolveInvestigateSuccess(r, base, boxCls, cm){
+  discardAttachedOnInvestigate(cur);   // 자욱한 안개 등 "조사 성공 시 버림" — 은폐 성공 시점(단서 유무 무관)
+  const present = cluesInRoom(cur).length;
+  const entitled = 1 + committedBonusClues(r);        // 본 조사 1 + 추론 등 추가 발견
+  const wouldDiscover = Math.min(entitled, present);  // 있는 단서 수가 상한(0개면 0)
+  discoverClues(wouldDiscover, cur, (gained, redirected)=>{
+    const drawLines = applyCommittedDraws(r);                             // 배짱=드로우
+    const reactionLines = triggerReactions("after_investigate_success");  // 밀란=자원
+    let mainExtra;
+    if(present===0)            mainExtra = '이 장소엔 획득할 단서가 없습니다.';
+    else if(redirected && gained) mainExtra = '단서 '+gained+'개 획득 · 은폐에서 '+redirected+'개 제거.';
+    else if(redirected)        mainExtra = '은폐에서 '+redirected+'개 제거 (맵 단서는 유지).';
+    else                       mainExtra = '단서 '+gained+'개를 획득했습니다. (보유 '+S.invClue+'개)';
+    const gotClue = gained>0;
+    const extra = [mainExtra].concat(drawLines, reactionLines).filter(Boolean).join(' ');
+    showPopup(testResultHtml({...base, extra}),
+      [{label:"확인", primary:true, act:()=>{ hidePopup(); if(gotClue) maybeShowAdvanceTip(); }}], null, boxCls);
+  }, cm);   // cm = 클릭한 단서(우선 수거)
 }
 // 조사 판정 결과 적용(단서 획득·결과 팝업)
 function applyInvestigateResult(cm, r){
@@ -2914,30 +3348,12 @@ function applyInvestigateResult(cm, r){
   if(horror){ S.invHorror += horror; renderInvestigator(); addLog("혼돈 토큰 효과로 공포 +"+horror+"."); }
 
   const base = { action:"조사", skill:"intellect", skillLabel:"지식", skillVal:r.base,
-                 drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"은폐",
+                 drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"은폐", targetBreak:r.difficultyBreak,
                  success:r.success, autoFail:r.autoFail };
   const boxCls = "pb-test " + (r.success ? "pb-ok" : "pb-no");
 
   if(r.success){
-    // ① 메인 단서 먼저 수거(추론 등 추가효과보다 먼저 — 단서 1개뿐이면 조사가 우선)
-    const marker = cm || cluesInRoom(cur)[0];   // 메뉴 조사면 현재 장소 단서 하나
-    let mainExtra;
-    if(marker){
-      marker.mesh.visible=false; marker.collected=true;   // 맵 단서 1개 제거
-      changeClue(1);                                // 조사자 단서 +1
-      addLog(ROOMS[cur].name+"에서 단서 1개 획득 (조사 성공). 현재 단서 "+S.invClue+"개.");
-      updateLocInfo();
-      mainExtra = '단서 1개를 획득했습니다. (보유 '+S.invClue+'개)';
-    }else{
-      addLog(ROOMS[cur].name+" 조사 성공 — 이 장소엔 단서가 없습니다.");
-      mainExtra = '이 장소엔 획득할 단서가 없습니다.';
-    }
-    // ② 커밋 카드 판정후 효과(추론 = 조사 성공 시 추가 단서) — 메인 수거 뒤
-    const commitLines = applyCommittedTestEffects(r);
-    const gotClue = !!marker || commitLines.length>0;
-    const extra = mainExtra + (commitLines.length ? ' '+commitLines.join(' ') : '');
-    showPopup(testResultHtml({...base, extra}),
-      [{label:"확인", primary:true, act:()=>{ hidePopup(); if(gotClue) maybeShowAdvanceTip(); }}], null, boxCls);
+    resolveInvestigateSuccess(r, base, boxCls, cm);   // cm = 클릭한 단서(우선 수거). 발견 합산·은폐 리다이렉트는 내부에서
   }else{
     showPopup(testResultHtml({...base, extra:'단서를 얻지 못했습니다.'+(horror?' 공포 '+horror+' 획득.':'')}),
       [{label:"확인", primary:true, act:hidePopup}], null, boxCls);
@@ -2962,6 +3378,442 @@ function updateTags(){
     tags[k].style.left=x+"px"; tags[k].style.top=y+"px";
     tags[k].style.opacity=(k===cur||overview)?1:0.65;
   });
+}
+
+/* =====================================================================
+   장소 부착물(바리케이드) — SVG 마커를 장소 중앙에 띄움 + 소유자 저장.
+   ===================================================================== */
+S.locationAttachments = S.locationAttachments || {};   // { roomKey: [{code, owner, blocks, discardWhen}] }
+const barricadeEls = {};
+const BARRICADE_SVG = '<svg viewBox="0 0 64 48" width="58" height="44">'+
+  '<rect x="12" y="6" width="8" height="40" rx="2" fill="#6b4526" stroke="#2a1810" stroke-width="1.5"/>'+
+  '<rect x="44" y="6" width="8" height="40" rx="2" fill="#6b4526" stroke="#2a1810" stroke-width="1.5"/>'+
+  '<rect x="4" y="16" width="56" height="10" rx="2" fill="#8a5f38" stroke="#2a1810" stroke-width="1.5"/>'+
+  '<rect x="4" y="30" width="56" height="10" rx="2" fill="#7a5230" stroke="#2a1810" stroke-width="1.5"/></svg>';
+// 자욱한 안개 — 회색 구름 뭉치
+const FOG_SVG = '<svg viewBox="0 0 64 48" width="58" height="44">'+
+  '<g fill="#c8cdd6" opacity="0.9" stroke="#8b93a0" stroke-width="1.2">'+
+  '<ellipse cx="22" cy="30" rx="16" ry="11"/>'+
+  '<ellipse cx="42" cy="27" rx="15" ry="12"/>'+
+  '<ellipse cx="32" cy="22" rx="13" ry="10"/></g>'+
+  '<g fill="#e3e7ee" opacity="0.55"><ellipse cx="28" cy="26" rx="9" ry="6"/></g></svg>';
+
+// ★ 멀티 확장 지점: 한 장소에 있는 조사자 수. 지금은 1인(말 하나=cur). 2~4인 추가 시 여기서 모든 말을 세면 끝.
+function countInvestigatorsAt(roomKey){
+  return cur===roomKey ? 1 : 0;
+}
+function attachToLocation(code, roomKey, eff){   // 이벤트·조우가 장소에 붙음(바리케이드·자욱한 안개)
+  const nm = S.byCode[code]?S.byCode[code].name:code;
+  // 최대 1장/장소(자욱한 안개) — 이미 같은 카드 있으면 부착 못 하고 버림
+  if(eff.limit_per_location && (S.locationAttachments[roomKey]||[]).some(a=>a.code===code)){
+    addLog(ROOMS[roomKey].name+"에 이미 "+nm+"이(가) 있어 부착하지 못하고 버립니다.");
+    discardToOrigin(code); updatePiles(); if(typeof updateEncounterUI==="function") updateEncounterUI();
+    return;
+  }
+  const owner = activeInvestigator ? activeInvestigator.investigator : "self";
+  const shroudMod = eff.shroud_mod || 0;
+  // occupants: 설치 당시 이 장소의 조사자 수(investigator_leaves용). 안개는 discard_when이 달라 미사용.
+  (S.locationAttachments[roomKey] = S.locationAttachments[roomKey] || []).push({ code, owner, blocks:eff.blocks, shroudMod, discardWhen:eff.discard_when, occupants:countInvestigatorsAt(roomKey) });
+  if(shroudMod){ S.shroudMod[roomKey] = (S.shroudMod[roomKey]||0) + shroudMod; updateLocInfo(); }
+  renderBarricades();
+  addLog(ROOMS[roomKey].name+"에 "+nm+"을(를) 부착했습니다."+(shroudMod?" (은폐 +"+shroudMod+")":""));
+}
+function discardAttachment(a, roomKey, reason){   // 부착물 버림 → 원래 소속 더미(안개=조우, 바리케이드=플레이어)
+  if(a.shroudMod){ S.shroudMod[roomKey] = (S.shroudMod[roomKey]||0) - a.shroudMod; updateLocInfo(); }   // 은폐 수정치 원복
+  discardToOrigin(a.code); updatePiles();
+  addLog((S.byCode[a.code]?S.byCode[a.code].name:a.code)+"이(가) 버려졌습니다."+(reason?" ("+reason+")":""));
+}
+function sweepAttachmentLeaves(roomKey){   // 인원수가 줄면(누군가 벗어남) investigator_leaves 부착물 버림
+  const atts = S.locationAttachments[roomKey]; if(!atts || !atts.length) return;
+  const here = countInvestigatorsAt(roomKey);
+  let changed=false; const stay=[];
+  atts.forEach(a=>{
+    if(a.discardWhen==="investigator_leaves"){
+      if(here < a.occupants){ discardAttachment(a, roomKey, "장소를 벗어남"); changed=true; return; }   // 한 명이라도 빠짐 → 벗어남
+      if(here > a.occupants) a.occupants = here;                               // 새로 들어옴 → 기준 상향(도착은 안 버림)
+    }
+    stay.push(a);
+  });
+  if(changed){ S.locationAttachments[roomKey] = stay; renderBarricades(); }
+}
+// 부착물 아이콘/라벨 — 안개는 3D 볼륨으로 방 전체에 깔리므로 아이콘 없이 라벨만(조우 인지용)
+function attachmentIcon(a){ return a.shroudMod ? "" : BARRICADE_SVG; }
+function attachmentLabel(a){ return a.shroudMod ? ("자욱한 안개 (은폐 +"+a.shroudMod+")") : "바리케이드"; }
+// 안개 3D 볼륨 — 방 부피(w×d, 높이 2.6)에 반투명(25%) 박스. 부착/해제에 따라 생성·제거.
+const fogMeshes = {};
+function syncFogMeshes(){
+  Object.keys(ROOMS).forEach(k=>{
+    const hasFog = (S.locationAttachments[k]||[]).some(a=>a.shroudMod);
+    if(hasFog && !fogMeshes[k]){
+      const R=ROOMS[k];
+      const m=new THREE.Mesh(
+        new THREE.BoxGeometry(R.w-0.4, 2.6, R.d-0.4),
+        new THREE.MeshBasicMaterial({ color:0xc8cdd6, transparent:true, opacity:0.25, depthWrite:false }));
+      m.position.set(R.x, R.y+1.4, R.z);
+      scene.add(m); fogMeshes[k]=m;
+    }else if(!hasFog && fogMeshes[k]){
+      scene.remove(fogMeshes[k]); fogMeshes[k]=null; delete fogMeshes[k];
+    }
+  });
+}
+function renderBarricades(){   // 마커 DOM 생성/제거 + 한 장소 여러 부착물 = 가로 배열(버프바처럼)
+  Object.keys(barricadeEls).forEach(k=>{ if(!(S.locationAttachments[k]||[]).length){ barricadeEls[k].remove(); delete barricadeEls[k]; } });
+  Object.keys(S.locationAttachments).forEach(k=>{
+    const atts = S.locationAttachments[k]||[]; if(!atts.length) return;
+    let d = barricadeEls[k];
+    if(!d){ d=document.createElement("div"); d.className="barricade-marker"; wrap.appendChild(d); barricadeEls[k]=d; }
+    d.innerHTML = '<div class="bm-row">'+ atts.map(a=>'<div class="bm-item">'+attachmentIcon(a)+'<div class="bm-label">'+attachmentLabel(a)+'</div></div>').join("") +'</div>';   // 가운데 정렬로 가로 늘어놓기
+  });
+  syncFogMeshes();   // 안개 3D 볼륨 동기화
+}
+function updateBarricades(){
+  // 일반 처리(반응형·인원수 기반): 설치 당시보다 조사자 수가 줄면(어떤 방법으로 벗어났든) 버림.
+  // → 이동·막 전환·이야기·순간이동 등 상황마다 훅 불필요. countInvestigatorsAt만 멀티로 확장하면 N인 공통.
+  Object.keys(S.locationAttachments).forEach(sweepAttachmentLeaves);
+  // 마커 위치 갱신(장소 중앙, 이름표와 동일 방식)
+  Object.keys(barricadeEls).forEach(k=>{
+    const R=ROOMS[k], el=barricadeEls[k];
+    if(!R || R.stage!==currentStage){ el.style.display="none"; return; }
+    const p=new THREE.Vector3(R.x, R.y+0.8, R.z).project(camera);
+    el.style.display=(p.z<1)?"block":"none";
+    el.style.left=(p.x*0.5+0.5)*MAP_W+"px"; el.style.top=(-p.y*0.5+0.5)*MAP_H+"px";
+  });
+}
+// 적 이동 훅(적 시스템 이후) — 비정예는 바리케이드 장소로 못 들어옴(출현/소환은 별개)
+function canEnemyEnterLocation(roomKey, enemy){
+  const blocked = (S.locationAttachments[roomKey]||[]).some(a=> a.blocks==="non_elite_enemy_movement");
+  return !(blocked && !(enemy && enemy.elite));
+}
+// 조사 성공 시 "부착된 장소 조사되면 버림"(자욱한 안개) 처리
+function discardAttachedOnInvestigate(roomKey){
+  const atts = S.locationAttachments[roomKey]; if(!atts||!atts.length) return;
+  const stay=[]; let changed=false;
+  atts.forEach(a=>{ if(a.discardWhen==="attached_location_investigated"){ discardAttachment(a, roomKey, "조사 성공"); changed=true; } else stay.push(a); });
+  if(changed){ S.locationAttachments[roomKey]=stay; renderBarricades(); }
+}
+
+/* ===== 조우 엔진 — 신화 1.4 뽑기 + 폭로 처리(시나리오1 적·음모) ===== */
+// 신화 1.4: 대표조사자부터 지정 순서대로 각 1장. 순서는 arkham_game이 localStorage("arkham_player_order")에 저장.
+// 1인: 값 null(순서 없음) → 활성 조사자 1명만. [다인 확장 훅] order 배열대로 순차 뽑기(각자 pause/resume 체이닝 필요).
+function drawEncounterPhase(){
+  let order=null; try{ order=JSON.parse(localStorage.getItem("arkham_player_order")); }catch(_){}
+  const drawers = (order && order.length) ? order : [ activeInvestigator ? activeInvestigator.investigator : "self" ];
+  drawOneEncounter(drawers[0]);   // 지금은 1인(첫 조사자)만. 다인 순차는 이후.
+}
+function drawOneEncounter(inv){
+  if(!encounterDeck.length){ addLog("신화 1.4 — 조우덱이 비어 뽑지 못했습니다."); return; }
+  const card = encounterDeck.shift(); updateEncounterUI();
+  addLog("신화 1.4 — 조우 뽑기: "+card.name+".");
+  S.phasePaused = true;   // 공개 연출·해결이 끝날 때까지 신화 단계 정지
+  revealEncounterCard(card.code, ()=>{
+    resolveEncounter(card.code, ()=>{ S.phasePaused=false; resumeAfterCutscene(); });   // 해결 끝 → 조사자 단계로
+  });
+}
+// 어떤 요소의 화면 위치 → stage 좌표 중심점
+function rectStageCenter(el){
+  const r=el.getBoundingClientRect();
+  return { x: toStageX(r.left+r.width/2), y: toStageY(r.top+r.height/2) };
+}
+// 방의 3D 중심 → stage 좌표(마커와 같은 투영)
+function roomStagePos(k){
+  const R=ROOMS[k];
+  const p=new THREE.Vector3(R.x, R.y+1, R.z).project(camera);
+  const wr=wrap.getBoundingClientRect();
+  return { x: toStageX(wr.left + (p.x*0.5+0.5)*wr.width), y: toStageY(wr.top + (-p.y*0.5+0.5)*wr.height) };
+}
+// 이 조우가 해결되면 어디로 가나 → 연출 목적지 stage 좌표
+function encRevealDest(code){
+  const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{};
+  if(c.type_code==="enemy"){ const room=(a.spawn && ROOMS[a.spawn])?a.spawn:cur; return roomStagePos(room); }   // 적 = 등장 장소(지정 없으면 뽑은 조사자 위치)
+  if(a.on_draw==="attach_to_location") return roomStagePos(cur);                                                 // 부착(안개) = 현재 장소
+  if(a.on_draw==="put_into_play"){ const pa=document.getElementById("play-area"); if(pa) return rectStageCenter(pa); }   // 위협영역 = 플레이 영역
+  const dp=document.getElementById("enc-discard"); if(dp) return rectStageCenter(dp);                            // 그 외(테스트·즉효) = 버린 조우 더미
+  return { x:1650, y:420 };
+}
+// 조우 공개 연출 — 조우덱에서 중앙으로 날아와 3초 표시(text_ko 포함) → 목적지로 날아가 사라짐 → after()
+function revealEncounterCard(code, after){
+  const c=S.byCode[code]||{};
+  const stage=document.getElementById("stage");
+  const d=document.createElement("div"); d.className="enc-reveal";
+  d.innerHTML='<img src="'+cardFront(code)+'" alt="">'+
+    '<div class="er-info"><h5>'+(c.name||code)+'</h5>'+
+    (c.traits?'<div class="er-txt" style="color:var(--muted);font-size:13px;margin-bottom:5px;">'+c.traits+'</div>':"")+
+    (cardTextOf(code)?'<div class="er-txt">'+cleanText(cardTextOf(code))+'</div>':"")+
+    '<div class="er-hint">클릭하면 바로 진행</div></div>';
+  // 딤 배경(어디를 클릭해도 진행)
+  const dim=document.createElement("div"); dim.className="enc-reveal-dim"; stage.appendChild(dim);
+  // 시작 위치 = 조우덱 더미
+  const encPile=document.getElementById("enc-draw");
+  const start = encPile ? rectStageCenter(encPile) : {x:1650, y:320};
+  d.style.left=start.x+"px"; d.style.top=start.y+"px"; d.style.opacity="0";
+  stage.appendChild(d);
+  let phase=0;   // 0=표시중 1=날아감
+  const flyOut=()=>{
+    if(phase===1) return; phase=1;
+    dim.remove();
+    const dest=encRevealDest(code);
+    d.classList.add("er-out");
+    d.style.left=dest.x+"px"; d.style.top=dest.y+"px";
+    setTimeout(()=>{ d.style.opacity="0"; }, 450);
+    setTimeout(()=>{ d.remove(); after(); }, 700);   // 도착 → 실제 해결(배치·등장·테스트)
+  };
+  dim.addEventListener("pointerdown", (e)=>{ e.stopPropagation(); flyOut(); });
+  d.addEventListener("pointerdown", (e)=>{ e.stopPropagation(); flyOut(); });   // 카드/아래 클릭 = 진행
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    d.style.opacity="1";
+    d.style.left="960px"; d.style.top="440px";   // 화면 중앙(살짝 위)
+  }); });   // 자동 진행 없음 — 클릭할 때까지 대기
+}
+function resolveEncounter(code, done){
+  done = done || function(){};
+  const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{}, name=c.name||code, nd=a.on_draw;
+  if(nd==="put_into_play"){ S.playedCards.push({code, uses:initialUses(code)}); onEnterPlay(code); renderPlayArea(); addLog("폭로 — "+name+" 위협영역에 놓임."); done(); return; }
+  if(nd==="attach_to_location"){ attachToLocation(code, cur, a); done(); return; }
+  if(nd==="resolve_and_discard"){ resolveTreachery(code, a, done); return; }
+  if(c.type_code==="enemy"){ spawnEnemy(code); done(); return; }   // 적 = 게임판에 등장(조우덱에서 빠짐)
+  encDiscard(code); done();
+}
+function resolveTreachery(code, a, done){
+  const ab=(a.abilities||[])[0]||{}, name=(S.byCode[code]||{}).name||code;
+  const finish=()=>{ encDiscard(code); done(); };
+  if(ab.revelation_test){
+    S.phasePaused=true;   // 폭로 테스트 동안 신화 페이즈 멈춤
+    startSkillTest({ skill:ab.revelation_test.skill, testType:"treachery", difficulty:ab.revelation_test.difficulty,
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(rm)=>cluesInRoom(rm).length },
+      actionLabel:name, targetLabel:"난이도",
+      onResolve:(r)=> showRevelationResult(ab, r, name, ()=> runRevEffects(r.success?(ab.on_success||[]):(ab.on_failure||[]), r, finish)) });
+  } else { (ab.do||[]).forEach(eff=> runEffect(eff, null)); finish(); }
+}
+function showRevelationResult(ab, r, name, next){
+  const base={ action:name, skill:ab.revelation_test.skill, skillLabel:SKILL_KO[ab.revelation_test.skill]||ab.revelation_test.skill,
+    skillVal:r.base, drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
+  showPopup(testResultHtml({...base, extra: r.success?"성공 — 효과 없음.":"실패 — 효과 적용."}),
+    [{label:"확인", primary:true, act:()=>{ hidePopup(); next(); }}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
+}
+function runRevEffects(effs, r, done){ let i=0; const next=()=>{ if(i>=effs.length){ done(); return; } applyRevEffect(effs[i++], r, next); }; next(); }
+function revAmount(spec, r){
+  if(typeof spec==="number") return spec;
+  if(spec==="fail_by") return Math.max(0, r.difficulty - r.total);
+  if(spec==="success_by") return Math.max(0, r.total - r.difficulty);
+  if(spec && typeof spec==="object"){ let v=revAmount(spec.value, r); if(spec.min!=null)v=Math.max(spec.min,v); if(spec.max!=null)v=Math.min(spec.max,v); return v; }
+  return 0;
+}
+function applyRevEffect(eff, r, next){
+  if(eff.effect==="damage_investigator"){ const v=revAmount(eff.damage, r); S.invDamage+=v; renderInvestigator(); addLog("피해 "+v+"를 받았습니다. (총 "+S.invDamage+")"); next(); return; }
+  if(eff.effect==="horror"){ const v=revAmount(eff.value, r); S.invHorror+=v; renderInvestigator(); addLog((eff.direct?"직접 ":"")+"공포 "+v+"를 받았습니다. (총 "+S.invHorror+")"); next(); return; }
+  if(eff.effect==="discard_owned_asset"){ discardOwnedAsset(eff, next); return; }
+  runEffect(eff, null); next();
+}
+function discardOwnedAsset(eff, next){   // 통제 자산 1개 버림: 1개=자동, 2+=일러스트 팝업, 0개=fallback(피해2)
+  const idxs = S.playedCards.map((p,i)=>i).filter(i=> (S.byCode[S.playedCards[i].code]||{}).type_code==="asset");
+  if(!idxs.length){ (eff.fallback||[]).forEach(fx=> applyRevEffect(fx, {difficulty:0,total:0}, ()=>{})); addLog("버릴 자산이 없어 대체 효과를 받습니다."); next(); return; }
+  if(idxs.length===1){ discardPlayed(idxs[0]); next(); return; }
+  showCardPickPopup("버릴 자산을 선택하세요 (으스스한 한기)", idxs.map(i=>S.playedCards[i].code), (chosen, pi)=>{
+    discardPlayed(idxs[pi]); next();   // 인덱스로 정확히(같은 카드 2장 대비)
+  });
+}
+
+/* ===== 적 · 전투 엔진 (기본) =====
+   상태: S.enemies = [{code, room, dmg, exhausted, engaged}]  (1인: engaged=활성 조사자와 교전)
+   [기본 규칙 구현] 등장(spawn) → 자동 교전(같은 장소·준비 상태) → 공격/회피 행동 → 적 단계(사냥꾼 이동·교전 적 공격) → 정비 준비.
+   [보류·주석] 기회공격(AoO), 피해 조력자 할당(소화), 보복(retaliate), 다인 prey 선택, 승점. */
+S.enemies = [];
+const enemyRowEls = {};   // roomKey → 가로 배열 마커(바리케이드와 동일 패턴)
+function enemyCard(en){ return S.byCode[en.code]||{}; }
+function enemyHealth(en){ return enemyCard(en).health||1; }
+function enemiesAt(k){ return S.enemies.filter(e=>e.room===k); }
+function enemyAtLoc(){ return enemiesAt(cur).length>0; }
+function spawnEnemy(code){
+  const a=S.cardAbilities[code]||{};
+  const room = (a.spawn && ROOMS[a.spawn]) ? a.spawn : cur;   // spawn 지정(식인귀=다락방) 없으면 뽑은 조사자 위치
+  S.enemies.push({ code, room, dmg:0, exhausted:false, engaged:false });
+  addLog("적 등장 — "+(S.byCode[code]||{}).name+" ("+ROOMS[room].name+")"+((a.keywords||[]).includes("hunter")?" [사냥꾼]":""));
+  renderEnemyMarkers(); resolveEngagements();
+}
+// 교전 결정(반응형): 준비된 미교전 적 + 같은 장소 조사자 → 자동 교전. [다인 훅] 2명 이상이면 prey(lowest_health 등)로 택1.
+function resolveEngagements(){
+  let changed=false;
+  S.enemies.forEach(en=>{
+    if(en.engaged || en.exhausted) return;
+    if(countInvestigatorsAt(en.room) >= 1){
+      en.engaged = true; changed=true;   // 1인: 자동 교전. 다인: prey 기준 선택은 countInvestigatorsAt 확장 시 함께.
+      addLog(enemyCard(en).name+"이(가) 당신과 교전했습니다!");
+    }
+  });
+  if(changed) renderEnemyMarkers();   // 매 프레임 호출되므로 변경 시에만 재렌더
+}
+// 적 마커 — 방 위 가로 배열(카드 미니 + HP). 소진=회색.
+function renderEnemyMarkers(){
+  Object.keys(enemyRowEls).forEach(k=>{ if(!enemiesAt(k).length){ enemyRowEls[k].remove(); delete enemyRowEls[k]; } });
+  Object.keys(ROOMS).forEach(k=>{
+    const list=enemiesAt(k); if(!list.length) return;
+    let d=enemyRowEls[k];
+    if(!d){ d=document.createElement("div"); d.className="enemy-marker"; wrap.appendChild(d); enemyRowEls[k]=d; }
+    d.innerHTML='<div class="em-row">'+list.map(en=>
+      '<div class="em-item'+(en.exhausted?" em-exh":"")+(en.engaged?" em-eng":"")+'">'+
+      '<img src="'+cardFront(en.code)+'" alt="">'+
+      '<div class="em-hp">'+(enemyHealth(en)-en.dmg)+'/'+enemyHealth(en)+'</div></div>').join("")+'</div>';
+  });
+}
+function updateEnemyMarkers(){   // 매 프레임 위치 갱신(방 위 살짝 높게)
+  Object.keys(enemyRowEls).forEach(k=>{
+    const R=ROOMS[k], el=enemyRowEls[k];
+    if(!R || R.stage!==currentStage){ el.style.display="none"; return; }
+    const p=new THREE.Vector3(R.x, R.y+2.6, R.z).project(camera);
+    el.style.display=(p.z<1)?"block":"none";
+    el.style.left=(p.x*0.5+0.5)*MAP_W+"px"; el.style.top=(-p.y*0.5+0.5)*MAP_H+"px";
+  });
+}
+function damageEnemy(en, n){
+  en.dmg += n;
+  addLog(enemyCard(en).name+"에게 피해 "+n+". ("+Math.max(0,enemyHealth(en)-en.dmg)+"/"+enemyHealth(en)+")");
+  if(en.dmg >= enemyHealth(en)){
+    addLog(enemyCard(en).name+" 격파!");
+    S.enemies.splice(S.enemies.indexOf(en),1);
+    encDiscard(en.code);   // 격파된 적 → 조우 버림 더미
+  }
+  renderEnemyMarkers();
+}
+// 공격 — 전투 판정 vs 적 전투력. opts={bonus, extraDamage, bonusIf, label} (무기 do_fight 공용)
+function startFightAction(opts){
+  opts = opts||{};
+  const targets = enemiesAt(cur);
+  if(!targets.length){ showToast("이 장소에 적이 없습니다."); return; }
+  const doIt=(en)=>{
+    let bonus = opts.bonus||0;
+    if(opts.bonusIf && opts.bonusIf.cond==="clue_at_your_location" && cluesInRoom(cur).length>0)
+      bonus = (opts.bonusIf.bonus && opts.bonusIf.bonus.combat) || bonus;   // 로랜드 권총: 단서 있으면 +1→+3
+    startSkillTest({ skill:"combat", testType:"fight", location:cur, difficulty:(enemyCard(en).enemy_fight||1),
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(rm)=>cluesInRoom(rm).length },
+      actionLabel:(opts.label||"공격"), targetLabel:"적 전투",
+      extraTestBonus:bonus,
+      onResolve:(r)=> applyFightResult(en, r, opts) });
+  };
+  if(targets.length===1) doIt(targets[0]);
+  else showCardPickPopup("공격할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
+}
+// 커밋된 기술의 "공격 성공 시 추가 피해"(무자비한 일격) 합
+function committedAttackDamage(r){
+  let extra=0;
+  (r.committed||[]).forEach(code=>{
+    ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
+      const cond=ab.conditional;
+      if(cond && cond.if==="attack_test_succeeded" && cond.extra_effect && cond.extra_effect.effect==="extra_damage")
+        extra += (cond.extra_effect.value||0);
+    });
+  });
+  return extra;
+}
+function applyFightResult(en, r, opts){
+  opts=opts||{}; const label=opts.label||"공격";
+  let dmg = 1 + (opts.extraDamage||0);   // 기본 1 + 무기 추가피해
+  // 마체테: 공격 대상이 나와 교전 중인 유일한 적이면 +1
+  if(opts.conditional && opts.conditional.if==="only_enemy_engaged_with_you"
+     && en.engaged && enemiesAt(cur).filter(e=>e.engaged).length===1)
+    dmg += (opts.conditional.extra_damage||0);
+  const commitDmg = committedAttackDamage(r);   // 무자비한 일격 등
+  const total = dmg + commitDmg;
+  const base={ action:label, skill:"combat", skillLabel:"전투", skillVal:r.base, drawn:r.drawn,
+    total:r.total, target:r.difficulty, targetLabel:"적 전투", success:r.success, autoFail:r.autoFail };
+  const lines = applyCommittedDraws(r);   // 배짱 등 커밋 드로우
+  if(r.success){ damageEnemy(en, total); }
+  const extraTxt = r.success ? ("명중! 피해 "+total+(commitDmg?" (기본 "+dmg+" + 커밋 "+commitDmg+")":"")+".") : "빗나감.";
+  showPopup(testResultHtml({...base, extra: extraTxt+(lines.length?" "+lines.join(" "):"")}),
+    [{label:"확인", primary:true, act:hidePopup}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
+}
+// 회피 — 민첩 판정 vs 적 회피력. 성공=적 소진+교전 해제. (실패해도 추가 불이익 없음 — 기본 룰)
+function startEvadeAction(){
+  const targets = enemiesAt(cur).filter(e=>e.engaged);
+  if(!targets.length){ showToast("교전 중인 적이 없습니다."); return; }
+  const doIt=(en)=>{
+    startSkillTest({ skill:"agility", testType:"evade", location:cur, difficulty:(enemyCard(en).enemy_evade||1),
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(rm)=>cluesInRoom(rm).length },
+      actionLabel:"회피", targetLabel:"적 회피",
+      onResolve:(r)=>{
+        const base={ action:"회피", skill:"agility", skillLabel:"민첩", skillVal:r.base, drawn:r.drawn,
+          total:r.total, target:r.difficulty, targetLabel:"적 회피", success:r.success, autoFail:r.autoFail };
+        const lines = applyCommittedDraws(r);
+        if(r.success){ en.exhausted=true; en.engaged=false; renderEnemyMarkers(); }
+        showPopup(testResultHtml({...base, extra:(r.success?"회피 성공 — 적이 소진되고 교전이 풀렸습니다.":"회피 실패.")+(lines.length?" "+lines.join(" "):"")}),
+          [{label:"확인", primary:true, act:hidePopup}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
+      } });
+  };
+  if(targets.length===1) doIt(targets[0]);
+  else showCardPickPopup("회피할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
+}
+// 사냥꾼 이동 경로 — ADJ 그래프 BFS로 목표를 향한 첫 걸음
+function nextStepToward(from, to){
+  if(from===to) return null;
+  const q=[[from]], seen=new Set([from]);
+  while(q.length){
+    const path=q.shift(), last=path[path.length-1];
+    for(const nb of (ADJ[last]||[])){
+      if(seen.has(nb)) continue; seen.add(nb);
+      const np=path.concat(nb);
+      if(nb===to) return np[1];
+      q.push(np);
+    }
+  }
+  return null;
+}
+// 적 단계 — 3.2 사냥꾼 이동(미교전·준비만, 바리케이드 차단 반영) → 교전 확인 → 3.3 교전 적 공격
+function runEnemyPhase(){
+  S.enemies.forEach(en=>{
+    if(en.engaged || en.exhausted) return;
+    if(!((S.cardAbilities[en.code]||{}).keywords||[]).includes("hunter")) return;
+    if(en.room===cur) return;
+    const next=nextStepToward(en.room, cur);
+    if(next && canEnemyEnterLocation(next, en)){
+      en.room=next;
+      addLog(enemyCard(en).name+"이(가) "+ROOMS[next].name+"(으)로 이동했습니다. [사냥꾼]");
+    } else if(next){
+      addLog(enemyCard(en).name+"의 이동이 바리케이드에 막혔습니다.");
+    }
+  });
+  resolveEngagements();
+  S.enemies.forEach(en=>{
+    if(!en.engaged || en.exhausted) return;
+    const c=enemyCard(en), d=c.enemy_damage||0, h=c.enemy_horror||0;
+    // [보류] 피해 조력자 할당(소화) — 지금은 조사자가 직접 받음
+    if(d){ S.invDamage+=d; } if(h){ S.invHorror+=h; }
+    renderInvestigator();
+    addLog(c.name+"의 공격! 피해 "+d+" · 공포 "+h+" 받음.");
+  });
+}
+
+/* ===== 위협영역 강제(forced) 효과 · 행동력 추가소모 =====
+   시끄러운 소음(end_of_round: 버림) / 공포에 얼어붙다(end_of_turn: 의지3 성공 시 버림 + 라운드 첫 이동·전투·회피 +1행동) */
+S.surchargeUsed = false;
+function frozenSurcharge(){ return S.playedCards.some(p=> ((S.cardAbilities[p.code]||{}).abilities||[]).some(ab=> ab.effect==="action_surcharge")); }
+function actionSurchargeFor(type){ return (["move","fight","evade"].includes(type) && frozenSurcharge() && !S.surchargeUsed) ? 1 : 0; }
+function markSurcharge(type){ if(actionSurchargeFor(type)){ S.surchargeUsed=true; addLog("공포에 얼어붙다 — 이번 라운드 첫 "+({move:"이동",fight:"전투",evade:"회피"}[type])+"에 행동력 1 추가 소모."); } }
+// forced 처리 — jobs를 순차(테스트는 async)로. done() 완료 콜백.
+function processForcedThreat(when, done){
+  done = done || function(){};
+  const jobs=[];
+  S.playedCards.forEach(p=>{ ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{ if(ab.timing==="forced" && ab.when===when) jobs.push({p,ab}); }); });
+  let i=0; const next=()=>{ if(i>=jobs.length){ done(); return; } const j=jobs[i++]; runForcedThreat(j.p, j.ab, next); };
+  next();
+}
+function applyForcedEffect(p, eff){
+  if(eff.effect==="discard" && eff.target==="self"){ const idx=S.playedCards.indexOf(p); if(idx>=0) discardPlayed(idx); return; }
+  runEffect(eff, p);
+}
+function runForcedThreat(p, ab, next){
+  const name = S.byCode[p.code]?S.byCode[p.code].name:p.code;
+  if(ab.test){   // 공포에 얼어붙다: 의지3 성공 시 버림
+    startSkillTest({ skill:ab.test.skill, testType:"treachery", difficulty:ab.test.difficulty,
+      ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(rm)=>cluesInRoom(rm).length },
+      actionLabel:name+" (강제)", targetLabel:"난이도",
+      onResolve:(r)=>{
+        const base={ action:name, skill:ab.test.skill, skillLabel:SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base, drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
+        showPopup(testResultHtml({...base, extra: r.success?"성공 — "+name+"을(를) 버립니다.":"실패 — 유지됩니다."}),
+          [{label:"확인", primary:true, act:()=>{ hidePopup(); (r.success?(ab.on_success||[]):(ab.on_failure||[])).forEach(eff=> applyForcedEffect(p, eff)); next(); }}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
+      } });
+    return;
+  }
+  (ab.do||[]).forEach(eff=> applyForcedEffect(p, eff));   // 시끄러운 소음: 즉시 버림
+  next();
 }
 
 function animate(){
@@ -3017,6 +3869,9 @@ function animate(){
   animateFire();
   renderer.render(scene,camera);
   updateTags();
+  updateBarricades();
+  updateEnemyMarkers();
+  resolveEngagements();   // 반응형: 조사자·적이 같은 방이 되는 순간(이동·등장·사냥꾼) 자동 교전
 }
 /* =====================================================================
    컷신 재생기 — 막/의제 전환 연출
@@ -3209,8 +4064,8 @@ focusRoom("study");   // 1막 시작 = 서재 클로즈업
 updateGoal("서재에서 단서를 모아 이야기를 진행하라");   // act1a 목표(임시 — 텍스트 교체 예정)
 updateDoom();
 setPhase("investigation");
-// 조우덱 임시 표시(이후 실제 조우 세트로 교체)
-encounterDeck = new Array(16).fill({name:"조우"});
+// 조우덱은 데이터 로드 후 boot에서 buildEncounterDeck()로 구성(여기선 빈 배열 — 로드 전이라 S.byCode 없음)
+encounterDeck = [];
 encounterDiscard = [];
 updateEncounterUI();
 setChaosDifficulty("normal");   // 토큰 효과·주머니 표시
