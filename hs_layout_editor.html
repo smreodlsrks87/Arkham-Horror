@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>체력/정신력 배지 위치 에디터</title>
+<style>
+  :root{ --bg:#120c1a; --pale:#e8e0f0; --gold:#d4b15a; --glow:#8a6fb0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--pale); font-family:"Noto Sans KR",system-ui,sans-serif;
+    display:flex; gap:36px; padding:32px; align-items:flex-start; }
+  h1{ font-size:19px; color:var(--gold); margin:0 0 4px; }
+  .hint{ font-size:13px; color:#9a8faa; line-height:1.6; margin-bottom:18px; max-width:360px; }
+  .stage{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  /* 카드 — scenario1의 played-card 비율(120x168) 확대판. 위치는 %라 크기 무관 */
+  #card{ position:relative; width:280px; height:392px; border-radius:12px; overflow:visible;
+    background:#1a1322; box-shadow:0 8px 30px rgba(0,0,0,.6); user-select:none; }
+  #card img{ width:100%; height:100%; object-fit:cover; border-radius:12px; display:block; pointer-events:none; }
+  /* 배지 — scenario1 .pc-hp/.pc-san과 동일 스타일 */
+  .badge{ position:absolute; transform:translate(-50%,-50%); z-index:3; cursor:grab;
+    font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; line-height:1;
+    border-radius:8px; padding:1px 6px; }
+  .badge.dragging{ cursor:grabbing; outline:2px dashed #fff; }
+  #hp{ background:rgba(150,30,30,.92); color:#ffe0e0; border:2px solid #ff9a9a; }
+  #san{ background:rgba(40,60,140,.92); color:#e0e8ff; border:2px solid #9ab0ff; }
+  .panel{ min-width:360px; }
+  .row{ display:flex; align-items:center; gap:10px; margin:10px 0; font-size:14px; }
+  .row label{ width:120px; color:#c9bfe0; }
+  .row input[type=range]{ flex:1; }
+  .row .val{ width:56px; text-align:right; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .row input[type=text]{ flex:1; background:#160f1e; border:1px solid #2e2440; color:var(--pale);
+    border-radius:6px; padding:7px 10px; font-family:inherit; }
+  .grp{ border:1px solid #2a2038; border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+  .grp h2{ font-size:14px; margin:0 0 8px; letter-spacing:.04em; }
+  .grp.hp h2{ color:#ff9a9a; } .grp.san h2{ color:#9ab0ff; }
+  #json{ width:100%; height:74px; background:#0d0913; border:1px solid #2e2440; color:#bfe0c9;
+    border-radius:8px; padding:10px 12px; font-family:ui-monospace,monospace; font-size:14px; resize:vertical; }
+  button{ font-family:inherit; font-size:14px; padding:10px 20px; border-radius:7px; cursor:pointer;
+    border:1px solid var(--glow); background:var(--glow); color:#fff; margin-top:10px; }
+  button:hover{ background:#9a7fc0; }
+  button.ghost{ background:#160f1e; color:var(--pale); }
+  .toast{ display:inline-block; margin-left:12px; color:#7ad07a; font-size:13px; opacity:0; transition:opacity .2s; }
+  .toast.show{ opacity:1; }
+  .chk{ font-size:13px; color:#9a8faa; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <h1>체력 / 정신력 배지 위치 에디터</h1>
+    <div id="card">
+      <img id="cardimg" src="https://arkhamdb.com/bundles/cards/01521.png" alt="">
+      <div class="badge" id="hp">3/3</div>
+      <div class="badge" id="san">1/1</div>
+    </div>
+    <div class="chk">
+      <label><input type="checkbox" id="showSan" checked> 정신력 배지 표시(정신력 없는 자산이면 해제)</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="hint">배지를 <b>드래그</b>하거나 슬라이더로 위치·크기를 맞춘 뒤 <b>내보내기</b>를 누르면 JSON이 복사됩니다.
+      값은 카드 대비 %(hX·hY·snX·snY)와 글자 크기(fs)입니다. 그 값을 대화창에 붙여 주세요.</div>
+
+    <div class="row"><label>카드 이미지 URL</label><input type="text" id="imgUrl" value="https://arkhamdb.com/bundles/cards/01521.png"></div>
+
+    <div class="grp hp">
+      <h2>🩸 체력(HP) 배지</h2>
+      <div class="row"><label>가로 hX</label><input type="range" id="hX" min="0" max="100" step="0.5" value="26"><span class="val" id="hXv">26</span></div>
+      <div class="row"><label>세로 hY</label><input type="range" id="hY" min="0" max="100" step="0.5" value="86"><span class="val" id="hYv">86</span></div>
+    </div>
+    <div class="grp san">
+      <h2>🧠 정신력(SAN) 배지</h2>
+      <div class="row"><label>가로 snX</label><input type="range" id="snX" min="0" max="100" step="0.5" value="74"><span class="val" id="snXv">74</span></div>
+      <div class="row"><label>세로 snY</label><input type="range" id="snY" min="0" max="100" step="0.5" value="86"><span class="val" id="snYv">86</span></div>
+    </div>
+    <div class="grp">
+      <h2>글자 크기(fs) — 두 배지 공통</h2>
+      <div class="row"><label>fs (px)</label><input type="range" id="fs" min="8" max="28" step="1" value="13"><span class="val" id="fsv">13</span></div>
+    </div>
+
+    <textarea id="json" readonly></textarea>
+    <div>
+      <button id="copy">내보내기(JSON 복사)</button>
+      <button class="ghost" id="reset">기본값으로</button>
+      <span class="toast" id="toast">복사됨!</span>
+    </div>
+  </div>
+
+<script>
+  const el = id => document.getElementById(id);
+  const card = el("card"), hp = el("hp"), san = el("san");
+  const KEYS = ["hX","hY","snX","snY","fs"];
+  const DEF = { hX:26, hY:86, snX:74, snY:86, fs:13 };
+
+  function apply(){
+    const showSan = el("showSan").checked;
+    hp.style.left = el("hX").value + "%"; hp.style.top = el("hY").value + "%";
+    san.style.left = el("snX").value + "%"; san.style.top = el("snY").value + "%";
+    hp.style.fontSize = el("fs").value + "px"; san.style.fontSize = el("fs").value + "px";
+    san.style.display = showSan ? "block" : "none";
+    KEYS.forEach(k => el(k+"v").textContent = el(k).value);
+    const obj = { hX:+el("hX").value, hY:+el("hY").value };
+    if(showSan){ obj.snX = +el("snX").value; obj.snY = +el("snY").value; }
+    obj.fs = +el("fs").value;
+    el("json").value = '"hs_layout": ' + JSON.stringify(obj);
+  }
+  KEYS.forEach(k => el(k).addEventListener("input", apply));
+  el("showSan").addEventListener("change", apply);
+  el("imgUrl").addEventListener("input", ()=>{ el("cardimg").src = el("imgUrl").value; });
+
+  // 드래그로 배지 이동 → 슬라이더 값 갱신
+  function drag(badge, xId, yId){
+    badge.addEventListener("pointerdown", e=>{
+      e.preventDefault(); badge.classList.add("dragging"); badge.setPointerCapture(e.pointerId);
+      const move = ev=>{
+        const r = card.getBoundingClientRect();
+        let x = (ev.clientX - r.left) / r.width * 100;
+        let y = (ev.clientY - r.top) / r.height * 100;
+        x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
+        el(xId).value = x.toFixed(1); el(yId).value = y.toFixed(1); apply();
+      };
+      const up = ev=>{ badge.classList.remove("dragging"); badge.releasePointerCapture(e.pointerId);
+        badge.removeEventListener("pointermove", move); badge.removeEventListener("pointerup", up); };
+      badge.addEventListener("pointermove", move); badge.addEventListener("pointerup", up);
+    });
+  }
+  drag(hp, "hX", "hY"); drag(san, "snX", "snY");
+
+  el("copy").addEventListener("click", ()=>{
+    el("json").select();
+    navigator.clipboard.writeText(el("json").value).then(()=>{
+      const t = el("toast"); t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 1400);
+    }).catch(()=>{ document.execCommand("copy"); });
+  });
+  el("reset").addEventListener("click", ()=>{ KEYS.forEach(k=> el(k).value = DEF[k]); el("showSan").checked = true; apply(); });
+
+  apply();
+</script>
+</body>
+</html>

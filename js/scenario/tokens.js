@@ -44,6 +44,7 @@ const ELDER_SIGN = {
   "01501": (ctx)=> ctx.cluesAt(ctx.myLocation),   // 로랜드 뱅크스: 내 장소 단서 수
 };
 export function elderSignValue(charCode, ctx){
+  if(ctx && ctx.blanked) return 0;   // 조사자 글상자 백지화(고지식한 탐정) → 표식 효과 무시 = +0
   const fn = ELDER_SIGN[charCode];
   return fn ? fn(ctx) : 0;   // 정의 없으면 0
 }

@@ -23,7 +23,7 @@
 
 const BGM_DIR = "audio/bgm/";
 const SFX_DIR = "audio/sfx/";
-const EXT = ".ogg";                    // 추후 mp3 폴백 추가 지점
+const EXT = ".mp3";                    // 파일 확장자(mp3·ogg·wav 등 브라우저가 디코딩 가능한 형식이면 변경 가능)
 
 const LS_KEY = "arkham_audio";         // { bgm:0~1, sfx:0~1, muted:bool }
 

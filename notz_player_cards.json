@@ -1,4 +1,11 @@
 {
+ "01117": {
+  "slot": "Ally",
+  "abilities": [
+   { "timing": "constant", "effect": { "bonus": { "combat": 1 } } },
+   { "timing": "reaction", "when": "after_successful_attack", "condition": "target_is_monster", "do": [ { "effect": "extra_damage", "value": 1 } ] }
+  ]
+ },
  "01530": {
   "fast": true,
   "slot": "hand",
@@ -460,17 +467,14 @@
  "01524": {
   "abilities": [
    {
-    "timing": "action",
+    "timing": "on_play",
     "do": [
      {
       "effect": "choose_location",
-      "location_range": "your_location_or_connected",
-      "store": "target_location"
-     },
-     {
-      "effect": "damage",
-      "value": 3,
-      "target": "all_at_target_location"
+      "range": "your_location_or_connected",
+      "then": [
+       { "effect": "damage_all", "value": 3 }
+      ]
      }
     ]
    }
@@ -970,6 +974,7 @@
  },
  "01603": {
   "on_draw": "spawn_enemy",
+  "blanks_investigator": true,
   "keywords": [
    "hunter"
   ],
@@ -1283,6 +1288,44 @@
      "discard": "self"
     },
     "label": "정신병 버리기 (행동 2)"
+   }
+  ]
+ },
+ "01601": {
+  "on_draw": "spawn_enemy",
+  "keywords": [
+   "hunter"
+  ],
+  "prey": "bearer_only",
+  "abilities": [
+   {
+    "timing": "action",
+    "action_type": "parley",
+    "cost": {
+     "resources": 4,
+     "discard": "self"
+    },
+    "label": "협상 · 행동대장 버리기 (자원 4)"
+   }
+  ]
+ },
+ "01602": {
+  "on_draw": "spawn_enemy",
+  "keywords": [
+   "hunter"
+  ],
+  "prey": "bearer_only",
+  "abilities": [
+   {
+    "timing": "forced",
+    "when": "after_this_attacks",
+    "do": [
+     {
+      "effect": "place_doom",
+      "value": 1,
+      "target": "agenda"
+     }
+    ]
    }
   ]
  }
