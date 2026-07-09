@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>캠페인 기록 — Night of the Zealot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }   /* 트라우마 숫자 등 */
+  /* 기록지 한글 필기체 — 나눔손글씨 펜 */
+  @font-face{ font-family:'Handwriting'; src:url('fonts/NanumPenScript.ttf'); }
+  /* 본명조(=Noto Serif KR, 구글폰트) — scenario1과 동일한 나레이션·팝업 폰트 */
+  :root{ --ink:#2d3a55; --hand:'Handwriting',"Batang","바탕",serif;
+         --serif:'Noto Serif KR','Iowan Old Style','Hoefler Text','맑은 고딕',serif; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:#000; display:flex; align-items:center; justify-content:center;
+    min-height:100vh; overflow:hidden; font-family:var(--hand);
+  }
+
+  /* ───────── PART 2: 캠페인 기록지(배경 1605×903) ───────── */
+  #stage2{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1.8s ease; pointer-events:none; }
+  #stage2.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:relative;
+    width:min(100vw, calc(100vh * 1605 / 903));
+    aspect-ratio:1605 / 903;
+    background:url("images/notzCampaignLog.png") center/100% 100% no-repeat;
+    container-type:inline-size;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);
+  }
+  .f{ position:absolute; font-family:var(--hand);
+    color:var(--ink); font-weight:600; line-height:1; white-space:nowrap; transform:translateY(-50%); }
+  .fld{ font-size:1.5cqw; }
+  .sm { font-size:1.3cqw; }
+  .r  { transform:translate(-100%,-50%); }          /* 우측 정렬(경험치=승점 숫자) */
+  .c  { transform:translate(-50%,-50%); }           /* 중앙(트라우마 값) */
+  .ico{ font-family:var(--hand); color:#7a1f1f; font-weight:600; }  /* 트라우마 = 나눔손글씨 펜(손글씨) */
+
+  /* 손글씨(Campaign Notes) — 살짝 기운 각도 + 한 글자씩 */
+  #notes-write{ position:absolute; left:55.4%; top:50.5%; width:18.2cqw;
+    transform:rotate(-2deg); transform-origin:left top;
+    font-family:var(--hand); color:var(--ink);
+    font-size:1.25cqw; line-height:1.7; white-space:pre-wrap; }
+  #notes-write .wc{ opacity:0; transition:opacity .18s ease; }
+  #notes-write .wc.on{ opacity:1; }
+  /* 만년필(이미지 없으면 SVG 폴백) */
+  #pen{ position:absolute; width:5.2cqw; height:5.2cqw; z-index:40; pointer-events:none;
+    opacity:0; transition:left .12s ease, top .12s ease, opacity .3s ease;
+    transform:translate(-4%,-88%); }               /* 펜촉이 글자 위치에 오도록 보정 */
+  #pen.show{ opacity:1; }
+  #pen img{ width:100%; height:100%; object-fit:contain; }
+
+  /* ───────── PART 1: 나레이션(검은 화면) ───────── */
+  #narration{ position:absolute; inset:0; z-index:100; background:#000;
+    display:flex; align-items:center; justify-content:center;
+    opacity:1; transition:opacity 1.6s ease; }
+  #narration.hide{ opacity:0; pointer-events:none; }
+  #narr-text{
+    width:min(820px,86vw); max-height:82vh;
+    font-family:var(--serif);   /* 나레이션 = 본명조(Noto Serif KR) */
+    color:#eee7d8; font-size:20px; line-height:2.0; letter-spacing:.01em;
+    white-space:pre-wrap; text-align:left; text-shadow:0 0 18px rgba(255,255,255,.05);
+  }
+  #narr-text .nc{ opacity:0; transition:opacity .4s ease; }
+  #narr-text .nc.on{ opacity:1; }
+  /* ESC 스킵 게이지(우상단) */
+  #narr-skip{ position:absolute; top:24px; right:28px; z-index:110; font-family:var(--serif);
+    display:flex; align-items:center; gap:11px; color:rgba(238,231,216,.5); font-size:13px; letter-spacing:.04em; }
+  #narr-skip .skip-ring{ transform:rotate(-90deg); }
+  #narr-skip .ring-bg{ fill:none; stroke:rgba(255,255,255,.12); stroke-width:2.5; }
+  #narr-skip .ring-fg{ fill:none; stroke:#eee7d8; stroke-width:2.5; stroke-linecap:round;
+    stroke-dasharray:88; stroke-dashoffset:88; }
+
+  /* ───────── PART 0: 트라우마 선택 팝업 ───────── */
+  #trauma-pop{ position:absolute; inset:0; z-index:200; background:rgba(0,0,0,.72);
+    display:none; align-items:center; justify-content:center; }
+  #trauma-pop.show{ display:flex; }
+  /* 트라우마 팝업 — scenario1 팝업과 동일한 폰트(본명조)·크기 */
+  .tp-box{ font-family:var(--serif); background:linear-gradient(180deg,#1a1322,#120c1a);
+    border:1px solid #6b4d8a; border-radius:14px; padding:26px 34px;
+    text-align:center; box-shadow:0 16px 50px rgba(0,0,0,.75); max-width:480px; }
+  .tp-box .tp-msg{ color:#e8ddc8; font-size:15px; line-height:1.6; letter-spacing:.02em; margin-bottom:20px; }
+  .tp-box .tp-msg b{ color:#c9a86a; font-weight:600; }
+  .tp-btns{ display:flex; gap:10px; justify-content:center; }
+  .tp-btns button{ font-family:inherit; cursor:pointer; font-size:14px; letter-spacing:.06em; padding:9px 22px; border-radius:8px;
+    border:1px solid #4a3a5e; background:#1a1226; color:#e8ddc8; transition:background .15s,border-color .15s; }
+  .tp-btns button:hover{ background:#221730; border-color:#6b4d8a; }
+</style>
+</head>
+<body>
+  <!-- PART 2: 기록지 -->
+  <div id="stage2">
+    <div class="sheet" id="sheet">
+      <div id="notes-write"></div>
+      <div id="pen"></div>
+    </div>
+  </div>
+
+  <!-- PART 1: 나레이션 -->
+  <div id="narration">
+    <div id="narr-text"></div>
+    <div id="narr-skip">
+      <span>ESC 길게 눌러 넘기기</span>
+      <svg class="skip-ring" width="34" height="34" viewBox="0 0 34 34">
+        <circle class="ring-bg" cx="17" cy="17" r="14"></circle>
+        <circle class="ring-fg" id="narr-skip-fg" cx="17" cy="17" r="14"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- PART 0: 트라우마 팝업 -->
+  <div id="trauma-pop"><div class="tp-box">
+    <div class="tp-msg" id="tp-msg"></div>
+    <div class="tp-btns">
+      <button id="tp-phys">육체 트라우마</button>
+      <button id="tp-ment">정신 트라우마</button>
+    </div>
+  </div></div>
+
+  <!-- 소리: 나레이션 음성(결말별) + 연필 -->
+  <audio id="narr-audio" preload="auto"></audio>
+  <audio id="pencil" src="audio/sfx/pencil.mp3" preload="auto"></audio>
+
+<script type="module">
+import { createSkipRing } from "./js/shared/skip-ring.js";
+
+/* ══════════════════════════════════════════════════════════════
+   ★ 테스트 시드 — scenario1 없이 이 파일만 열어도 값이 보이도록 미리 주입.
+   scenario1→여기 연결이 끝나면 TEST_SEED=false 로 두면 실제 값이 쓰임.
+   요청 설정: 결말1, 조사자=데이지 워커, 종료상태[0,3](체력·정신 0 → 트라우마 택1), 승점4.
+   ══════════════════════════════════════════════════════════════ */
+const TEST_SEED = true;
+if(TEST_SEED){
+  localStorage.setItem("arkham_resolution", "1");
+  localStorage.setItem("arkham_decks", JSON.stringify([
+    { investigator:"01502", investigatorName:"데이지 워커", victoryPoints:4, status:[0,3] }
+  ]));
+  localStorage.setItem("arkham_player_order", JSON.stringify(["01502"]));
+}
+
+/* ── localStorage에서 값 읽기 ── */
+function readDecks(){ try{ return JSON.parse(localStorage.getItem("arkham_decks"))||[]; }catch(_){ return []; } }
+function readOrder(){ try{ return JSON.parse(localStorage.getItem("arkham_player_order"))||[]; }catch(_){ return []; } }
+const RESOLUTION = parseInt(localStorage.getItem("arkham_resolution"), 10) || 0;
+let DECKS = readDecks();
+
+/* 대표조사자부터(조우 뽑는 순서) 좌측 열에 배치 */
+function orderedDecks(){
+  const order = readOrder();
+  const byCode = {}; DECKS.forEach(d=> byCode[d.investigator]=d);
+  const out = order.map(c=>byCode[c]).filter(Boolean);
+  DECKS.forEach(d=>{ if(!out.includes(d)) out.push(d); });   // 순서에 없던 덱은 뒤에
+  return out;
+}
+
+/* ── 결말별 나레이션 텍스트(0~3) ── */
+const NARRATION = {
+0:"당신은 간신히 목숨을 건져 집 밖으로 빠져나옵니다. 거실에 있던 여자가 현관문을 닫고 나오며 문을 쾅 소리 나게 닫습니다. \"이 바보들! 무슨 짓을 저질렀는지 알기나 해?\" 그녀는 의자를 문 앞으로 밀어 가져가더니, 등받이를 문손잡이 아래에 끼워 넣어 문을 고정합니다. \"여길 벗어나야 해. 날 따라와. 내가 아는 걸 전부 말해줄 테니까. 저 아래 도사리고 있는 위협이 도시 전체로 퍼져나가는 걸 막을 수 있는 건 우리뿐이야.\" 당신은 반박할 여력이 없습니다. 고개를 끄덕인 당신은 현관을 나서서 비 내리는 거리, 리버타운을 향해 달려가는 여자를 뒤따릅니다.",
+1:"당신은 고개를 끄덕이며 붉은 머리의 여자가 집의 벽과 바닥에 불을 지르도록 내버려 둡니다. 불길이 빠르게 번져나가고, 당신은 그 거센 화염에 휩쓸리지 않으려 서둘러 현관문 밖으로 뛰쳐나갑니다. 보도에 서서 당신은 자신의 모든 소유물이 불길에 삼켜지는 모습을 지켜봅니다. “나를 따라와.” 여자가 말합니다. “너희들은 저 아래 도사리고 있는 위협에 대해 알아야만 해. 혼자서는 어렵겠지만… 함께라면 막아낼 수 있어.”",
+2:"당신은 여자가 당신의 허락도 없이 집에 불을 지를지도 모른다는 우려 때문에, 여자의 요구를 거절하고 그녀를 집 밖으로 내쫓으려 합니다. \"어리석은 놈들! 너희들은 아주 큰 실수를 저지르고 있어!\" 그녀가 경고합니다. \"너희들은 저 아래 도사리고 있는 위협을, 우리 모두가 엄청난 위험에 처했다는 사실을 전혀 모르고 있다고!\" 오늘 밤 겪은 일로 동요하던 당신은 일단 그녀의 말을 들어보기로 합니다. 어쩌면 그녀가 이 기이한 사건들에 대해 무언가 실마리를 제공해 줄지도 모르니까요... 하지만 그녀는 당신을 별로 신뢰하지 않는 듯합니다.",
+3:"집을 빠져나갈 방법을 찾으려 복도로 달려가 보지만, 여전히 뜨겁게 타오르는 장벽이 앞길을 가로막고 있습니다. 꼼짝없이 갇힌 상황에서 집에 침입한 흉포한 괴물 무리가 점점 더 가까이 다가오고, 이제 도망칠 곳은 어디에도 없습니다."
+};
+
+/* Campaign Notes 손글씨 텍스트 — ★사용자 지정 예정(지금은 자리 확인용 예시) */
+const NOTES_TEXT = "붉은 머리의 여인을 따라 리버타운으로 향한다. 그녀가 아는 모든 것을 듣기로 했다.";
+
+/* ── 좌표(배경 1605×903 기준 %). 각 조사자 열 라벨 좌측 % ── */
+const px = (n)=> n/1605*100;
+const COL = [25.86, 38.26, 50.65, 63.06];
+const ROW = { inv:21.2, xp:25.2, trauma:29.3 };
+
+const sheet = document.getElementById("sheet");
+function put(l, t, cls, txt){
+  const el=document.createElement("div");
+  el.className="f "+cls; el.style.left=l+"%"; el.style.top=t+"%"; el.textContent=txt;
+  sheet.appendChild(el); return el;
+}
+
+/* ── 기록지 값 채우기(즉시 기록분: 조사자명·승점·트라우마) ── */
+function fillSheet(){
+  orderedDecks().slice(0,4).forEach((d,i)=>{
+    const cx = COL[i];
+    put(cx+0.5, ROW.inv, "fld", d.investigatorName||"");                 // INVESTIGATOR = 조사자명
+    put(cx+px(185), ROW.xp, "fld r", String(d.victoryPoints||0));        // UNSPENT EXPERIENCE = 승점(우측)
+    // TRAUMA: status[0]==1(후퇴)·2(생존) → 없음 / 0(쓰러짐) → status[1]로 표시
+    const st = d.status||[2,0];
+    if(st[0]===0){
+      const type = st[1];   // 1=체력0(육체), 2=정신0(정신), 3=둘 다(선택값)
+      const which = type===1 ? "phys" : type===2 ? "ment"
+                  : (d.chosenTrauma==="mental" ? "ment" : "phys");
+      const tx = which==="phys" ? cx+px(80) : cx+px(145);
+      put(tx, ROW.trauma, "sm c ico", "1");
+    }
+  });
+}
+
+/* ══ PART 0: 트라우마 선택 팝업(둘 다 0으로 쓰러진 조사자, 순서대로·정지) ══ */
+function traumaPhase(){
+  const need = orderedDecks().filter(d=> (d.status||[])[0]===0 && (d.status||[])[1]===3);
+  const pop = document.getElementById("trauma-pop");
+  const msg = document.getElementById("tp-msg");
+  const bp = document.getElementById("tp-phys"), bm = document.getElementById("tp-ment");
+  return new Promise(resolve=>{
+    let i=0;
+    function next(){
+      if(i>=need.length){ pop.classList.remove("show"); resolve(); return; }
+      const d=need[i];
+      msg.innerHTML = "<b>"+(d.investigatorName||"조사자")+"</b> — 체력과 정신력이 모두 0이 되어 쓰러졌습니다.<br>어떤 트라우마를 받겠습니까?";
+      pop.classList.add("show");
+      bp.onclick=()=>{ d.chosenTrauma="physical"; i++; next(); };
+      bm.onclick=()=>{ d.chosenTrauma="mental";   i++; next(); };
+    }
+    next();
+  });
+}
+
+/* ══ PART 1: 나레이션(한 글자씩, 자리 미리 고정 → 안 밀림) ══ */
+let narrGen = 0, narrDone = false, narrSpansRef = [];
+// 좌클릭 → 나레이션 전체 텍스트 즉시 노출(넘어가진 않음; 다 읽고 ESC 길게로 스킵)
+document.getElementById("narration").addEventListener("mousedown", (e)=>{
+  if(e.button!==0 || document.getElementById("narration").classList.contains("hide")) return;
+  narrSpansRef.forEach(s=> s.classList.add("on"));
+});
+const skip = createSkipRing({
+  ringEl: document.getElementById("narr-skip-fg"),
+  holdMs: 1000,
+  isDone: ()=> narrDone,
+  onComplete: ()=> finishNarration(),
+});
+function narrationPhase(){
+  return new Promise(resolve=>{
+    narrGen++; const gen=narrGen; narrDone=false;
+    const box=document.getElementById("narr-text");
+    const text=NARRATION[RESOLUTION] || NARRATION[0];
+    box.innerHTML="";
+    // 모든 글자를 미리 span으로 깔아 자리 확보(opacity만 0→1) → 줄바꿈돼도 위로 안 밀림
+    const spans=[...text].map(ch=>{ const s=document.createElement("span"); s.className="nc"; s.textContent=ch; box.appendChild(s); return s; });
+    narrSpansRef=spans;   // 좌클릭 노출 대상
+    // 음성(파일 있으면 재생, 없으면 무음)
+    const au=document.getElementById("narr-audio");
+    au.src="cutscenes/ending"+RESOLUTION+".mp3";
+    au.onerror=()=>{}; try{ au.currentTime=0; au.play().catch(()=>{}); }catch(_){}
+    const TOTAL=40000, per=TOTAL/spans.length;   // 일괄 40초
+    skip.enable();
+    let k=0;
+    (function step(){
+      if(gen!==narrGen) return;                  // 스킵/재시작되면 중단
+      if(k>=spans.length){ setTimeout(()=>finishNarration(), 1500); return; }
+      spans[k].classList.add("on"); k++;
+      setTimeout(step, per);
+    })();
+    finishNarration = ()=>{
+      if(narrDone) return; narrDone=true; narrGen++;
+      skip.disable();
+      spans.forEach(s=>s.classList.add("on"));   // 스킵 시 즉시 완성
+      try{ au.pause(); }catch(_){}
+      document.getElementById("narration").classList.add("hide");
+      setTimeout(resolve, 1300);                 // 페이드아웃 후 다음 파트
+    };
+  });
+}
+let finishNarration = ()=>{};   // narrationPhase 안에서 실제 구현 주입
+
+/* ══ PART 2: 기록지 페이드인 + Campaign Notes 손글씨 ══ */
+function sheetPhase(){
+  document.getElementById("stage2").classList.add("show");
+  setTimeout(()=> writeNotes(NOTES_TEXT), 1600);   // 밝아진 뒤 손글씨 시작
+}
+
+/* 만년필 이미지(있으면 사용) 준비 — 없으면 SVG 폴백 */
+function initPen(){
+  const pen=document.getElementById("pen");
+  const SVG='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
+    +'<g transform="rotate(38 50 50)">'
+    +'<rect x="44" y="6" width="12" height="60" rx="4" fill="#1c2233"/>'
+    +'<rect x="44" y="6" width="12" height="16" rx="4" fill="#c8a24a"/>'
+    +'<polygon points="44,66 56,66 50,92" fill="#c9ccd6"/>'
+    +'<rect x="49" y="66" width="2" height="20" fill="#3a3f4c"/>'
+    +'</g></svg>';
+  pen.innerHTML=SVG;
+  const img=new Image();
+  img.onload=()=>{ pen.innerHTML='<img src="images/pen.png" alt="">'; };  // 실제 이미지 있으면 교체
+  img.src="images/pen.png";
+}
+
+function writeNotes(text){
+  const wrap=document.getElementById("notes-write");
+  const pen=document.getElementById("pen");
+  wrap.innerHTML="";
+  const spans=[...text].map(ch=>{ const s=document.createElement("span"); s.className="wc"; s.textContent=ch; wrap.appendChild(s); return s; });
+
+  // 연필 소리: 재생이 끝날 때마다 아직 쓰는 중이면 반복
+  const pencil=document.getElementById("pencil");
+  let writing=true;
+  pencil.onended=()=>{ if(writing){ try{ pencil.currentTime=0; pencil.play().catch(()=>{}); }catch(_){} } };
+  try{ pencil.currentTime=0; pencil.play().catch(()=>{}); }catch(_){}
+  pen.classList.add("show");
+
+  const sr=sheet.getBoundingClientRect();
+  const PER=140;   // 손글씨 속도(글자당 ms) — 추후 조절
+  let k=0;
+  (function step(){
+    if(k>=spans.length){
+      writing=false;
+      try{ pencil.pause(); }catch(_){}
+      setTimeout(()=> pen.classList.remove("show"), 400);
+      return;
+    }
+    const s=spans[k]; s.classList.add("on");
+    // 펜촉을 방금 쓴 글자 위치로 이동(그럴싸한 궤적)
+    const cr=s.getBoundingClientRect(), sr2=sheet.getBoundingClientRect();
+    pen.style.left=((cr.left+cr.width*0.5 - sr2.left)/sr2.width*100)+"%";
+    pen.style.top =((cr.top - sr2.top)/sr2.height*100)+"%";
+    k++;
+    setTimeout(step, PER);
+  })();
+}
+
+/* ── 부팅: 값 기록 → (트라우마 선택) → 나레이션 → 기록지 ── */
+async function boot(){
+  initPen();
+  await traumaPhase();         // [0,3] 조사자 트라우마 택1(정지) → 선택값(chosenTrauma) 확정
+  fillSheet();                 // 조사자명·승점·트라우마(선택값 반영) 즉시 기록(기록지는 아직 숨김)
+  await narrationPhase();      // 결말 나레이션(40초, ESC 길게 스킵)
+  sheetPhase();                // 기록지 페이드인 + 손글씨
+}
+boot();
+</script>
+</body>
+</html>

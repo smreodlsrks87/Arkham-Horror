@@ -49,8 +49,8 @@
    },
    {
     "timing": "reaction",
-    "auto": true,
     "when": "after_investigate_success",
+    "prompt_ko": "조사 성공! 돈을 받으시겠습니까? (자원 +1)",
     "do": [
      {
       "effect": "gain_resources",

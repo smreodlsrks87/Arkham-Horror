@@ -43,7 +43,7 @@
     text-shadow:0 2px 8px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.9);}
   .tag3d .floor{display:block;font-size:10px;letter-spacing:.15em;text-transform:uppercase;
     opacity:.8;text-align:center;margin-top:1px;}
-  /* 공개된 방: 이름 아래 정보(은폐도·단서·강제·승점) — 맵에서 상시 확인, 전체보기로 먼 방도 */
+  /* 공개된 방: 이름 아래 정보(장막·단서·강제·승점) — 맵에서 상시 확인, 전체보기로 먼 방도 */
   .tag3d .rt-name{display:block;text-align:left;}   /* 공개 방: 이름도 좌측(승점만 가운데) */
   .tag3d .rt-sub{display:block;font-size:11px;letter-spacing:.03em;color:#e8dcc0;text-align:left;margin-top:2px;font-weight:600;}
   .tag3d .rt-forced{display:block;font-size:11px;letter-spacing:.02em;color:#f0b0b0;text-align:left;margin-top:3px;font-weight:600;max-width:250px;white-space:normal;line-height:1.35;}
@@ -293,10 +293,29 @@
   #action-menu, #ability-menu{ position:absolute; z-index:150; display:none; min-width:118px; padding:6px;
     background:linear-gradient(180deg,#1d1626,#120d1a); border:1px solid #6a5a3a; border-radius:10px;
     box-shadow:0 12px 34px rgba(0,0,0,.7), inset 0 0 24px rgba(212,177,90,.05); }
-  /* 플레이된 카드의 uses(탄약·보급) 뱃지 */
-  .pc-uses{ position:absolute; top:-7px; right:-7px; min-width:22px; height:22px; border-radius:50%;
-    background:#2a1e12; border:1.5px solid #c8a24a; color:#f0d890; font-size:14px; font-weight:700;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.6); }
+  /* 플레이된 카드의 uses(자원) — 숫자 대신 종류별 입체 토큰을 카드 위에 올림 */
+  .pc-tokens{ position:absolute; top:7%; left:50%; transform:translateX(-50%);
+    display:flex; flex-wrap:wrap; justify-content:center; gap:3px; max-width:86%;
+    pointer-events:none; z-index:3; }
+  .rtok{ display:inline-block; }
+  /* 탄약 = 놋쇠 총알(같은 자원은 모두 동일 모양) */
+  .rtok.tk-ammo{ width:9px; height:16px; border-radius:5px 5px 3px 3px;
+    background:linear-gradient(180deg,#ffe9a6 0%,#f0cf72 22%,#c99a3a 48%,#a2761f 100%);
+    box-shadow:inset -1px -1px 1.5px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.6); }
+  /* 충전 = 신비 보랏빛 구슬 */
+  .rtok.tk-charge{ width:13px; height:13px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #ecc4ff, #9a5fe0 52%, #4a1f7a);
+    box-shadow:0 0 6px rgba(160,90,220,.65), inset -1px -1px 2px rgba(0,0,0,.4); }
+  /* 비밀 = 청록 구슬 */
+  .rtok.tk-secret{ width:13px; height:13px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #b0efe8, #2a9aa0 54%, #14555a);
+    box-shadow:0 0 5px rgba(60,190,190,.6), inset -1px -1px 2px rgba(0,0,0,.4); }
+  /* 보급 = 황갈색 보급 꾸러미 */
+  .rtok.tk-supply{ width:14px; height:12px; border-radius:3px; border:1px solid #6a5a34;
+    background:linear-gradient(180deg,#d3bd8a,#8f7a4a);
+    box-shadow:inset -1px -1px 2px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.55); }
+  /* 단서 = images/clue.png */
+  .rtok.tk-clue img{ width:16px; height:16px; display:block; filter:drop-shadow(0 1px 2px rgba(0,0,0,.65)); }
   .played-card.pc-exhausted{ transform:rotate(90deg); transition:transform .25s ease; }   /* 소진(눕힘) */
   .am-item{ padding:9px 20px; font-size:18px; color:#e8dfc8; text-align:center; white-space:nowrap;
     border-radius:6px; cursor:pointer; letter-spacing:2px; user-select:none; }
@@ -738,7 +757,7 @@
   <!-- 맵 위 HUD들 -->
   <div class="hud" id="title">
     <h1>로랜드의 저택</h1>
-    <div class="loc-info" id="loc-info">은폐도 — · 남은 단서 —</div>
+    <div class="loc-info" id="loc-info">장막 — · 남은 단서 —</div>
     <div class="cur" id="cur">현재: 복도</div>
     <div class="ap" id="ap">행동력 <b id="ap-n">3</b> / 3</div>
     <button id="advance-btn" style="display:none">이야기 진행</button>
@@ -1941,12 +1960,24 @@ function assetHSBadges(p, c){
 }
 /* 플레이된 자산 영역 */
 S.playedCards=[];
+// uses(자원)를 숫자가 아닌 종류별 토큰으로 카드 위에 표시. 같은 종류는 모두 동일 모양(총알 등).
+const USES_KO = { ammo:"탄약", supply:"보급", secret:"비밀", charge:"충전", clue:"단서" };
+function usesTokensHtml(uses){
+  if(!uses || !uses.type) return "";
+  const n = Math.max(0, uses.count|0);
+  const ko = USES_KO[uses.type] || uses.type;
+  const one = (uses.type==="clue")
+    ? '<span class="rtok tk-clue"><img src="images/clue.png" alt=""></span>'
+    : '<span class="rtok tk-'+uses.type+'"></span>';
+  let inner=""; for(let i=0;i<n;i++) inner+=one;
+  return '<div class="pc-tokens" title="'+ko+' '+n+'개">'+inner+'</div>';   // 0개면 빈 컨테이너(토큰 없음)
+}
 function renderPlayArea(){
   const area=document.getElementById("play-area");
   const engaged = (S.enemies||[]).filter(e=>e.engaged);   // 교전 중인 적 = 룰상 위협영역 → 카드로도 표시
   if(!S.playedCards.length && !engaged.length){ area.innerHTML='<div class="play-placeholder">플레이된 자산</div>'; return; }
   const assetsHtml = S.playedCards.map((p,idx)=>{
-    const badge = p.uses ? '<span class="pc-uses">'+p.uses.count+'</span>' : "";   // 탄약·보급 등
+    const badge = usesTokensHtml(p.uses);   // 탄약·보급·충전·비밀·단서 = 종류별 토큰
     const c=S.byCode[p.code]||{};
     const hsB = assetHSBadges(p, c);   // 체력/정신력 배지(있는 자산만) — 조사자와 동일 스타일, 위치는 hs_layout
     const boostCls = commitMode ? (canBoost(idx) ? ' pc-boost-ok' : ' pc-boost-no') : "";   // 커밋 중: 강화 가능 자산만 밝게
@@ -3945,7 +3976,7 @@ function updateLocInfo(){
   const remain=cluesInRoom(cur).length;   // 아직 안 가져간 단서 수
   const mod=S.shroudMod[cur]||0;
   const shroudTxt = R.shroud + (mod?' <span class="li-mod">(+'+mod+')</span>':'');   // 원래값 옆에 (+2)
-  document.getElementById("loc-info").innerHTML="은폐도 "+shroudTxt+" · 남은 단서 "+remain;
+  document.getElementById("loc-info").innerHTML="장막 "+shroudTxt+" · 남은 단서 "+remain;
   if(typeof renderRoomTags==="function") renderRoomTags();   // 공개된 방 이름표의 남은 단서 등 갱신
 }
 function focusRoom(k){
@@ -4079,35 +4110,40 @@ function doInvestigate(cm){
       [{label:"확인", primary:true, act:hidePopup}]); return;
   }
   S.actionPoints--; updateAP();
-  provokeAoO(()=> startSkillTest({       // 조사도 행동 → 기회공격 먼저. 지식 테스트 vs 은폐도(커밋 윈도우 → 판정)
+  provokeAoO(()=> startSkillTest({       // 조사도 행동 → 기회공격 먼저. 지식 테스트 vs 장막(커밋 윈도우 → 판정)
     skill:"intellect", testType:"investigate", location:cur, difficulty:effShroud(cur),   // 은폐 수정치(안개 +2) 반영
     ctx:{ charCode: activeInvestigator?activeInvestigator.investigator:null, myLocation:cur, cluesAt:(room)=>cluesInRoom(room).length, blanked:investigatorBlanked() },
     actionLabel:"조사", targetLabel:"은폐",
     onResolve:(r)=> applyInvestigateResult(cm, r),
   }));
 }
-// 특정 시점(when)의 반응 발동.
-//   ab.auto:true  → 순수 이득이라 자동 발동(밀란 자원 등)
-//   그 외         → 룰상 선택(may)이므로 "사용?" 확인 후 발동(확인 UI는 이후 — 지금은 안내만)
-// 반환: 자동 적용분의 팝업 덧붙일 문구.
-function triggerReactions(when){
-  const extra=[];
-  S.playedCards.forEach(p=>{
-    ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
-      if(ab.timing!=="reaction" || ab.when!==when) return;
-      const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
-      if(ab.auto){
-        (ab.do||[]).forEach(eff=>{
-          if(eff.effect==="gain_resources"){ const v=eff.value||1; gainResources(v);
-            addLog(name+" 반응: 자원 +"+v+" (보유 "+S.invResource+")."); extra.push("("+name+") 자원 +"+v); }
-          else addLog(name+" 반응("+eff.effect+") — 미구현.");
-        });
-      }else{
-        addLog(name+" 반응 사용 가능 — 확인 후 발동(확인 UI 이후 구현).");   // TODO: 선택 반응 확인 팝업
-      }
-    });
-  });
-  return extra;
+// 플레이영역 자산의 반응(timing:reaction, when=시점) 발동.
+//   ab.auto:true  → 순수 이득이라 자동 발동
+//   그 외         → 룰상 선택(may) → 반응격발 아이콘 확인 팝업(밀란=조사 성공 후 자원 등)으로 순차 발동
+// 확인 팝업은 비동기라 결과 팝업이 닫힌 뒤 호출한다. 모두 끝나면 done().
+const RX_ICON = '<span style="font-family:\'ArkhamIcons\',serif;color:#e0b34a;font-size:26px;vertical-align:-4px;">y</span>';
+function firePlayedReactions(when, done){
+  done = done || function(){};
+  const q=[];
+  S.playedCards.forEach(p=> ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
+    if(ab.timing==="reaction" && ab.when===when) q.push({ p, ab });
+  }));
+  (function next(){
+    if(!q.length){ done(); return; }
+    const { p, ab } = q.shift();
+    const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
+    const apply=()=>{ (ab.do||[]).forEach(eff=>{
+      if(eff.effect==="gain_resources"){ const v=eff.value||1; gainResources(v); addLog(name+" 반응: 자원 +"+v+" (보유 "+S.invResource+")."); }
+      else if(EFFECTS[eff.effect]){ EFFECTS[eff.effect](eff, null); }
+      else addLog(name+" 반응("+eff.effect+") 미구현.");
+    }); };
+    if(ab.auto){ apply(); next(); return; }                 // 순수 이득 = 자동
+    const prompt = ab.prompt_ko || (name+' 반응을 발동하시겠습니까?');
+    showPopup(RX_ICON+' <b>반응 격발</b> — '+name+'<br>'+prompt, [
+      {label:"아니오", act:()=>{ hidePopup(); next(); }},
+      {label:"예", primary:true, act:()=>{ hidePopup(); apply(); next(); }},
+    ]);
+  })();
 }
 // 은폐 등 "단서 발견 가로채기" 반응을 가진, 위협영역의 카드(단서 남음) 찾기
 function coverUpRedirect(){
@@ -4149,16 +4185,17 @@ function resolveInvestigateSuccess(r, base, boxCls, cm){
   const wouldDiscover = Math.min(entitled, present);  // 있는 단서 수가 상한(0개면 0)
   discoverClues(wouldDiscover, cur, (gained, redirected)=>{
     const drawLines = applyCommittedDraws(r);                             // 배짱=드로우
-    const reactionLines = triggerReactions("after_investigate_success");  // 밀란=자원
     let mainExtra;
     if(present===0)            mainExtra = '이 장소엔 획득할 단서가 없습니다.';
     else if(redirected && gained) mainExtra = '단서 '+gained+'개 획득 · 은폐에서 '+redirected+'개 제거.';
     else if(redirected)        mainExtra = '은폐에서 '+redirected+'개 제거 (맵 단서는 유지).';
     else                       mainExtra = '단서 '+gained+'개를 획득했습니다. (보유 '+S.invClue+'개)';
     const gotClue = gained>0;
-    const extra = [mainExtra].concat(drawLines, reactionLines).filter(Boolean).join(' ');
+    const extra = [mainExtra].concat(drawLines).filter(Boolean).join(' ');
     showPopup(testResultHtml({...base, extra}),
-      [{label:"확인", primary:true, act:()=>{ hidePopup(); if(gotClue) maybeShowAdvanceTip(); }}], null, boxCls);
+      [{label:"확인", primary:true, act:()=>{ hidePopup();
+        firePlayedReactions("after_investigate_success", ()=>{ if(gotClue) maybeShowAdvanceTip(); });   // 밀란=조사 성공 후 자원(확인 팝업)
+      }}], null, boxCls);
   }, cm);   // cm = 클릭한 단서(우선 수거)
 }
 // 조사 판정 결과 적용(단서 획득·결과 팝업)
@@ -4186,13 +4223,13 @@ function applyInvestigateResult(cm, r){
 }
 
 /* 3D 이름표 — 방 중심을 화면 좌표로 변환해 HTML 라벨 띄움.
-   미공개: 이름만. 공개(처음 들어간 뒤): 이름+은폐도·남은단서+강제+승점 → 맵에서 상시 확인. */
+   미공개: 이름만. 공개(처음 들어간 뒤): 이름+장막·남은단서+강제+승점 → 맵에서 상시 확인. */
 function roomTagHtml(k){
   const R=ROOMS[k];
   if(!S.revealedRooms[k]) return R.name;   // 미공개 = 이름만(2층 등 표기 없음)
   const shroud=effShroud(k), remain=cluesInRoom(k).length, info=ROOM_INFO[k]||{};
   let h='<span class="rt-name">'+R.name+'</span>';
-  h+='<span class="rt-sub">은폐도 '+shroud+' · 남은 단서 '+remain+'</span>';
+  h+='<span class="rt-sub">장막 '+shroud+' · 남은 단서 '+remain+'</span>';
   if(k==="parlor"){   // 거실: 후퇴는 상시, 협상 줄은 리타가 남아있을 때만
     let pi=info.withdrawInfo||"";
     if(S.ritaPawnActive && info.ritaInfo) pi += (pi?"<br>":"")+info.ritaInfo;
@@ -4827,12 +4864,14 @@ function assignBoth(dmg, hor, opts, next){
   soakAll.forEach(p=>{ const i=S.playedCards.indexOf(p); dA[i]=0; hA[i]=0; });
   const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
   const commit=()=>{
+    const dogRx=[];   // 경비견 등 피해 반응(할당 커밋 후 순차 확인)
     soakAll.forEach(p=>{ const i=S.playedCards.indexOf(p);
-      if(dA[i]>0){ p.dmg=(p.dmg||0)+dA[i]; addLog(S.byCode[p.code].name+"에 피해 "+dA[i]+" 할당."); triggerAssetDamageReaction(p, dA[i], opts); }
+      if(dA[i]>0){ p.dmg=(p.dmg||0)+dA[i]; addLog(S.byCode[p.code].name+"에 피해 "+dA[i]+" 할당."); collectAssetDamageReaction(p, opts, dogRx); }
       if(hA[i]>0){ p.hor=(p.hor||0)+hA[i]; addLog(S.byCode[p.code].name+"에 공포 "+hA[i]+" 할당."); }
     });
     applyToInvestigator(dmg-sum(dA), hor-sum(hA));
-    renderPlayArea(); checkAssetsDefeat(); next();
+    renderPlayArea(); checkAssetsDefeat();
+    askAssetDamageReactions(dogRx, next);   // 반응 확인 팝업들 끝난 뒤 다음 진행
   };
   const open=()=>{
     const render=()=>{
@@ -4869,14 +4908,30 @@ function assignBoth(dmg, hor, opts, next){
   };
   open();
 }
-// 경비견: 자신이 적 공격 피해를 받을 때 → 공격 적에게 피해
-function triggerAssetDamageReaction(p, amount, opts){
+// 경비견 등: 자산이 적 공격 피해를 받을 때 → "공격한 적에게 피해?" 반응(수집만; 커밋 후 순차 확인 팝업)
+function collectAssetDamageReaction(p, opts, into){
   if(!opts.attackingEnemy) return;
   ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
     if(ab.timing==="reaction" && ab.when==="self_takes_damage_from_enemy_attack")
-      (ab.do||[]).forEach(e=>{ if(e.effect==="damage" && e.target==="attacking_enemy" && S.enemies.includes(opts.attackingEnemy)){
-        addLog((S.byCode[p.code].name)+" 반응 — 공격한 적에게 피해 "+(e.value||1)+"."); damageEnemy(opts.attackingEnemy, e.value||1); flushDefeatReaction(); }});   // 경비견이 격파 시 로랜드 반응 즉시 처리(잔류 방지)
+      (ab.do||[]).forEach(e=>{ if(e.effect==="damage" && e.target==="attacking_enemy")
+        into.push({ p, enemy:opts.attackingEnemy, value:e.value||1 }); });
   });
+}
+// 수집된 자산 피해 반응 → 반응격발 아이콘 확인 팝업 순차(이미 처치·부재 적은 스킵) → 끝나면 done()
+function askAssetDamageReactions(list, done){
+  done = done || function(){};
+  (function next(){
+    while(list.length && (!list[0].enemy || !S.enemies.includes(list[0].enemy))) list.shift();   // 죽었/사라진 적은 스킵
+    if(!list.length){ done(); return; }
+    const { p, enemy, value } = list.shift();
+    const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
+    const enName = enemyCard(enemy) ? enemyCard(enemy).name : "적";
+    showPopup(RX_ICON+' <b>반응 격발</b> — '+name+'<br>방금 피해를 입힌 <b>'+enName+'</b>에게 피해 <b>'+value+'</b>을(를) 주시겠습니까?', [
+      {label:"아니오", act:()=>{ hidePopup(); next(); }},
+      {label:"예(피해 "+value+")", primary:true, act:()=>{ hidePopup();
+        addLog(name+" 반응 — "+enName+"에게 피해 "+value+"."); damageEnemy(enemy, value); flushDefeatReaction(); next(); }},
+    ]);
+  })();
 }
 // 자산 파괴(체력/정신 초과) → 버림
 function checkAssetsDefeat(){
@@ -5025,10 +5080,11 @@ const csRing   = document.getElementById("cs-skip-ring");
 const csOk     = document.getElementById("cutscene-ok");
 const csSkipUI = document.getElementById("cutscene-skip");
 const CS_RING_LEN = 88;
-const CS_SKIP_MS = 2000;
+const CS_SKIP_MS = 1000;
 const CS_TYPE_MS_PER_CHAR = 55;   // 글자당 타이핑 속도(느긋하게)
 
 let csActive=false, csDone=false, csTimers=[], csOnEnd=null;
+let csReveal=false, csFullText="";   // 좌클릭 시 전체 텍스트 즉시 노출용
 
 // (삭제됨) 탭 복귀 시 미디어 재생 핸들러 — 처음부터 되감겨 재생되는 버그를 유발.
 // 알트탭·작업탭 전환 시 영상 끊김은 .exe 패키징(backgroundThrottling:false)에서 해결 예정.
@@ -5040,7 +5096,7 @@ function playCutscene(id, onEnd){
   cancelAllMapActions();            // 컷신 시작 → 진행 중이던 이동·조사·팝업 전부 취소
   S.phaseBusy = true;                 // 컷신 시작 → 입력 잠금(조사자 단계 복귀 시 풀림)
   csOnEnd = onEnd || null;
-  csDone=false; csActive=true; csTimers=[];
+  csDone=false; csActive=true; csTimers=[]; csReveal=false;
   csTextBox.innerHTML=""; csTextBox.classList.add("cs-cursor");
 
   csScreen.style.display="";        // endCutscene에서 none 처리된 것 복구
@@ -5100,18 +5156,27 @@ document.addEventListener("keydown", (e)=>{
   if(csCanProceed()){ e.preventDefault(); endCutscene(false); }
 });
 document.addEventListener("mousedown", (e)=>{
-  if(csCanProceed()){ endCutscene(false); }
+  if(csCanProceed()){ endCutscene(false); return; }
+  // 타이핑 중 좌클릭 → 전체 텍스트 즉시 노출(넘어가진 않음; 다 읽고 ESC 길게로 스킵)
+  if(csActive && !csReveal && e.button===0) revealCutsceneText();
 });
+function revealCutsceneText(){
+  if(!csActive || csReveal) return;
+  csReveal=true;                       // typeCutsceneText의 step()이 이후 멈춤
+  csTextBox.textContent = csFullText;  // 전체 즉시 표시
+  csTextBox.classList.remove("cs-cursor");
+}
 
 // 알트탭 시 음소거 영상 자동정지는 JS로 잡지 않는다(되감김 버그 유발).
 // → .exe 패키징(backgroundThrottling:false)에서 근본 해결 예정. (위 주석 참고)
 
 function typeCutsceneText(text, totalMs){
   let i=0;
+  csFullText = text;   // 좌클릭 즉시 노출용
   // 총 시간이 지정되면 글자당 간격 = 총시간/글자수, 아니면 기본 속도
   const perChar = (totalMs && text.length) ? (totalMs/text.length) : CS_TYPE_MS_PER_CHAR;
   function step(){
-    if(csDone) return;
+    if(csDone || csReveal) return;
     csTextBox.textContent = text.slice(0, i+1);
     i++;
     if(i < text.length) csTimers.push(setTimeout(step, perChar));

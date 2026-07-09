@@ -904,10 +904,11 @@ const PROLOGUE_LINES = [
 
 const TYPING_TOTAL_MS = 73000;   // 전체 타이핑 1분 13초
 const PROLOGUE_END_MS = 77000;   // 시작 후 1분 17초에 다음 장면
-const SKIP_HOLD_MS    = 2000;    // ESC 2초 길게
+const SKIP_HOLD_MS    = 1000;    // ESC 1초 길게
 
 let prologueTimers = [];
 let prologueDone = false;
+let prologueRevealed = false, prologueLineEls = [];   // 좌클릭 시 전체 텍스트 즉시 노출용
 
 function startPrologue(){
   const scr = document.getElementById("screen-prologue");
@@ -944,11 +945,12 @@ function runTyping(textBox, audio){
     textBox.appendChild(el);
     return el;
   });
+  prologueRevealed=false; prologueLineEls=lineEls;   // 좌클릭 노출 대상 등록
 
   // 단일 타임라인: (줄 인덱스, 글자 인덱스)를 순서대로 진행
   let li=0, ci=0, t=0;
   function step(){
-    if(prologueDone) return;
+    if(prologueDone || prologueRevealed) return;
     // 빈 줄은 건너뜀
     while(li<PROLOGUE_LINES.length && PROLOGUE_LINES[li].length===0) li++;
     if(li>=PROLOGUE_LINES.length){
@@ -974,6 +976,15 @@ function runTyping(textBox, audio){
 }
 
 function clearPrologueTimers(){ prologueTimers.forEach(t=>clearTimeout(t)); prologueTimers=[]; }
+
+// 좌클릭 → 프롤로그 전체 텍스트 즉시 노출(넘어가진 않음; 다 읽고 ESC 길게로 스킵)
+function revealPrologue(){
+  if(prologueDone || prologueRevealed) return;
+  prologueRevealed=true;
+  PROLOGUE_LINES.forEach((line,idx)=>{ if(prologueLineEls[idx] && line!=="") prologueLineEls[idx].textContent=line; });
+  prologueLineEls.forEach(e=>e.classList.remove("pl-cursor"));
+}
+document.getElementById("screen-prologue").addEventListener("mousedown", (e)=>{ if(e.button===0) revealPrologue(); });
 
 function endPrologue(){
   if(prologueDone) return;
