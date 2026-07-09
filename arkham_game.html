@@ -299,13 +299,20 @@
 
   /* 좌: 조사자 선택 */
   .col-invest{
-    flex:0 0 320px; border-right:1px solid var(--edge);
+    flex:0 0 420px; border-right:1px solid var(--edge);   /* 조사자 탭 30% 확대(320→420) — 그림 안 짤리게 */
     padding:20px; overflow-y:auto;
   }
   .col-title{
-    font-size:12px; letter-spacing:.25em; text-transform:uppercase;
+    font-size:17px; letter-spacing:.08em; text-transform:uppercase;   /* 조사자 카드명 크기로 확대(12→17) */
     color:var(--muted); margin:0 0 16px;
   }
+  /* 카드풀 직업 분류 드롭다운 */
+  .pool-faction{
+    margin-left:12px; font-family:inherit; font-size:17px; letter-spacing:.05em;
+    color:var(--pale, #e8e0f0); background:#12141c; border:1px solid var(--edge, #2a2e3a);
+    border-radius:4px; padding:3px 8px; cursor:pointer; vertical-align:middle; text-transform:none;
+  }
+  .pool-faction:hover{ border-color:var(--glow-dim, #6a5a8a); }
   .invest-card{
     border:1px solid var(--edge); border-radius:3px; overflow:hidden;
     margin-bottom:14px; cursor:pointer; background:#0a0c12;
@@ -317,8 +324,8 @@
     box-shadow:0 0 28px rgba(201,168,76,.55), inset 0 0 0 1px rgba(201,168,76,.4);
   }
   .invest-card.sel .nm{ color:var(--gold); font-weight:600; }
-  .invest-card img{ width:100%; display:block; }
-  .invest-card .nm{ padding:8px 10px; font-size:14px; letter-spacing:.05em; }
+  .invest-card img{ width:100%; height:auto; display:block; object-fit:contain; }   /* 잘림 없이 전체 표시 */
+  .invest-card .nm{ padding:10px 12px; font-size:17px; letter-spacing:.05em; }
   .invest-card .ph{
     padding:30px 10px; text-align:center; color:var(--muted); font-size:12px;
   }
@@ -340,8 +347,8 @@
   .col-pool{ flex:1 1 auto; padding:20px 24px; overflow-y:auto; }
   .pool-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
-    gap:14px;
+    grid-template-columns:repeat(4, 1fr);   /* 한 줄 4장 → 카드 크게 */
+    gap:18px;
   }
   .pcard{
     border:1px solid var(--edge); border-radius:4px; overflow:hidden;
@@ -355,7 +362,7 @@
   }
   .pcard img{ width:100%; display:block; aspect-ratio:5/7; object-fit:cover; }
   .pcard .nm{
-    padding:6px 8px; font-size:12px; letter-spacing:.03em;
+    padding:8px 10px; font-size:15px; letter-spacing:.03em;
     border-top:1px solid var(--edge); color:rgba(232,230,221,.85);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
@@ -387,7 +394,7 @@
 
   /* 우측: 덱 목록 칸 — 세로 배치(목록 위 / 카운터·버튼 하단 고정) */
   .col-deck{
-    flex:0 0 300px; border-left:1px solid var(--edge);
+    flex:0 0 330px; border-left:1px solid var(--edge);   /* 덱 탭 공간 조금 확대(300→330) */
     padding:20px; display:flex; flex-direction:column; min-height:0;
   }
   .col-deck .col-title{ flex:0 0 auto; }
@@ -403,10 +410,10 @@
   .confirm-btn{ padding:9px 22px; font-size:14px; }
   .confirm-btn:disabled{ opacity:.35; cursor:not-allowed; }
   .dcard{
-    display:flex; align-items:center; gap:8px;
-    padding:8px 10px; margin-bottom:4px;
+    display:flex; align-items:center; gap:7px;
+    padding:7px 9px; margin-bottom:3px;                /* 행 살짝 축소(공간 확보) */
     border:1px solid var(--edge); border-radius:4px;
-    background:#0a0c12; cursor:pointer; font-size:13px;
+    background:#0a0c12; cursor:pointer; font-size:15px;  /* 덱 카드 텍스트 확대(13→15, 한 줄 유지) */
     transition:border-color .15s, background .15s;
   }
   .dcard:hover{ border-color:var(--blood); background:#160d0d; }
@@ -446,19 +453,19 @@
   /* 카드 호버 번역 툴팁 (deckbuilder.html 방식) */
   #tip{
     position:fixed; display:none; z-index:200;
-    width:300px; max-height:92vh; overflow:auto;
+    width:420px; max-height:92vh; overflow:auto;                /* 텍스트 여유 위해 폭 확대 */
     background:#15111c; border:1px solid var(--glow-dim);
-    border-radius:10px; padding:14px;
+    border-radius:10px; padding:18px 20px;
     box-shadow:0 8px 30px rgba(0,0,0,.7), 0 0 22px rgba(143,214,200,.12);
-    font-size:13px; line-height:1.6; pointer-events:none;
+    font-size:19px; line-height:1.6; pointer-events:none;      /* 본문 13→19 (+50%) */
     font-family:'Hoefler Text','Iowan Old Style','Times New Roman',serif;
     color:var(--pale);
   }
-  #tip .tn{ font-size:17px; font-weight:600; margin-bottom:2px; color:#fff; }
-  #tip .ts{ color:var(--glow); font-size:12px; margin-bottom:5px; letter-spacing:.03em; }
-  #tip .tt{ font-style:italic; color:#b9c9c4; font-size:12px; margin-bottom:6px; }
-  #tip .tx{ white-space:pre-line; border-top:1px solid var(--edge); padding-top:8px; }
-  #tip .tf{ margin-top:8px; font-style:italic; color:var(--muted); font-size:12px; }
+  #tip .tn{ font-size:25px; font-weight:600; margin-bottom:3px; color:#fff; }   /* 17→25 */
+  #tip .ts{ color:var(--glow); font-size:18px; margin-bottom:6px; letter-spacing:.03em; }  /* 12→18 */
+  #tip .tt{ font-style:italic; color:#b9c9c4; font-size:18px; margin-bottom:8px; }          /* 12→18 */
+  #tip .tx{ white-space:pre-line; border-top:1px solid var(--edge); padding-top:10px; }
+  #tip .tf{ margin-top:10px; font-style:italic; color:var(--muted); font-size:18px; }        /* 12→18 */
 
   /* 무대 축소 기준점을 좌상단으로 고정 (JS의 left/top 계산과 일치) */
   #stage{ transform-origin:top left; }
@@ -521,7 +528,6 @@
   <div id="screen-deck">
     <div class="deck-head">
       <h1>Investigator &amp; Deck</h1>
-      <span class="sub">Night of the Zealot</span>
     </div>
     <div class="deck-body">
       <div class="col-invest">
@@ -529,13 +535,15 @@
         <div id="invest-list"></div>
       </div>
       <div class="col-pool">
-        <p class="col-title">카드 풀 — Night of the Zealot</p>
+        <p class="col-title">카드 풀
+          <select id="pool-faction" class="pool-faction"><option value="all">전체</option></select>
+        </p>
         <div class="pool-grid" id="pool-grid">
           <div class="loading"><span class="pulse">카드를 불러오는 중…</span></div>
         </div>
       </div>
       <div class="col-deck">
-        <p class="col-title">덱 목록 <span class="col-sub">이름 클릭 = 1장 빼기</span></p>
+        <p class="col-title">덱 목록</p>
         <div id="deck-list"><div class="deck-empty">조사자를 고르고 카드를 담으세요.</div></div>
         <div class="deck-foot">
           <span class="deck-count" id="deck-count">0/30</span>
@@ -617,6 +625,9 @@ const NOTZ_CODES = ["01501","01504","01516","01517","01518","01519","01520",
 
 const EN_API = "https://arkhamdb.com";       /* 영문 이미지 */
 const KO_API = "https://ko.arkhamdb.com";     /* 한국어 텍스트 */
+// arkhamdb가 느리거나 순간 실패해 카드 이미지가 검게 남을 때 한 번 재시도(캐시 안 된 새 URL에서 잦음)
+window.imgRetry = function(el){ if(el.dataset.r) return; el.dataset.r=1; const s=el.src; el.src=""; setTimeout(()=>{ el.src=s; }, 700); };
+const ONERR = ' onerror="imgRetry(this)"';
 
 /* ---------- 요소 ---------- */
 const fade   = document.getElementById("fade");
@@ -690,6 +701,7 @@ function doQuit(){
    화면 1 → 2 : Single Game → 페이드아웃 → 플레이어 수 팝업
    ===================================================================== */
 function goSingle(){
+  loadDeckScreen();                           // ★ 미리 카드 로드(난이도·인원 선택 동안) → 덱빌딩 진입 시 즉시 표시
   fade.classList.add("show");                 // 검게 페이드아웃
   setTimeout(()=>{
     scrMain.style.display = "none";
@@ -737,6 +749,8 @@ document.getElementById("deck-back").addEventListener("click", ()=>{
     startMainSequence();                      // 메뉴 등장 시퀀스 재생
   }, 1150);
 });
+// 카드풀 분류 드롭다운
+document.getElementById("pool-faction").addEventListener("change", (e)=>{ poolFactionFilter = e.target.value; applyPoolFilter(); });
 
 /* 덱 완성 → 확인 팝업 → 진행 */
 const deckPop=document.getElementById("deck-pop");
@@ -764,7 +778,7 @@ function drawRandomWeakness(){
   const imgBox=document.getElementById("weak-img");
   imgBox.dataset.c = w.code;       // 호버 툴팁(한글 텍스트)용
   imgBox.innerHTML = w.imagesrc
-    ? '<img src="'+EN_API+w.imagesrc+'" alt="">'
+    ? '<img src="'+EN_API+w.imagesrc+'" alt=""'+ONERR+'>'
     : '<div class="ph" style="color:var(--muted)">이미지 없음</div>';
   document.getElementById("weak-name").textContent = w.name||"";
   weakPop.style.display="flex";
@@ -795,6 +809,8 @@ function saveCompletedDeck(){
     signatures: signatures.slice(),          // 고유 자산 + 고유 약점 코드
     randomWeakness: drawnWeakness ? drawnWeakness.code : null,
     cards: {},                               // 일반 카드 코드→매수 (덱 30장)
+    victoryPoints: 0,                        // 캠페인 누적 승점(시나리오 종료 시 scenario1이 합산 기록)
+    status: [2, 0],                          // [결과(0=쓰러짐,1=후퇴,2=종료 시 생존), 패배유형(0=없음,1=체력0,2=정신0,3=둘다0→트라우마 택1)]
   };
   Object.entries(deck).forEach(([code,n])=>{
     if(code===chosenInv) return;
@@ -1030,6 +1046,10 @@ const FAC_KO={guardian:"수호자",seeker:"탐구자",rogue:"무법자",mystic:"
    ===================================================================== */
 const TRIAL_INV = "01501";        // 로랜드 뱅크스(개정판)만 선택 가능
 const TRIAL_MAX_LEVEL = 0;        // 0레벨 카드만 노출
+// 직업 순서·한글명(카드풀 정렬·분류 드롭다운)
+const FACTION_ORDER = { guardian:0, seeker:1, rogue:2, mystic:3, survivor:4, neutral:5 };
+const FACTION_KO = { guardian:"수호자", seeker:"탐구자", rogue:"무법자", mystic:"신비주의자", survivor:"생존자", neutral:"중립" };
+let poolFactionFilter = "all";    // 카드풀 분류 필터(all=전체)
 
 // 조사자의 deck_options(덱빌딩 조건)를 읽어, 그 카드를 덱에 넣을 수 있는지 판정
 //   예) 로랜드: 수호자·중립 0~5레벨, 탐구자 0~2레벨
@@ -1045,14 +1065,26 @@ function deckEligible(c, inv){
   });
 }
 
-// 선택된 조사자 기준으로 카드풀 노출 갱신 — 0레벨 + 덱빌딩 조건 충족만 보이게
+// 선택된 조사자 기준으로 카드풀 노출 갱신 — 0레벨 + 덱빌딩 조건 충족 + 분류 필터
 function applyPoolFilter(){
   const inv = byCode[chosenInv];
   document.querySelectorAll("#pool-grid .pcard").forEach(el=>{
     const c = byCode[el.dataset.c];
-    const ok = !!c && (c.xp||0) <= TRIAL_MAX_LEVEL && deckEligible(c, inv);
-    el.style.display = ok ? "" : "none";
+    const eligible = !!c && (c.xp||0) <= TRIAL_MAX_LEVEL && deckEligible(c, inv);
+    const factionOk = poolFactionFilter==="all" || (c && c.faction_code===poolFactionFilter);
+    el.style.display = (eligible && factionOk) ? "" : "none";
   });
+}
+// 분류 드롭다운 채우기 — 이 조사자가 쓸 수 있는 직업만(전체 + 사용 가능 클래스)
+function buildFactionFilter(){
+  const sel = document.getElementById("pool-faction"); if(!sel) return;
+  const inv = byCode[chosenInv];
+  const usable = new Set();
+  (inv && inv.deck_options || []).forEach(o=>{ (o.faction||[]).forEach(f=> usable.add(f)); });
+  const order = Object.keys(FACTION_ORDER).filter(f=> usable.has(f)).sort((a,b)=>FACTION_ORDER[a]-FACTION_ORDER[b]);
+  sel.innerHTML = '<option value="all">전체</option>' + order.map(f=>'<option value="'+f+'">'+FACTION_KO[f]+'</option>').join("");
+  if(poolFactionFilter!=="all" && !usable.has(poolFactionFilter)) poolFactionFilter="all";
+  sel.value = poolFactionFilter;
 }
 
 async function loadDeckScreen(){
@@ -1072,17 +1104,19 @@ async function loadDeckScreen(){
         // (0) byCode 저장소에는 "모든" 카드를 넣는다(시그니처·약점·장소 등 참조용).
         indexByCode(all, byCode);                // js/data/load.js
 
-        // (0-1) 무작위 기본 약점 목록 만들기(subtype_code: basicweakness, 타입 공포/적)
-        //       core판 기준 8종. 같은 이름 중복 제거.
-        const wkSeen=new Set();
-        RANDOM_WEAKNESSES = all.filter(c=>{
-          if(c.subtype_code!=="basicweakness") return false;
-          if(!["treachery","enemy"].includes(c.type_code)) return false;
-          if(c.code==="01000") return false;     // 플레이스홀더 제외
+        // (0-1) 무작위 기본 약점 목록(subtype_code: basicweakness, 적/음모). 같은 이름은
+        //       ★개정판(rcore, notz 있는 016xx)을 우선 — 구판(011xx)은 notz가 없어 scenario1에서
+        //       폭로가 안 걸려 약점이 손패로 새는 버그 발생. (행동대장 01101 vs 01601 등)
+        const wkMap={};
+        all.forEach(c=>{
+          if(c.subtype_code!=="basicweakness") return;
+          if(!["treachery","enemy"].includes(c.type_code)) return;
+          if(c.code==="01000") return;           // 플레이스홀더 제외
           const nm=c.real_name||c.name;
-          if(wkSeen.has(nm)) return false; wkSeen.add(nm);
-          return true;
+          const score=x=>(x.pack_code==="rcore"?2:1);   // 개정판 우선
+          if(!wkMap[nm] || score(c)>score(wkMap[nm])) wkMap[nm]=c;
         });
+        RANDOM_WEAKNESSES = Object.values(wkMap);
 
         // 무작위 약점 이미지를 화면 밖에서 미리 받아둠(뽑는 순간 즉시 표시)
         RANDOM_WEAKNESSES.forEach(w=>{
@@ -1145,7 +1179,10 @@ async function loadDeckScreen(){
       ? investigatorCards
       : cards.filter(c=>c.type_code === "investigator");   // 폴백 대비
     const players       = cards.filter(c=>c.type_code !== "investigator")
-                               .sort((a,b)=> (a.name>b.name?1:-1));
+                               .sort((a,b)=>{   // 직업 순서(수호자·탐구자·무법자·신비주의자·생존자·중립) → 같은 직업은 이름순
+                                 const fa=FACTION_ORDER[a.faction_code] ?? 9, fb=FACTION_ORDER[b.faction_code] ?? 9;
+                                 return (fa!==fb) ? fa-fb : (a.name>b.name?1:-1);
+                               });
 
     // ----- 좌측: 조사자 (시험판: 로랜드만 선택, 나머지 잠금) -----
     investList.innerHTML = "";
@@ -1157,7 +1194,7 @@ async function loadDeckScreen(){
       el.className = "invest-card" + (locked ? " locked" : "");
       el.dataset.c = c.code;                    // 호버 툴팁용
       const img = c.imagesrc
-        ? '<img src="'+EN_API+c.imagesrc+'" alt="">'
+        ? '<img src="'+EN_API+c.imagesrc+'" alt=""'+ONERR+'>'
         : '<div class="ph">이미지 없음</div>';
       el.innerHTML = img + '<div class="nm">'+(c.name||c.code)+'</div>'
         + (locked ? '<div class="lock-tag">준비 중</div>' : '');
@@ -1178,7 +1215,7 @@ async function loadDeckScreen(){
       el.className = "pcard";
       el.dataset.c = c.code;                    // 담기 + 호버 툴팁용
       const img = c.imagesrc
-        ? '<img src="'+EN_API+c.imagesrc+'" alt="" loading="lazy">'
+        ? '<img src="'+EN_API+c.imagesrc+'" alt="" loading="lazy"'+ONERR+'>'
         : '<div class="ph">이미지 없음</div>';
       el.innerHTML =
         '<span class="count" data-count></span>' + img +
@@ -1231,6 +1268,7 @@ function selectInvestigator(code){
   signatureCodes = parseSignatures(inv).filter(sc=>byCode[sc]);
   // 시그니처 카드를 덱에 자동 포함(고유 자산 + 고유 약점)
   signatureCodes.forEach(sc=>{ deck[sc] = 1; });
+  buildFactionFilter();   // 이 조사자가 쓸 수 있는 직업으로 분류 드롭다운 갱신
   renderPoolCounts(); renderDeck(); applyPoolFilter();
 }
 
