@@ -988,6 +988,7 @@ import { commitIcons, isCommittable, resolveTest } from "./js/scenario/skilltest
 import { S, bus } from "./js/scenario/state.js";   // 게임 공유 상태 + 이벤트버스
 import { cardFront, PLAYER_BACK } from "./js/scenario/card-img.js";   // 카드 이미지 URL 빌더
 import { updatePiles } from "./js/scenario/piles.js";   // 카드더미·버린더미 시각화
+import { totalDoom, updateDoom, addDoomSource, removeDoomSource, setPendingDoomGetter } from "./js/scenario/doom.js";   // 파멸·게이지
 import { setPhase, startInvestigatorPhase, resumeAfterCutscene, endTurnToEnemy, resumeUpkeep, resumeEnemy, PHASE_NAMES } from "./js/scenario/phases.js";   // 라운드 루프
 import { audio } from "./js/shared/audio.js";   // 효과음·BGM (파일은 audio/sfx/, audio/bgm/ 에 .ogg)
 audio.armOnFirstGesture();                       // 첫 클릭/키에서 오디오 켜짐(자동재생 정책)
@@ -3171,36 +3172,12 @@ S.playerCount = 1;      // 플레이어 수(a) — arkham_game에서 읽음, 없
 S.actGoalClues = 0;     // 현재 막이 요구하는 단서 수(a×2 또는 a×3)
 // 필드 파멸: 장소·적·플레이된 카드에 놓인 파멸의 합. 파멸원(源)을 등록해두고 합산.
 S.doomSources = [];      // 예: [{id:"비술입문자", get:()=>2}] 형태로 등록
-function fieldDoom(){ return S.doomSources.reduce((a,s)=>a+(s.get?s.get():0),0); }
-function totalDoom(){ return S.agendaDoom + fieldDoom(); }
+// 파멸 카운트·게이지·필드 파멸원은 js/scenario/doom.js 로 분리(fieldDoom·totalDoom·updateDoom·add/removeDoomSource).
+// 적 결합(라운드끝 구울 예고 파멸)만 여기 남겨 doom.js에 getter로 주입(setPendingDoomGetter).
 // 특별규칙(agenda3a) — 라운드 끝에 늘어날 파멸 예측치(거실·복도 구울 수)
 function ghoulsInRoom(room){ return S.enemies.filter(e=> isGhoul(e.code) && e.room===room).length; }
 function pendingGhoulDoom(){ return S.agenda3aRule ? (ghoulsInRoom("parlor")+ghoulsInRoom("hallway")) : 0; }
-
-function updateDoom(){
-  const field = fieldDoom();
-  const sum = S.agendaDoom + field;
-  document.getElementById("d-agenda").textContent = S.agendaDoom;
-  document.getElementById("d-field").textContent  = field;
-  document.getElementById("d-sum").textContent    = sum;
-  document.getElementById("d-thr").textContent    = S.doomThreshold;
-  // 게이지 높이 + 색 변화(여유→임박→위험)
-  const ratio = Math.max(0, Math.min(1, sum/S.doomThreshold));
-  const fill = document.getElementById("doom-fill");
-  fill.style.height = (ratio*100)+"%";
-  let g;
-  if(ratio < 0.5)      g = "#4a3a78";   // 여유(보라)
-  else if(ratio < 0.8) g = "#9a5a30";   // 임박(주황)
-  else                 g = "#a83030";   // 위험(빨강)
-  fill.style.background = g;
-  // 특별규칙 라운드끝 파멸 예고
-  const pend = pendingGhoulDoom(), pe = document.getElementById("d-pending");
-  if(pe){ if(pend>0){ pe.textContent = "라운드끝 +"+pend; pe.style.display="inline-block"; pe.title="거실·복도의 구울 수만큼 라운드 끝에 파멸이 증가합니다."; } else pe.style.display="none"; }
-}
-
-/* 필드 파멸원 등록/해제 — 파멸이 게임에 등장/제거될 때 호출 */
-function addDoomSource(id, getter){ S.doomSources.push({id, get:getter}); updateDoom(); }
-function removeDoomSource(id){ S.doomSources = S.doomSources.filter(s=>s.id!==id); updateDoom(); }
+setPendingDoomGetter(pendingGhoulDoom);   // 적 결합 예고 파멸을 doom 게이지에 주입
 
 /* 아젠다 진행 트리거 (재사용)
    - 신화 단계: 의제에 +1 후 이 함수 호출
