@@ -14,3 +14,8 @@ export function cardFront(code){
   const c = S.byCode[code];
   return c && c.imagesrc ? CARD_IMG_BASE + c.imagesrc : PLAYER_BACK;
 }
+
+// 카드 코드 → 표시용 한글 텍스트(notz의 text_ko 우선, 없으면 cards.json text)
+export function cardTextOf(code){
+  return (S.cardAbilities[code]||{}).text_ko || (S.byCode[code]||{}).text || "";
+}

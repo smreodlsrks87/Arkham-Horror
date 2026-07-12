@@ -986,8 +986,10 @@ import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSi
 import { onEnterPlay, onLeavePlay, initialUses, activatable, conditionalTestBonus, isFastPlay } from "./js/scenario/abilities.js";   // 카드 능력 엔진
 import { commitIcons, isCommittable, resolveTest } from "./js/scenario/skilltest.js";   // 능력치 테스트 엔진
 import { S, bus } from "./js/scenario/state.js";   // 게임 공유 상태 + 이벤트버스
-import { cardFront, PLAYER_BACK } from "./js/scenario/card-img.js";   // 카드 이미지 URL 빌더
+import { cardFront, PLAYER_BACK, cardTextOf } from "./js/scenario/card-img.js";   // 카드 이미지 URL·텍스트
+import { shuffle } from "./js/scenario/util.js";   // 공용 소도구(셔플 등)
 import { updatePiles } from "./js/scenario/piles.js";   // 카드더미·버린더미 시각화
+import { buildEncounterDeck, updateEncounterUI, setEncounterSets } from "./js/scenario/encounter.js";   // 조우덱 구성·UI
 import { totalDoom, updateDoom, addDoomSource, removeDoomSource, setPendingDoomGetter } from "./js/scenario/doom.js";   // 파멸·게이지
 import { playCutscene, playCutsceneSequence, setCutscenes, setCancelActions, csActive } from "./js/scenario/cutscene.js";   // 컷신 재생기
 import { setPhase, startInvestigatorPhase, resumeAfterCutscene, endTurnToEnemy, resumeUpkeep, resumeEnemy, PHASE_NAMES } from "./js/scenario/phases.js";   // 라운드 루프
@@ -1111,7 +1113,6 @@ S.playerHand = [];               // 손패 (state.js S)
 S.playerDiscard = [];          // 버린 더미
 
 // 배열 셔플(피셔-예이츠)
-function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 
 async function loadPlayerDecks(){
   try{
@@ -1349,7 +1350,6 @@ function renderHand(){
 // 공용 카드 정보 — 카드 위(stage 좌표)에 정방향. side="left"면 카드 왼쪽에.
 // 표시용 카드 텍스트 — notz의 text_ko(직접 번역)가 있으면 그걸, 없으면 cards.json text.
 // cards.json은 수정 금지라, 영문뿐인 조우 카드는 notz_encounter_cards.json의 text_ko로 한글 출력.
-function cardTextOf(code){ return (S.cardAbilities[code]||{}).text_ko || (S.byCode[code]||{}).text || ""; }
 function showCardInfo(el, code, side){
   const c=S.byCode[code]; const info=document.getElementById("card-info");
   if(!c){ return; }
@@ -3473,79 +3473,11 @@ function onEndTurnClick(){
    ===================================================================== */
 S.encounterDeck = [];    // 뽑을 조우 카드들(객체 배열: {code,name,imagesrc})
 S.encounterDiscard = []; // 버린 조우 카드들
-const EN_IMG = "https://arkhamdb.com";   // 조우 카드 앞면 이미지 베이스
 
 // 시나리오1(회합의 밤) 조우덱 구성 — 규칙서 세트 6개(회합·쥐떼·구울·엄습하는공포·태고의악·으스스한한기)
 const SCENARIO1_SETS = ["torch","rats","ghouls","striking_fear","ancient_evils","chilling_cold"];
 const ENC_SET_ASIDE = new Set(["01116"]);   // 구울 사제 = 따로 빼둠(의제로 등장). 리타(자산)는 적/음모 아니라 자동 제외.
-function buildEncounterDeck(){
-  const deck=[];
-  Object.keys(S.byCode).forEach(function(code){
-    const c=S.byCode[code];
-    if(c.pack_code!=="core" || !SCENARIO1_SETS.includes(c.encounter_code)) return;
-    if(c.type_code!=="enemy" && c.type_code!=="treachery") return;   // 조우덱=적+음모(장소·막·의제 제외)
-    if(ENC_SET_ASIDE.has(code)) return;
-    for(let i=0;i<(c.quantity||1);i++) deck.push({ code:code, name:c.name, imagesrc:c.imagesrc });
-  });
-  shuffle(deck);
-  return deck;
-}
-
-function updateEncounterUI(){
-  document.getElementById("enc-draw-num").textContent = S.encounterDeck.length;
-  document.getElementById("enc-discard-num").textContent = S.encounterDiscard.length;
-  // 0장이면 겹침(쌓임) 숨김
-  document.getElementById("enc-draw").classList.toggle("empty", S.encounterDeck.length<=1);
-  document.getElementById("enc-discard").classList.toggle("empty", S.encounterDiscard.length<=1);
-
-  // 버린 더미 맨 위 = 가장 최근 버린 조우(앞면)
-  const topCard = S.encounterDiscard[S.encounterDiscard.length-1];
-  const dimg = document.getElementById("enc-discard-img");
-  const dface = document.getElementById("enc-discard-face");
-  if(topCard && topCard.imagesrc){
-    dimg.src = EN_IMG + topCard.imagesrc; dimg.style.display="block"; dface.style.display="none";
-  }else if(topCard){
-    dface.textContent = topCard.name||"조우"; dface.style.display="flex"; dimg.style.display="none";
-  }else{
-    dface.textContent = "—"; dface.style.display="flex"; dimg.style.display="none";
-  }
-
-  // 호버 목록 — 조우덱은 순서 숨기려 이름별 수량으로 정렬 / 버린 더미는 내역 + 맨 위 카드 정보(2단)
-  renderEncList("enc-draw-list", S.encounterDeck, "조우덱 구성");
-  renderEncDiscardList();
-}
-// 버린 조우 더미 호버 — 한쪽 내역, 한쪽 맨 위 카드 정보(이미지+번역). 플레이어 버린더미와 같은 방식.
-function renderEncDiscardList(){
-  const box=document.getElementById("enc-discard-list"); if(!box) return;
-  const arr=S.encounterDiscard, top=arr[arr.length-1];
-  const counts={}; arr.forEach(c=>{ const nm=c.name||"조우"; counts[nm]=(counts[nm]||0)+1; });
-  const names=Object.keys(counts).sort();
-  let list='<div class="el-title">버린 더미 ('+arr.length+')</div>';
-  if(!names.length) list+='<div class="el-empty">없음</div>';
-  else names.forEach(nm=>{ list+='<div class="el-row"><span>'+nm+'</span><span class="el-q">× '+counts[nm]+'</span></div>'; });
-  let info;
-  if(top){
-    info='<div class="eld-info"><div class="eld-cap">맨 위 카드</div>'+
-      '<img class="eld-img" src="'+cardFront(top.code)+'" alt="">'+
-      '<div class="eld-nm">'+((S.byCode[top.code]||{}).name || top.name || top.code)+'</div>'+
-      (cardTextOf(top.code)?'<div class="eld-txt">'+cleanText(cardTextOf(top.code))+'</div>':'')+'</div>';
-  }else{
-    info='<div class="eld-info eld-none">비어 있음</div>';
-  }
-  box.innerHTML='<div class="eld-two"><div class="eld-list">'+list+'</div>'+info+'</div>';
-}
-function renderEncList(id, arr, title){
-  const box=document.getElementById(id);
-  const counts={};
-  arr.forEach(c=>{ const nm=c.name||"조우"; counts[nm]=(counts[nm]||0)+1; });
-  const names=Object.keys(counts).sort();   // 이름순 정렬(순서 노출 방지)
-  let html='<div class="el-title">'+title+' ('+arr.length+')</div>';
-  if(!names.length){ html+='<div class="el-empty">없음</div>'; }
-  else names.forEach(nm=>{
-    html+='<div class="el-row"><span>'+nm+'</span><span class="el-q">× '+counts[nm]+'</span></div>';
-  });
-  box.innerHTML=html;
-}
+setEncounterSets(SCENARIO1_SETS, ENC_SET_ASIDE);   // 조우덱 구성(js/scenario/encounter.js)에 시나리오 세트 주입
 
 /* =====================================================================
    혼돈 토큰 — SVG 아이콘 + 난이도별 주머니 구성·효과 (광신도의 밤)
