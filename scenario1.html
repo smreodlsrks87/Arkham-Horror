@@ -2748,11 +2748,32 @@ function endScenario(resolution){
     const raw = localStorage.getItem("arkham_decks");
     if(raw){
       const decks = JSON.parse(raw);
+      // 종료 시 강제 능력(scenario_end) — 은폐 등: 위협영역에 남은 uses(단서)만큼 트라우마(데이터 주도).
+      const endTrauma = { mental:0, physical:0 };
+      S.playedCards.forEach(p=>{
+        ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
+          if(ab.timing!=="forced" || ab.when!=="scenario_end") return;
+          if(ab.condition==="uses_remaining" && !(p.uses && p.uses.count>0)) return;   // 남은 uses 없으면 발동 X
+          const mult = (ab.condition==="uses_remaining" && p.uses) ? p.uses.count : 1;   // uses_remaining = 잔량만큼(은폐=단서당 1)
+          (ab.do||[]).forEach(eff=>{
+            if(eff.effect==="mental_trauma")   endTrauma.mental   += (eff.value||1)*mult;
+            else if(eff.effect==="physical_trauma") endTrauma.physical += (eff.value||1)*mult;
+          });
+        });
+      });
+      if(endTrauma.mental||endTrauma.physical)
+        addLog("종료 정산 — 정신 트라우마 +"+endTrauma.mental+(endTrauma.physical?(" · 육체 +"+endTrauma.physical):"")+" (은폐 등 종료 시 능력).");
       decks.forEach(d=>{
         d.xp = (d.xp||0) + total;   // 획득 승점 = 경험치(캠페인 규칙상 전원 공유). 로그·업그레이드에서 사용/차감
         // 결과값: 0=쓰러짐(뒷자리=패배유형), 1=후퇴, 2=종료 시 생존(쓰러짐·후퇴 기록이 없으면 자동)
-        if(S.activeInvestigator && d.investigator===S.activeInvestigator.investigator)
+        if(S.activeInvestigator && d.investigator===S.activeInvestigator.investigator){
           d.status = S.defeated ? [0, S.defeatType] : (S.withdrawn ? [1, 0] : [2, 0]);
+          if(endTrauma.mental||endTrauma.physical){   // 소유자(활성 조사자)에게 종료 트라우마 누적 → 로그 기록지가 그대로 표시
+            d.trauma = d.trauma || { physical:0, mental:0 };
+            d.trauma.mental   = (d.trauma.mental||0)   + endTrauma.mental;
+            d.trauma.physical = (d.trauma.physical||0) + endTrauma.physical;
+          }
+        }
         else if(!d.status) d.status = [2, 0];               // [다인 훅] 각 조사자 상태 개별 기록
         d.chosenTrauma = null;   // 패배유형 3 → 로그의 트라우마 택1이 채움(트라우마 누적도 로그가 처리)
       });
