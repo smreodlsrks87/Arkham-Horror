@@ -4062,7 +4062,7 @@ function applyFightResult(en, r, opts){
       [{label:"확인", primary:true, act:()=>{ hidePopup(); flushDefeatReaction(); if(willRetaliate) doRetaliate(en); }}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));   // 결과 확인 후 처치 반응(로랜드) / 보복
   };
 
-  if(opts.weaponCode==="01516") playBattleMotion(finish);   // 45구경 자동 권총 = 전투 영상 6초 후 결과
+  if(opts.weaponCode==="01516" && isGhoul(en.code)) playBattleMotion(finish);   // 45구경 자동 권총 + 구울 대상 = 전투 영상 6초 후 결과(ghoul_hit는 구울에게만)
   else finish();
 }
 // 보복 공격 — 공격자에게 적의 공격 1회. 적은 소진되지 않음.
