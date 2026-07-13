@@ -19,7 +19,9 @@
   body{
     background:#000; display:flex; align-items:center; justify-content:center;
     min-height:100vh; overflow:hidden; font-family:var(--hand);
+    user-select:none; -webkit-user-select:none; -moz-user-select:none;   /* 텍스트 드래그 선택 차단 */
   }
+  img{ -webkit-user-drag:none; user-drag:none; }   /* 이미지 드래그 잔상 차단 */
 
   /* ───────── PART 2: 캠페인 기록지(배경 1605×903) ───────── */
   #stage2{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -137,6 +139,10 @@
 
 <script type="module">
 import { createSkipRing } from "./js/shared/skip-ring.js";
+
+/* 전역 UX — 우클릭 메뉴·이미지 드래그 등 브라우저 기본 상호작용 차단 (모든 화면 공통 지침, scenario1과 동일) */
+window.addEventListener("contextmenu", e=> e.preventDefault());
+window.addEventListener("dragstart", e=>{ if(e.target && e.target.tagName==="IMG") e.preventDefault(); });
 
 /* ══════════════════════════════════════════════════════════════
    ★ 테스트 시드 — scenario1 없이 이 파일만 열어도 값이 보이도록 미리 주입.
@@ -328,7 +334,7 @@ function narrationPhase(){
     let k=0;
     (function step(){
       if(gen!==narrGen) return;                  // 스킵/재시작되면 중단
-      if(k>=spans.length){ setTimeout(()=>finishNarration(), 1500); return; }
+      if(k>=spans.length){ setTimeout(armContinue, 1500); return; }   // 출력 완료 → "계속하려면 아무거나"로 대기(자동 전환 안 함)
       spans[k].classList.add("on"); k++;
       setTimeout(step, per);
     })();
@@ -343,6 +349,23 @@ function narrationPhase(){
   });
 }
 let finishNarration = ()=>{};   // narrationPhase 안에서 실제 구현 주입
+
+// 나레이션 출력 완료 → 우상단 "스킵하려면 esc를 길게" 안내를 "계속하려면 아무거나 누르세요"로 바꾸고
+// 아무 키·클릭이면 다음 파트로 넘어감(arkham_game 나레이션과 동일한 대기 방식).
+function armContinue(){
+  skip.disable();
+  const lbl=document.querySelector("#narr-skip .skip-label");
+  if(lbl) lbl.textContent="계속하려면 아무거나 누르세요";
+  const ring=document.querySelector("#narr-skip .skip-ring");
+  if(ring) ring.style.display="none";   // ESC 길게 게이지 숨김(이제 아무거나로 넘어감)
+  const go=()=>{
+    document.removeEventListener("keydown", go, true);
+    document.removeEventListener("mousedown", go, true);
+    finishNarration();
+  };
+  document.addEventListener("keydown", go, true);
+  document.addEventListener("mousedown", go, true);
+}
 
 /* ══ PART 2: 기록지 페이드인 + Campaign Notes 손글씨 ══ */
 function sheetPhase(){

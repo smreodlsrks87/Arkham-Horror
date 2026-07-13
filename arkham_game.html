@@ -22,6 +22,7 @@
     -webkit-font-smoothing:antialiased;
     user-select:none;
   }
+  img{ -webkit-user-drag:none; user-drag:none; }   /* 이미지 드래그 잔상 차단 */
 
   /* 1920x1080 무대. 화면이 작으면 비율 유지하며 축소 */
   #stage{
@@ -658,6 +659,8 @@ window.addEventListener("contextmenu", (e)=>{
   }
   // 무작위 약점 팝업(weak-pop)은 취소 옵션이 없으므로 우클릭으로 닫지 않음
 });
+/* 이미지 드래그 잔상 방지(그림파일 끌기 차단) */
+window.addEventListener("dragstart", (e)=>{ if(e.target && e.target.tagName==="IMG") e.preventDefault(); });
 
 /* =====================================================================
    화면 1 — 메뉴 등장 타이밍
