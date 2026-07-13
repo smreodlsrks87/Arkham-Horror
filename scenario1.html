@@ -1397,7 +1397,15 @@ function renderMenu(items, clientX, clientY){
   actionMenuOpen=true;
 }
 function openActionMenu(clientX, clientY){
-  renderMenu(BASIC_ACTIONS.map(a=>({ label:a.label, state:a.state(), divider:a.divider, danger:a.danger, run:a.run })), clientX, clientY);
+  const items = BASIC_ACTIONS.map(a=>({ label:a.label, state:a.state(), divider:a.divider, danger:a.danger, run:a.run }));
+  // 착용 무기 격발(do_fight) — "공격(맨손)" 바로 아래에 "공격(무기명)"로 삽입.
+  // weaponFightOptions()는 지금 발동 가능한 것만 반환 → 메뉴가 길어지지 않음(쓸 수 있을 때만 1~2줄).
+  const wOpts = weaponFightOptions().map(w=>({ label:w.label, state:"active", run:()=> activateAbility(w.pi, w.ai) }));
+  if(wOpts.length){
+    const fi = items.findIndex(it=> it.label==="공격");   // 공격(맨손) 위치
+    items.splice(fi>=0 ? fi+1 : items.length, 0, ...wOpts);
+  }
+  renderMenu(items, clientX, clientY);
 }
 function closeActionMenu(){ const m=document.getElementById("action-menu"); if(m) m.style.display="none"; actionMenuOpen=false; activeMenuItems=null; }
 
@@ -1697,9 +1705,10 @@ function renderPlayArea(){
    ===================================================================== */
 const EFFECT_LABEL = { do_fight:"공격", heal:"치유", damage:"피해", bonus:"능력치 강화", gain_resources:"자원 얻기", draw:"카드 뽑기", look_top_draw:"덱 위 카드 뽑기", search_deck:"덱 검색" };
 const STUB_EFFECTS = new Set(["bonus"]);   // 남은 스텁(초지각 등 판정강화). do_fight·damage는 실동작
-function abilityLabel(ab){
+function abilityLabel(ab, cardName){
   if(ab.label) return ab.label + " (" + (ab.timing==="fast" ? "신속" : "행동") + ")";   // 명시 라벨(의학 서적=치유 판정)
   const eff = (ab.do && ab.do[0] && ab.do[0].effect) || "능력";
+  if(eff==="do_fight" && cardName) return "공격 (" + cardName + ")";   // 무기 공격 = "공격 (무기명)" (적 메뉴와 통일)
   return (EFFECT_LABEL[eff] || eff) + " (" + (ab.timing==="fast" ? "신속" : "행동") + ")";
 }
 // 발동 가능? — 자기 턴 + (행동이면 AP) + 비용(자원) + uses/requires. 스텁 효과는 불가.
@@ -2021,7 +2030,7 @@ function openAbilityMenu(pi, cardEl){
   const menu = document.getElementById("ability-menu");
   menu.innerHTML = list.map(({i,ab})=>{
     const ok = canActivateAbility(p, ab);
-    return '<div class="am-item'+(ok?"":" am-disabled")+'" data-pi="'+pi+'" data-ai="'+i+'" data-en="'+(ok?1:0)+'">'+abilityLabel(ab)+'</div>';
+    return '<div class="am-item'+(ok?"":" am-disabled")+'" data-pi="'+pi+'" data-ai="'+i+'" data-en="'+(ok?1:0)+'">'+abilityLabel(ab, (S.byCode[p.code]||{}).name)+'</div>';
   }).join("");
   menu.style.display="block";
   const r = cardEl.getBoundingClientRect();
