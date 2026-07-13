@@ -1157,7 +1157,7 @@ async function loadPlayerDecks(){
       preloadAllCardImages();   // 진입 즉시 모든 카드 이미지 캐싱(컷신 도는 동안)
       updatePiles();
     }
-  }catch(e){ /* 실패 시 기본값 유지 */ }
+  }catch(e){ console.error("조사자/덱 로드 실패:", e); }
 }
 
 /* 조사자 상태(피해·공포·트라우마·자원·단서) */
@@ -3888,7 +3888,7 @@ function focusRoom(k){
     if(info.onEnterHorror){ addLog("강제 — "+ROOMS[k].name+"에 들어와 공포 "+info.onEnterHorror+"을(를) 받습니다."); takeDamageHorror(0, info.onEnterHorror, {source:"location"}, ()=>{}); }
     if(info.onEnterDamage){ addLog("강제 — "+ROOMS[k].name+"에 들어와 피해 "+info.onEnterDamage+"을(를) 받습니다."); takeDamageHorror(info.onEnterDamage, 0, {source:"location"}, ()=>{}); }
   }
-  document.getElementById("S.cur").textContent="현재: "+ROOMS[k].name;
+  document.getElementById("cur").textContent="현재: "+ROOMS[k].name;
   updateLocInfo();
   renderRoomButtons();
   const c=roomCenter(k); wantTarget.set(c.x, c.y+1, c.z); wantFrustum=13;
