@@ -993,6 +993,7 @@ import { buildEncounterDeck, updateEncounterUI, setEncounterSets } from "./js/sc
 import { renderHand, committableHand, dealOpeningHand, doMulligan, mulliganMode, setHandDeps } from "./js/scenario/hand.js";   // 손패 렌더·드래그·멀리건
 import { showCardInfo, hideCardInfo, openCardZoom, closeCardZoom, zoomOpen } from "./js/scenario/tooltip.js";   // 카드 호버 정보·확대뷰
 import { renderInvestigator, updateAP, setInvDeps } from "./js/scenario/investigator.js";   // 세로형 조사자 카드·행동력
+import { showPopup, showForcedPopup, hidePopup, popupOpen, showToast, popupForced, popupCancelAct } from "./js/scenario/popup.js";   // 공용 팝업·토스트
 import { totalDoom, updateDoom, addDoomSource, removeDoomSource, setPendingDoomGetter } from "./js/scenario/doom.js";   // 파멸·게이지
 import { playCutscene, playCutsceneSequence, setCutscenes, setCancelActions, csActive } from "./js/scenario/cutscene.js";   // 컷신 재생기
 import { setPhase, startInvestigatorPhase, resumeAfterCutscene, endTurnToEnemy, resumeUpkeep, resumeEnemy, PHASE_NAMES } from "./js/scenario/phases.js";   // 라운드 루프
@@ -1239,7 +1240,6 @@ document.addEventListener("mousedown",(e)=>{ if(zoomOpen && e.button===0){ close
    ※ 맵 액션과 같은 로직을 호출 → 효과 동일. (예: 조사 = doInvestigate)
    ===================================================================== */
 function canAct(){ return !csActive && !S.phaseBusy && S.currentPhase==="investigation" && !pawnMoving && !walkTo; }  // 이동중(방간·방내)에도 잠금
-function popupOpen(){ return document.getElementById("popup").style.display!=="none"; }
 
 // 적/상황 시스템 미구현 — 스텁(나중에 실제 판정으로 교체)
 function enemyAtLocation(){ return (S.enemies||[]).some(e=>e.room===S.cur); }   // 내 장소의 적(교전 여부 무관)
@@ -1662,14 +1662,6 @@ function tryPlayCard(idx){
 }
 
 // 화면에 잠깐 뜨는 안내(토스트)
-let toastTimer=null;
-function showToast(msg){
-  let t=document.getElementById("toast");
-  if(!t){ t=document.createElement("div"); t.id="toast"; document.getElementById("stage").appendChild(t); }
-  t.textContent=msg; t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove("show"), 1800);
-}
 
 /* 자산 체력/정신력 배지 — 조사자 카드와 동일 스타일. 위치는 카드 대비 %(hs_layout). 카드별 notz로 조절.
    ★ 규칙: 체력·정신력이 '없는'(수치 0/미표기='-') 자산에는 이 배지를 붙이지 않는다. */
@@ -3435,29 +3427,6 @@ advanceBtn.onclick = ()=>{
 /* =====================================================================
    팝업
    ===================================================================== */
-const popup=document.getElementById("popup");
-let popupCancelAct=null;   // 우클릭 시 실행할 동작(없으면 그냥 닫기)
-let popupForced=false;     // 강제 팝업(우클릭으로도 못 닫음 — 반드시 버튼 택1)
-function showPopup(msgHtml, buttons, onCancel, boxClass){
-  const box=document.querySelector("#popup .popup-box");
-  if(box) box.className = "popup-box" + (boxClass ? " "+boxClass : "");   // 판정 등 특수 팝업 스타일
-  document.getElementById("popup-msg").innerHTML=msgHtml;
-  const bb=document.getElementById("popup-btns"); bb.innerHTML="";
-  buttons.forEach(b=>{
-    const el=document.createElement("button");
-    el.textContent=b.label; if(b.primary) el.className="primary";
-    el.onclick=b.act; bb.appendChild(el);
-  });
-  popupCancelAct = onCancel || null;
-  popupForced = false;
-  popup.style.display="flex";
-}
-// 강제 택1 팝업(우클릭·취소 불가). buttons는 전부 활성색으로 표시.
-function showForcedPopup(msgHtml, buttons, boxClass){
-  showPopup(msgHtml, buttons.map(b=>({...b, primary:true})), null, (boxClass?boxClass+" ":"")+"vpop");
-  popupForced = true;
-}
-function hidePopup(){ popup.style.display="none"; popupCancelAct=null; popupForced=false; }
 // 일러스트 카드 선택 팝업 — 카드명만 텍스트로 뜨던 선택을, 카드 썸네일 가로 배열로. onPick(code) 호출.
 function showCardPickPopup(title, codes, onPick, opts){
   opts = opts || {};
@@ -3545,7 +3514,7 @@ renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();
 // 우클릭: 컨텍스트 메뉴 차단 + 팝업이 떠 있으면 취소(취소 콜백 있으면 실행)
 window.addEventListener("contextmenu", e=>{
   e.preventDefault();
-  if(popup.style.display!=="none"){
+  if(popupOpen()){
     if(popupForced) return;  // 강제 택1 팝업 = 우클릭으로 못 닫음
     const act=popupCancelAct;
     if(act){ act(); }        // 취소 콜백(예: 멀리건 완료)
