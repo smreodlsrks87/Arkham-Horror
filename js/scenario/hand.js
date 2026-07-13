@@ -7,7 +7,7 @@
 import { S } from "./state.js";
 import { cardFront } from "./card-img.js";
 import { toStageX, toStageY } from "../shared/stage.js";
-import { isCommittable } from "./skilltest.js";
+import { isCommittable, commitMode, commitSel, commitCfg, commitLimitReached, toggleCommit } from "./skilltest.js";
 import { updatePiles } from "./piles.js";
 import { addLog } from "./log.js";
 import { shuffle } from "./util.js";
@@ -18,9 +18,8 @@ import { showCardInfo, hideCardInfo } from "./tooltip.js";   // 카드 호버 �
 let D = {
   canAct: ()=>true, tryPlayCard(){}, eventReactionPlayable: ()=>false,   // 플레이 엔진
   discardMode: ()=>false, discardOne(){},        // 정비 손패 정리(upkeep)
-  commitMode: ()=>false, commitSel: ()=>new Set(), commitSkill: ()=>null, // 커밋(skilltest UI)
-  commitLimitReached: ()=>false, toggleCommit(){},
   isWeakness: ()=>false, playOpeningCutscenes(){},  // 약점 판별 / 도입 컷신
+  // 커밋(commitMode·commitSel·commitCfg·commitLimitReached·toggleCommit)은 skilltest.js에서 직접 import.
 };
 export function setHandDeps(o){ Object.assign(D, o); }
 
@@ -82,12 +81,12 @@ export function renderHand(){
       el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
       el.addEventListener("mouseleave", hideCardInfo);
       el.onclick=()=>D.discardOne(i);
-    }else if(D.commitMode()){   // 커밋: 테스트 기호 있는 카드만 선택 가능
-      const selected = D.commitSel().has(i);
+    }else if(commitMode){   // 커밋: 테스트 기호 있는 카드만 선택 가능
+      const selected = commitSel.has(i);
       // 기호 있음 + (이미 선택했거나 / 매수제한에 안 걸림). 같은 카드 1장 커밋되면 나머지는 비활성.
-      const ok = isCommittable(S.byCode[code], D.commitSkill()) && (selected || !D.commitLimitReached(code, i));
+      const ok = isCommittable(S.byCode[code], commitCfg && commitCfg.skill) && (selected || !commitLimitReached(code, i));
       el.classList.add(ok ? "commit-ok" : "commit-no");
-      if(ok){ if(selected) el.classList.add("mull-sel"); el.onclick=()=>D.toggleCommit(i); }
+      if(ok){ if(selected) el.classList.add("mull-sel"); el.onclick=()=>toggleCommit(i); }
       el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
       el.addEventListener("mouseleave", hideCardInfo);
     }else{
