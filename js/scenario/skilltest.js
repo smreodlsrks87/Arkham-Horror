@@ -20,9 +20,10 @@ import { renderInvestigator } from "./investigator.js";
 import { showPopup, hidePopup, showToast } from "./popup.js";
 import { addLog } from "./log.js";
 import { updatePiles } from "./piles.js";
+import { renderPlayArea } from "./play.js";   // 플레이영역 재렌더(커밋 진입/강화/확정 시)
 
 // ── 주입(scenario1 전용 링크) ──
-let D = { SKILL_KO:{}, showPersistentCard(){}, renderPlayArea(){}, drawCards:()=>0 };
+let D = { SKILL_KO:{}, showPersistentCard(){}, drawCards:()=>0 };
 export function setSkillTestDeps(o){ Object.assign(D, o); }
 
 const SKILL_FIELD = { willpower:"skill_willpower", intellect:"skill_intellect", combat:"skill_combat", agility:"skill_agility" };
@@ -167,7 +168,7 @@ function enterCommit(cfg){
       '<div class="mh-count">추가 보너스 <b id="cm-b">+0</b></div>';
     hint.classList.add("show");
   }
-  renderHand(); D.renderPlayArea(); updateCommitBonus();
+  renderHand(); renderPlayArea(); updateCommitBonus();
 }
 function updateCommitBonus(){
   let icons=0; commitSel.forEach(i=> icons += commitIcons(S.byCode[S.playerHand[i]], commitCfg.skill));
@@ -196,7 +197,7 @@ export function useBoostAsset(pi){
   if(b.cost){ S.invResource-=b.cost; renderInvestigator(); }
   commitAssetBonus += b.amount;
   addLog((S.byCode[p.code]?S.byCode[p.code].name:p.code)+" 사용 — "+commitCfg.actionLabel+" +"+b.amount+(b.cost?" (자원 -"+b.cost+")":"")+".");
-  D.renderPlayArea(); updateCommitBonus();
+  renderPlayArea(); updateCommitBonus();
 }
 export function confirmCommit(){
   if(!commitMode) return;
@@ -209,7 +210,7 @@ export function confirmCommit(){
   commitMode=false; commitSel.clear();
   document.getElementById("stage").classList.remove("commit-active");
   document.getElementById("mull-hint").classList.remove("show");
-  renderHand(); D.renderPlayArea(); updatePiles();
+  renderHand(); renderPlayArea(); updatePiles();
   if(bonus) addLog("커밋 보너스 +"+bonus+".");
   if(cfg.cardCode) D.showPersistentCard(cfg.cardCode);   // 커밋 끝 → 결과 팝업(정중앙)과 안 겹치게 카드는 상단 참조용으로 전환
   resolveTestNow(cfg, bonus, committed);

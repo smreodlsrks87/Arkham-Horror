@@ -13,10 +13,11 @@ import { addLog } from "./log.js";
 import { shuffle } from "./util.js";
 import { audio } from "../shared/audio.js";
 import { showCardInfo, hideCardInfo } from "./tooltip.js";   // 카드 호버 정보(툴팁)
+import { tryPlayCard } from "./play.js";   // 손패 밖 드롭 → 카드 플레이(플레이 엔진)
 
 // ── 주입(다른 도메인으로의 링크) — scenario1이 setHandDeps로 채운다 ──
 let D = {
-  canAct: ()=>true, tryPlayCard(){}, eventReactionPlayable: ()=>false,   // 플레이 엔진
+  canAct: ()=>true, eventReactionPlayable: ()=>false,   // canAct·반응 이벤트(tryPlayCard는 play.js에서 직접 import)
   discardMode: ()=>false, discardOne(){},        // 정비 손패 정리(upkeep)
   isWeakness: ()=>false, playOpeningCutscenes(){},  // 약점 판별 / 도입 컷신
   // 커밋(commitMode·commitSel·commitCfg·commitLimitReached·toggleCommit)은 skilltest.js에서 직접 import.
@@ -158,7 +159,7 @@ function onHandDragUp(e){
     reorderHand(d.idx, e.clientX);
   }else{
     // 손패 밖 → 플레이 시도
-    D.tryPlayCard(d.idx);
+    tryPlayCard(d.idx);
   }
 }
 
