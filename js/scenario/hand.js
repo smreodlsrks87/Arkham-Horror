@@ -12,10 +12,10 @@ import { updatePiles } from "./piles.js";
 import { addLog } from "./log.js";
 import { shuffle } from "./util.js";
 import { audio } from "../shared/audio.js";
+import { showCardInfo, hideCardInfo } from "./tooltip.js";   // 카드 호버 정보(툴팁)
 
 // ── 주입(다른 도메인으로의 링크) — scenario1이 setHandDeps로 채운다 ──
 let D = {
-  showCardInfo(){}, hideCardInfo(){},           // 툴팁(호버 카드 정보)
   canAct: ()=>true, tryPlayCard(){}, eventReactionPlayable: ()=>false,   // 플레이 엔진
   discardMode: ()=>false, discardOne(){},        // 정비 손패 정리(upkeep)
   commitMode: ()=>false, commitSel: ()=>new Set(), commitSkill: ()=>null, // 커밋(skilltest UI)
@@ -34,7 +34,7 @@ let handDrag=null;
 
 export function renderHand(){
   const area=document.getElementById("hand-area");
-  D.hideCardInfo();   // 재렌더 시 정보 잔상 제거
+  hideCardInfo();   // 재렌더 시 정보 잔상 제거
   // 드래그로 stage에 떠 있던 카드 잔재 제거
   document.querySelectorAll("#stage > .hand-card").forEach(el=>el.remove());
   area.innerHTML="";
@@ -70,8 +70,8 @@ export function renderHand(){
     el.innerHTML='<div class="hc-img"><img src="'+cardFront(code)+'" alt=""></div>';
     if(mulliganMode){
       if(mulliganSel.has(i)) el.classList.add("mull-sel");        // 선택되어 솟은 카드
-      el.addEventListener("mouseenter", ()=>D.showCardInfo(el, code));  // 호버 정보는 그대로
-      el.addEventListener("mouseleave", D.hideCardInfo);
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));  // 호버 정보는 그대로
+      el.addEventListener("mouseleave", hideCardInfo);
       el.onclick=(e)=>{   // 좌클릭: 선택 토글(솟음 유지, 재클릭 시 해제)
         e.stopPropagation();
         if(mulliganSel.has(i)){ mulliganSel.delete(i); el.classList.remove("mull-sel"); }
@@ -79,8 +79,8 @@ export function renderHand(){
         updateMullCount();
       };
     }else if(D.discardMode()){   // 정비 4.5 손패 정리 — 클릭한 카드를 버림
-      el.addEventListener("mouseenter", ()=>D.showCardInfo(el, code));
-      el.addEventListener("mouseleave", D.hideCardInfo);
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
+      el.addEventListener("mouseleave", hideCardInfo);
       el.onclick=()=>D.discardOne(i);
     }else if(D.commitMode()){   // 커밋: 테스트 기호 있는 카드만 선택 가능
       const selected = D.commitSel().has(i);
@@ -88,13 +88,13 @@ export function renderHand(){
       const ok = isCommittable(S.byCode[code], D.commitSkill()) && (selected || !D.commitLimitReached(code, i));
       el.classList.add(ok ? "commit-ok" : "commit-no");
       if(ok){ if(selected) el.classList.add("mull-sel"); el.onclick=()=>D.toggleCommit(i); }
-      el.addEventListener("mouseenter", ()=>D.showCardInfo(el, code));
-      el.addEventListener("mouseleave", D.hideCardInfo);
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
+      el.addEventListener("mouseleave", hideCardInfo);
     }else{
       if(S.afterDefeatWindow && D.eventReactionPlayable(code)) el.classList.add("react-ok");   // 증거! 등 지금 낼 수 있는 반응 이벤트 = 초록 테두리
       el.addEventListener("mousedown", (e)=>startHandDrag(e, i, el));
-      el.addEventListener("mouseenter", ()=>D.showCardInfo(el, code));
-      el.addEventListener("mouseleave", D.hideCardInfo);
+      el.addEventListener("mouseenter", ()=>showCardInfo(el, code));
+      el.addEventListener("mouseleave", hideCardInfo);
     }
     area.appendChild(el);
   });
@@ -145,7 +145,7 @@ function onHandDragUp(e){
   window.removeEventListener("mousemove", onHandDragMove);
   window.removeEventListener("mouseup", onHandDragUp);
   document.body.classList.remove("dragging");
-  D.hideCardInfo();   // 드래그 끝 → 남아있을 수 있는 정보 잔상 제거
+  hideCardInfo();   // 드래그 끝 → 남아있을 수 있는 정보 잔상 제거
   if(!handDrag){ return; }
   const d=handDrag; handDrag=null;
   if(!d.moved){ renderHand(); return; }   // 클릭만 한 경우
