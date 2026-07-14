@@ -1280,7 +1280,14 @@ function doWithdraw(){
 function ritaParleyAvailable(){ return !!S.ritaPawnActive && S.cur==="parlor" && S.parlorActionsActive && S.currentPhase==="investigation" && !S.phaseBusy && S.actionPoints>=1; }
 function parleyRita(){
   if(!ritaParleyAvailable()){ showToast("지금 협상할 수 없습니다."); return; }
-  S.actionPoints -= 1; updateAP();   // 협상 = 행동 1 (기회공격 면제)
+  // 사전확인(조사와 동일) — 취소하면 행동력 소모 X. '협상' 눌러야 AP 차감 + 판정.
+  showPopup('리타 챈들러와 협상합니다.<br>협상에 <span class="hl">행동력 1</span>이 소모됩니다. (지식 4 판정)',
+    [{label:"취소", act:hidePopup},
+     {label:"협상", primary:true, act:()=>{ hidePopup(); doParleyRita(); }}]);
+}
+function doParleyRita(){
+  if(!ritaParleyAvailable()){ showToast("지금 협상할 수 없습니다."); return; }
+  S.actionPoints -= 1; updateAP();   // 협상 = 행동 1 (기회공격 면제) — 확인 후에만 차감
   addLog("리타 챈들러와 협상 — 지식 4 판정.");
   startSkillTest({ skill:"intellect", testType:"parley", difficulty:4, cardCode:"01117",
     ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>cluesInRoom(rm).length, blanked:investigatorBlanked() },
@@ -2056,7 +2063,13 @@ ritaPawn.add(new THREE.Mesh(new THREE.SphereGeometry(0.34,20,16),
 ritaPawn.visible=false; scene.add(ritaPawn);
 const ritaTag=document.createElement("div"); ritaTag.className="tag3d rita-tag"; ritaTag.textContent="리타 챈들러"; wrap.appendChild(ritaTag);
 // 리타 말/이름표 클릭·우클릭 → 협상(가능할 때)
-ritaTag.addEventListener("click", (e)=>{ e.stopPropagation(); if(ritaParleyAvailable()) parleyRita(); else if(S.ritaPawnActive) showToast("act3a 이후 거실에서 협상할 수 있습니다."); });
+ritaTag.addEventListener("click", (e)=>{ e.stopPropagation();
+  if(ritaParleyAvailable()){ parleyRita(); return; }
+  if(!S.ritaPawnActive) return;
+  // 협상 불가 사유 구분: 거실·act3a 조건은 맞는데 행동력만 없으면 '행동력 없음'
+  const inParlorNow = S.cur==="parlor" && S.parlorActionsActive && S.currentPhase==="investigation" && !S.phaseBusy;
+  showToast(inParlorNow ? "남은 행동력이 없습니다." : "act3a 이후 거실에서 협상할 수 있습니다.");
+});
 ritaTag.addEventListener("contextmenu", (e)=>{ e.preventDefault(); e.stopPropagation(); if(ritaParleyAvailable()) parleyRita(); });
 
 /* =====================================================================

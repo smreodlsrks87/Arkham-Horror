@@ -156,7 +156,7 @@ function enterCommit(cfg){
   const commitBody =
     '<div class="stc-commit"><div class="stc-cmt"><b class="hl">'+cfg.actionLabel+'</b> 판정 — 커밋 중.<br>'+
     '테스트 기호 있는 <b>손패</b>(파란 테두리)·강화 <b>자산</b>을 <b>좌클릭</b>해 추가, 다 골랐으면 <b>우클릭</b>으로 판정.</div>'+
-    '<div class="stc-bonus">추가 보너스 <b id="cm-b">+0</b></div></div>';
+    '<div class="stc-bonus">추가 보너스 <b class="cm-b">+0</b></div></div>';
   if(cfg.cardCode){
     // 조우 능력테스트: 커밋 선택 팝업(정중앙)과 "같은 박스·같은 위치·같은 크기"로 그대로 이어지게 정중앙에 카드+지시문
     showPersistentCard(cfg.cardCode, commitBody, {center:true});
@@ -166,14 +166,15 @@ function enterCommit(cfg){
     hint.innerHTML =
       '<div class="mh-title">'+cfg.actionLabel+' 판정 — 커밋</div>'+
       '<div class="mh-body">테스트 기호가 있는 <b>손패</b>(파란 테두리)·강화 <b>자산</b>을 <b>좌클릭</b>해 추가.<br>다 골랐으면 <b>우클릭</b>으로 판정.</div>'+
-      '<div class="mh-count">추가 보너스 <b id="cm-b">+0</b></div>';
+      '<div class="mh-count">추가 보너스 <b class="cm-b">+0</b></div>';
     hint.classList.add("show");
   }
   renderHand(); renderPlayArea(); updateCommitBonus();
 }
 function updateCommitBonus(){
   let icons=0; commitSel.forEach(i=> icons += commitIcons(S.byCode[S.playerHand[i]], commitCfg.skill));
-  const el=document.getElementById("cm-b"); if(el) el.textContent = "+" + (icons + commitAssetBonus);
+  // cm-b는 조우카드(persist-enc)·비카드(mull-hint) 양쪽에 생길 수 있어 class로 모두 갱신(숨은 잔여 포함 → 보이는 것 정확)
+  document.querySelectorAll(".cm-b").forEach(el=> el.textContent = "+" + (icons + commitAssetBonus));
 }
 // "능력 테스트당 최대 N장" — 같은 코드 카드가 이미 한도만큼 커밋됐는지(카드 단위 제한). exceptIdx는 자기 자신 제외.
 export function commitLimitReached(code, exceptIdx){
