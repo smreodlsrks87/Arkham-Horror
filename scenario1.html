@@ -994,6 +994,7 @@ import { renderHand, committableHand, dealOpeningHand, doMulligan, mulliganMode,
 import { tryPlayCard, renderPlayArea, activateAbility, discardPlayed, weaponFightOptions, slotInfo, slotUsed, SLOT_CAP, setPlayDeps } from "./js/scenario/play.js";   // 플레이 엔진(플레이·슬롯·능력발동·플레이영역)
 import { floatTextAt, hitFlash } from "./js/scenario/combat-fx.js";   // 전투 피드백 공용 이펙트(뜨는 텍스트·피격 플래시)
 import { enemyAtLocation, enemyParleyAbility, doParley, openEnemyMenu, ghoulsInRoom, isGhoul, enemyCard, enemyHealth, enemiesAt, enemySpawnRoom, spawnEnemy, provokeAoO, resolveEngagements, damageEnemy, startFightAction, startEvadeAction, runEnemyPhase, setEnemyDeps } from "./js/scenario/enemy.js";   // 적 코어+전투 엔진
+import { drawEncounterPhase, revealEncounterCard, rectStageCenter, hidePersistentCard, setEncResolveDeps } from "./js/scenario/encounter-resolve.js";   // 조우/치레커리 해결
 import { showCardInfo, hideCardInfo, openCardZoom, closeCardZoom, zoomOpen } from "./js/scenario/tooltip.js";   // 카드 호버 정보·확대뷰
 import { renderInvestigator, updateAP, setInvDeps } from "./js/scenario/investigator.js";   // 세로형 조사자 카드·행동력
 import { showPopup, showForcedPopup, hidePopup, popupOpen, showToast, popupForced, popupCancelAct } from "./js/scenario/popup.js";   // 공용 팝업·토스트
@@ -3335,25 +3336,7 @@ function discardAttachedOnInvestigate(roomKey){
 /* ===== 조우 엔진 — 신화 1.4 뽑기 + 폭로 처리(시나리오1 적·음모) ===== */
 // 신화 1.4: 대표조사자부터 지정 순서대로 각 1장. 순서는 arkham_game이 localStorage("arkham_player_order")에 저장.
 // 1인: 값 null(순서 없음) → 활성 조사자 1명만. [다인 확장 훅] order 배열대로 순차 뽑기(각자 pause/resume 체이닝 필요).
-function drawEncounterPhase(){
-  let order=null; try{ order=JSON.parse(localStorage.getItem("arkham_player_order")); }catch(_){}
-  const drawers = (order && order.length) ? order : [ S.activeInvestigator ? S.activeInvestigator.investigator : "self" ];
-  drawOneEncounter(drawers[0]);   // 지금은 1인(첫 조사자)만. 다인 순차는 이후.
-}
-function drawOneEncounter(inv){
-  if(!S.encounterDeck.length){ addLog("신화 1.4 — 조우덱이 비어 뽑지 못했습니다."); S.phasePaused=false; resumeAfterCutscene(); return; }   // 빈 덱이어도 멈추지 않게 재개(agenda2b로 소진된 경우 등)
-  const card = S.encounterDeck.shift(); updateEncounterUI();
-  addLog("신화 1.4 — 조우 뽑기: "+card.name+".");
-  S.phasePaused = true;   // 공개 연출·해결이 끝날 때까지 신화 단계 정지
-  revealEncounterCard(card.code, ()=>{
-    resolveEncounter(card.code, ()=>{ S.phasePaused=false; resumeAfterCutscene(); });   // 해결 끝 → 조사자 단계로
-  });
-}
 // 어떤 요소의 화면 위치 → stage 좌표 중심점
-function rectStageCenter(el){
-  const r=el.getBoundingClientRect();
-  return { x: toStageX(r.left+r.width/2), y: toStageY(r.top+r.height/2) };
-}
 // 방의 3D 중심 → stage 좌표(마커와 같은 투영)
 function roomStagePos(k){
   const R=ROOMS[k];
@@ -3362,112 +3345,8 @@ function roomStagePos(k){
   return { x: toStageX(wr.left + (p.x*0.5+0.5)*wr.width), y: toStageY(wr.top + (-p.y*0.5+0.5)*wr.height) };
 }
 // 이 조우가 해결되면 어디로 가나 → 연출 목적지 stage 좌표
-function encRevealDest(code){
-  const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{};
-  if(c.type_code==="enemy"){ const room=enemySpawnRoom(code); if(room) return roomStagePos(room); }   // 적 = 등장 장소. 장소가 게임에 없으면(null) → 아래 조우 버린 더미로 날아감
-  if(a.on_draw==="attach_to_location") return roomStagePos(S.cur);                                                 // 부착(안개) = 현재 장소
-  if(a.on_draw==="put_into_play"){ const pa=document.getElementById("play-area"); if(pa) return rectStageCenter(pa); }   // 위협영역 = 플레이 영역
-  if(!isEncounterCard(code)){ const pd=document.getElementById("discard-pile"); if(pd) return rectStageCenter(pd); }  // 플레이어 약점(편집증 등) = 플레이어 버린 더미
-  const dp=document.getElementById("enc-discard"); if(dp) return rectStageCenter(dp);                            // 조우 즉효 = 조우 버린 더미
-  return { x:1650, y:420 };
-}
 // 조우 공개 연출 — 조우덱에서 중앙으로 날아와 3초 표시(text_ko 포함) → 목적지로 날아가 사라짐 → after()
-function revealEncounterCard(code, after, opts){
-  opts = opts || {};
-  const c=S.byCode[code]||{};
-  const stage=document.getElementById("stage");
-  const d=document.createElement("div"); d.className="enc-reveal";
-  d.innerHTML='<img src="'+cardFront(code)+'" alt="">'+
-    '<div class="er-info"><h5>'+(c.name||code)+'</h5>'+
-    (c.traits?'<div class="er-txt" style="color:var(--muted);font-size:13px;margin-bottom:5px;">'+c.traits+'</div>':"")+
-    (cardTextOf(code)?'<div class="er-txt">'+cleanText(cardTextOf(code))+'</div>':"")+
-    '<div class="er-hint">클릭하면 바로 진행</div></div>';
-  // 딤 배경(어디를 클릭해도 진행)
-  const dim=document.createElement("div"); dim.className="enc-reveal-dim"; stage.appendChild(dim);
-  // 시작 위치 = 조우덱(기본) 또는 지정 더미(약점=플레이어 덱)
-  const encPile=document.getElementById(opts.startEl||"enc-draw");
-  const start = encPile ? rectStageCenter(encPile) : {x:1650, y:320};
-  d.style.left=start.x+"px"; d.style.top=start.y+"px"; d.style.opacity="0";
-  stage.appendChild(d);
-  let phase=0;   // 0=표시중 1=날아감
-  const flyOut=()=>{
-    if(phase===1) return; phase=1;
-    dim.remove();
-    const dest=encRevealDest(code);
-    d.classList.add("er-out");
-    d.style.left=dest.x+"px"; d.style.top=dest.y+"px";
-    setTimeout(()=>{ d.style.opacity="0"; }, 450);
-    setTimeout(()=>{ d.remove(); after(); }, 700);   // 도착 → 실제 해결(배치·등장·테스트)
-  };
-  dim.addEventListener("pointerdown", (e)=>{ e.stopPropagation(); flyOut(); });
-  d.addEventListener("pointerdown", (e)=>{ e.stopPropagation(); flyOut(); });   // 카드/아래 클릭 = 진행
-  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
-    d.style.opacity="1";
-    d.style.left="960px"; d.style.top="440px";   // 화면 중앙(살짝 위)
-  }); });   // 자동 진행 없음 — 클릭할 때까지 대기
-}
-function resolveEncounter(code, done){
-  done = done || function(){};
-  const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{}, name=c.name||code, nd=a.on_draw;
-  if(nd==="put_into_play"){ S.playedCards.push({code, uses:initialUses(code)}); onEnterPlay(code); renderPlayArea(); addLog("폭로 — "+name+" 위협영역에 놓임."); done(); return; }
-  if(nd==="attach_to_location"){ attachToLocation(code, S.cur, a); done(); return; }
-  if(nd==="resolve_and_discard"){ resolveTreachery(code, a, done); return; }
-  if(c.type_code==="enemy"){ spawnEnemy(code); done(); return; }   // 적 = 게임판에 등장(조우덱에서 빠짐)
-  encDiscard(code); done();
-}
-function resolveTreachery(code, a, done){
-  const ab=(a.abilities||[])[0]||{}, name=(S.byCode[code]||{}).name||code;
-  const finish=()=>{ hidePersistentCard(); encDiscard(code); done(); };
-  if(ab.revelation_test){
-    S.phasePaused=true;   // 폭로 테스트 동안 신화 페이즈 멈춤
-    // 조우 카드는 커밋 팝업 안에 합쳐 표시(startSkillTestInner) → 커밋 진입 후엔 상단 고정으로 유지
-    startSkillTest({ skill:ab.revelation_test.skill, testType:"treachery", difficulty:ab.revelation_test.difficulty, cardCode:code,
-      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>cluesInRoom(rm).length, blanked:investigatorBlanked() },
-      actionLabel:name, targetLabel:"난이도",
-      onResolve:(r)=> showRevelationResult(ab, r, name, ()=> runRevEffects(r.success?(ab.on_success||[]):(ab.on_failure||[]), r, finish)) });
-  } else { (ab.do||[]).forEach(eff=> runEffect(eff, null)); finish(); }
-}
 // 조우 카드 상단 고정 표시(커밋/판정 동안) — 기호 확인용
-let persistentCardEl=null;
-function showPersistentCard(code, extraHtml, opts){
-  hidePersistentCard();
-  opts = opts||{};
-  persistentCardEl=document.createElement("div"); persistentCardEl.className="persist-enc"+(opts.center?" pe-center":"");
-  persistentCardEl.innerHTML=encCardHeaderHtml(code) + (extraHtml||"");   // 커밋 팝업과 동일 레이아웃 + (선택)커밋 지시문
-  document.getElementById("stage").appendChild(persistentCardEl);
-}
-function hidePersistentCard(){ if(persistentCardEl){ persistentCardEl.remove(); persistentCardEl=null; } }
-function showRevelationResult(ab, r, name, next){
-  const base={ action:name, skill:ab.revelation_test.skill, skillLabel:SKILL_KO[ab.revelation_test.skill]||ab.revelation_test.skill,
-    skillVal:r.base, drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
-  const lines = applyCommittedDraws(r);   // 배짱 등 커밋 드로우(모든 판정 성공 시)
-  const ex = (r.success?"성공 — 효과 없음.":"실패 — 효과 적용.") + (lines.length?" "+lines.join(" "):"");
-  showPopup(testResultHtml({...base, extra: ex}),
-    [{label:"확인", primary:true, act:()=>{ hidePopup(); next(); }}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
-}
-function runRevEffects(effs, r, done){ let i=0; const next=()=>{ if(i>=effs.length){ done(); return; } applyRevEffect(effs[i++], r, next); }; next(); }
-function revAmount(spec, r){
-  if(typeof spec==="number") return spec;
-  // 촉수(autoFail) 시 능력값을 0으로 취급 → fail_by = 난이도 전체 (룰: 자동실패는 스킬값 0으로 실패폭 계산)
-  if(spec==="fail_by") return Math.max(0, r.difficulty - (r.autoFail ? 0 : r.total));
-  if(spec==="success_by") return Math.max(0, r.total - r.difficulty);
-  if(spec && typeof spec==="object"){ let v=revAmount(spec.value, r); if(spec.min!=null)v=Math.max(spec.min,v); if(spec.max!=null)v=Math.min(spec.max,v); return v; }
-  return 0;
-}
-function applyRevEffect(eff, r, next){
-  if(eff.effect==="damage_investigator"){ takeDamageHorror(revAmount(eff.damage, r), 0, {direct:!!eff.direct}, next); return; }
-  if(eff.effect==="horror"){ takeDamageHorror(0, revAmount(eff.value, r), {direct:!!eff.direct}, next); return; }
-  if(eff.effect==="discard_owned_asset"){ discardOwnedAsset(eff, next); return; }
-  runEffect(eff, null); next();
-}
-function discardOwnedAsset(eff, next){   // 통제 자산 1개 버림: 1개=자동, 2+=일러스트 팝업, 0개=fallback(피해2)
-  const idxs = S.playedCards.map((p,i)=>i).filter(i=> (S.byCode[S.playedCards[i].code]||{}).type_code==="asset");
-  if(!idxs.length){ (eff.fallback||[]).forEach(fx=> applyRevEffect(fx, {difficulty:0,total:0}, ()=>{})); addLog("버릴 자산이 없어 대체 효과를 받습니다."); next(); return; }
-  if(idxs.length===1){ discardPlayed(idxs[0]); next(); return; }
-  showCardPickPopup("버릴 자산을 선택하세요 (으스스한 한기)", idxs.map(i=>S.playedCards[i].code), (chosen, pi)=>{
-    discardPlayed(idxs[pi]); next();   // 인덱스로 정확히(같은 카드 2장 대비)
-  });
-}
 
 /* ===== 적 · 전투 엔진 (기본) =====
    상태: S.enemies = [{code, room, dmg, exhausted, engaged}]  (1인: engaged=활성 조사자와 교전)
@@ -3854,7 +3733,7 @@ setHandDeps({
 setInvDeps({ cluesInRoom, investigatorBlanked });
 
 // 판정/커밋 모듈(js/scenario/skilltest.js)에 scenario1 전용 링크 주입.
-setSkillTestDeps({ SKILL_KO, showPersistentCard, drawCards });   // renderPlayArea는 play.js에서 skilltest가 직접 import
+setSkillTestDeps({ SKILL_KO, drawCards });   // renderPlayArea·showPersistentCard는 play.js·encounter-resolve.js에서 skilltest가 직접 import
 
 // 플레이 엔진(js/scenario/play.js)에 scenario1 인라인(전투·적·효과엔진·반응·조사결과) 주입.
 setPlayDeps({
@@ -3871,6 +3750,12 @@ setEnemyDeps({
   cluesInRoom, countInvestigatorsAt, leadInvestigatorName, investigatorBlanked, canEnemyEnterLocation,
   actionSurchargeFor, markSurcharge, discardToOrigin, flushDefeatReaction, renderMenu, isEncounterCard,
   ROOMS, ADJ, pawnMoving: ()=>pawnMoving,
+});
+
+// 조우해결 모듈(js/scenario/encounter-resolve.js)에 scenario1 인라인(3D투영·효과엔진·피해할당·조우버림·데이터) 주입.
+setEncResolveDeps({
+  roomStagePos, runEffect, takeDamageHorror, attachToLocation, encDiscard,
+  isEncounterCard, SKILL_KO, showCardPickPopup, cluesInRoom, investigatorBlanked,
 });
 
 // ===== 로딩 화면 시스템 =====

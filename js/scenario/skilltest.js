@@ -21,9 +21,10 @@ import { showPopup, hidePopup, showToast } from "./popup.js";
 import { addLog } from "./log.js";
 import { updatePiles } from "./piles.js";
 import { renderPlayArea } from "./play.js";   // 플레이영역 재렌더(커밋 진입/강화/확정 시)
+import { showPersistentCard } from "./encounter-resolve.js";   // 조우 카드 상단 고정(커밋/판정 동안)
 
 // ── 주입(scenario1 전용 링크) ──
-let D = { SKILL_KO:{}, showPersistentCard(){}, drawCards:()=>0 };
+let D = { SKILL_KO:{}, drawCards:()=>0 };
 export function setSkillTestDeps(o){ Object.assign(D, o); }
 
 const SKILL_FIELD = { willpower:"skill_willpower", intellect:"skill_intellect", combat:"skill_combat", agility:"skill_agility" };
@@ -140,7 +141,7 @@ function startSkillTestInner(cfg){
   const assets = boostAssets(cfg.skill);
   const header = cfg.cardCode ? encCardHeaderHtml(cfg.cardCode) : "";
   // 조우 카드면 커밋 모드/판정 동안 상단에 카드를 계속 띄운다(팝업 닫힌 뒤 기호 확인용)
-  const keepCard = ()=>{ if(cfg.cardCode) D.showPersistentCard(cfg.cardCode); };
+  const keepCard = ()=>{ if(cfg.cardCode) showPersistentCard(cfg.cardCode); };
   if(!hand.length && !assets.length){ keepCard(); resolveTestNow(cfg, 0); return; }   // 커밋 옵션 없음 → 즉시 판정
   const cmt = '<div class="stc-cmt"><span class="hl">'+cfg.actionLabel+'</span> 판정 — 커밋하거나 도움을 받으시겠습니까?<br>손패 기호·강화 자산으로 판정값을 올릴 수 있습니다.</div>';
   showPopup(header + cmt, [
@@ -158,7 +159,7 @@ function enterCommit(cfg){
     '<div class="stc-bonus">추가 보너스 <b id="cm-b">+0</b></div></div>';
   if(cfg.cardCode){
     // 조우 능력테스트: 커밋 선택 팝업(정중앙)과 "같은 박스·같은 위치·같은 크기"로 그대로 이어지게 정중앙에 카드+지시문
-    D.showPersistentCard(cfg.cardCode, commitBody, {center:true});
+    showPersistentCard(cfg.cardCode, commitBody, {center:true});
   }else{
     // 그 외(전투·조사·능력 판정): 카드가 없으므로 기존 하단 힌트 박스 사용
     const hint=document.getElementById("mull-hint");
@@ -212,7 +213,7 @@ export function confirmCommit(){
   document.getElementById("mull-hint").classList.remove("show");
   renderHand(); renderPlayArea(); updatePiles();
   if(bonus) addLog("커밋 보너스 +"+bonus+".");
-  if(cfg.cardCode) D.showPersistentCard(cfg.cardCode);   // 커밋 끝 → 결과 팝업(정중앙)과 안 겹치게 카드는 상단 참조용으로 전환
+  if(cfg.cardCode) showPersistentCard(cfg.cardCode);   // 커밋 끝 → 결과 팝업(정중앙)과 안 겹치게 카드는 상단 참조용으로 전환
   resolveTestNow(cfg, bonus, committed);
 }
 function resolveTestNow(cfg, extraBonus, committed){
