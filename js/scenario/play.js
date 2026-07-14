@@ -15,13 +15,14 @@ import { addLog } from "./log.js";
 import { audio } from "../shared/audio.js";
 import { commitMode, canBoost, useBoostAsset, startSkillTest, applyCommittedDraws, testResultHtml } from "./skilltest.js";
 import { toStageX, toStageY } from "../shared/stage.js";
+import { provokeAoO, enemyAtLocation, openEnemyMenu, enemyHealth } from "./enemy.js";   // 적 코어(기회공격·장소적·적메뉴·적체력)
 
-// 주입(scenario1 인라인: 전투·적·효과엔진·반응·조사결과 등) — 전부 안정 함수/상수라 게터 불필요.
+// 주입(scenario1 인라인: 효과엔진·반응·조사결과 등) — 전부 안정 함수/상수라 게터 불필요.
 let D = {
-  provokeAoO:(cb)=>{ if(cb) cb(); }, runEffect(){}, enemyAtLocation:()=>false, openEnemyMenu(){},
+  runEffect(){},
   closeActionMenu(){}, actionSurchargeFor:()=>0, markSurcharge(){}, showCardPickPopup(){},
   attachToLocation(){}, triggerEnterPlayReaction(){}, applyInvestigateResult(){}, cluesInRoom:()=>[],
-  investigatorBlanked:()=>false, effShroud:()=>0, enemyHealth:()=>0, isThreatCard:()=>false,
+  investigatorBlanked:()=>false, effShroud:()=>0, isThreatCard:()=>false,
   hasReactionWhen:()=>false, eventReactionPlayable:()=>false, reactionAbilityOpen:()=>false,
   closeAfterDefeatWindow(){}, discardToOrigin(){}, SKILL_KO:{},
 };
@@ -141,7 +142,7 @@ export function tryPlayCard(idx){
     renderInvestigator();
     S.playerHand.splice(idx,1);
     const actLog = needAction ? "" : " [신속]";
-    if(needAction){ renderHand(); D.provokeAoO(()=> playBody()); } else playBody();   // 신속 아님 = 행동 → 기회공격
+    if(needAction){ renderHand(); provokeAoO(()=> playBody()); } else playBody();   // 신속 아님 = 행동 → 기회공격
     function playBody(){
     if(c.type_code==="event"){
       // 이벤트: 즉시 효과(on_play) 또는 지금 열린 반응 창(증거!=적 처치 직후) 효과 실행. 부착 이벤트는 붙고, 아니면 버린 더미로.
@@ -213,7 +214,7 @@ export function renderPlayArea(){
   const enemyHtml = engaged.map(en=>{
     const ei=S.enemies.indexOf(en);
     return '<div class="played-card pc-enemy threat-card'+(en.exhausted?' pc-exhausted':'')+(commitMode?' pc-boost-no':'')+'" data-ei="'+ei+'" data-code="'+en.code+'"><img src="'+cardFront(en.code)+'" alt="">'+
-      '<span class="pc-eng">🎯 교전</span><div class="pc-ehp">'+(D.enemyHealth(en)-en.dmg)+'/'+D.enemyHealth(en)+'</div></div>';
+      '<span class="pc-eng">🎯 교전</span><div class="pc-ehp">'+(enemyHealth(en)-en.dmg)+'/'+enemyHealth(en)+'</div></div>';
   }).join("");
   area.innerHTML = assetsHtml + enemyHtml;
   area.querySelectorAll(".played-card:not(.pc-enemy)").forEach(el=>{
@@ -227,7 +228,7 @@ export function renderPlayArea(){
     const en=S.enemies[+el.dataset.ei]; if(!en) return;
     el.addEventListener("mouseenter", ()=> showCardInfo(el, en.code, "left"));
     el.addEventListener("mouseleave", hideCardInfo);
-    el.addEventListener("click", (e)=>{ e.stopPropagation(); hideCardInfo(); D.openEnemyMenu(en, e.clientX, e.clientY); });
+    el.addEventListener("click", (e)=>{ e.stopPropagation(); hideCardInfo(); openEnemyMenu(en, e.clientX, e.clientY); });
   });
 }
 
@@ -245,7 +246,7 @@ function abilityLabel(ab, cardName){
 function canActivateAbility(p, ab){
   const first = ab.do && ab.do[0] && ab.do[0].effect;
   if(STUB_EFFECTS.has(first)) return false;
-  if((first==="do_fight"||first==="damage") && !D.enemyAtLocation()) return false;   // 무기 공격·적 피해는 내 장소에 적이 있어야
+  if((first==="do_fight"||first==="damage") && !enemyAtLocation()) return false;   // 무기 공격·적 피해는 내 장소에 적이 있어야
   if(S.currentPhase!=="investigation" || S.phaseBusy) return false;
   let apNeed = (ab.cost && ab.cost.action) ? ab.cost.action : (ab.timing==="action" ? 1 : 0);   // 행동 비용(심기증 버리기=2)
   if(first==="do_fight") apNeed += D.actionSurchargeFor("fight");   // 무기 공격도 공포에 얼어붙다 추가행동
@@ -284,7 +285,7 @@ export function activateAbility(pi, ai){
     const spendUse = (he.spend && p.uses && he.spend[p.uses.type]) ? he.spend[p.uses.type] : 0;
     const commit=(k)=>{
       pay(); if(spendUse && p.uses) p.uses.count -= spendUse;   // 선택 순간에만 지불
-      D.provokeAoO(()=>{                                          // 행동 소비 → 기회공격 후 회복
+      provokeAoO(()=>{                                          // 행동 소비 → 기회공격 후 회복
         if(k==="damage"){ S.invDamage=Math.max(0,S.invDamage-v); addLog(nm+" — 피해 "+v+" 회복."); }
         else { S.invHorror=Math.max(0,S.invHorror-v); addLog(nm+" — 공포 "+v+" 회복."); }
         renderInvestigator();
@@ -299,7 +300,7 @@ export function activateAbility(pi, ai){
   }
   pay();
   // 기회공격 — 행동 소비 능력 중 공격(do_fight) 지정이 아닌 것(손전등 조사·의학서적·심기증 버리기 등)
-  if(apCost>0 && !isFight){ D.provokeAoO(()=> abilityBody()); } else abilityBody();
+  if(apCost>0 && !isFight){ provokeAoO(()=> abilityBody()); } else abilityBody();
   function abilityBody(){
   if(ab.action_type==="investigate"){                                              // 손전등: 장막 수정 조사(현재 장소)
     const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
