@@ -997,6 +997,7 @@ import { enemyAtLocation, enemyParleyAbility, doParley, openEnemyMenu, ghoulsInR
 import { drawEncounterPhase, revealEncounterCard, rectStageCenter, hidePersistentCard, setEncResolveDeps } from "./js/scenario/encounter-resolve.js";   // 조우/치레커리 해결
 import { updateGoal, beginAct, checkActCondition, checkAdvanceCondition, checkAgendaAdvance, locationVictoryPoints, showAdvanceButton, hideAdvanceButton, maybeShowAdvanceTip, defeatGhoulPriest, advanceReady, actCluesNeeded, setActDeps } from "./js/scenario/act.js";   // 시나리오 진행(막·의제)
 import { cluesInRoom, applyInvestigateResult, clueMeshes, nearestClueTo, discoverClues, setCluesDeps } from "./js/scenario/clues.js";   // 단서·조사 판정
+import { ROOMS, ROOM_INFO, ADJ, WAY } from "./js/scenario/rooms-data.js";   // 방 지오메트리·정보·인접·경유점 데이터
 import { showCardInfo, hideCardInfo, openCardZoom, closeCardZoom, zoomOpen } from "./js/scenario/tooltip.js";   // 카드 호버 정보·확대뷰
 import { renderInvestigator, updateAP, setInvDeps } from "./js/scenario/investigator.js";   // 세로형 조사자 카드·행동력
 import { showPopup, showForcedPopup, hidePopup, popupOpen, showToast, popupForced, popupCancelAct } from "./js/scenario/popup.js";   // 공용 팝업·토스트
@@ -1052,24 +1053,7 @@ const fill=new THREE.DirectionalLight(0x7a6f9a,0.35); fill.position.set(-14,16,-
 const mat=(c,r=0.9,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
 
 /* 방 — 색을 뚜렷이·밝게, 높이차 과장, 복도 길게 해서 방 거리 벌림 */
-const ROOMS={
-  // 1막 — 서재(혼자 고립). 저택과 멀리 떨어뜨려 배치(전환 전 단계).
-  study:  { name:"서재",   floor:"",         x:-30, y:0,   z:0,   w:13, d:13, color:0xb08a4a, css:"#d8b878", shroud:2, clues:2, floorCol:0x4a3826, stage:"study" },
-  // 2막 — 저택(복도 허브 + 방들)
-  hallway:{ name:"복도",   floor:"중앙 통로", x:0,  y:0,   z:0,   w:9,  d:24, color:0xc4a468, css:"#d9bd82", shroud:1, clues:0, floorCol:0x6b5236, stage:"mansion" },
-  parlor: { name:"거실",   floor:"1층",      x:22, y:0,   z:0,   w:15, d:15, color:0x9a7ad0, css:"#bda0e8", shroud:1, clues:0, floorCol:0x5a4636, locked:true, stage:"mansion" },
-  attic:  { name:"다락방", floor:"2층",      x:22, y:12,  z:16,  w:15, d:15, color:0xe0c050, css:"#f0d878", shroud:1, clues:2, floorCol:0x6e5a3a, stage:"mansion" },
-  cellar: { name:"지하실", floor:"지하",     x:22, y:-12, z:-16, w:15, d:15, color:0x4a9ab0, css:"#6ec0d8", shroud:4, clues:2, floorCol:0x3a3a40, stage:"mansion" },
-};
 // 방 카드 정보(공개된 방 이름표에 표시) — 강제/능력 텍스트(HTML)·승점 등. [사용자 지정]
-const RX_ACT = '<span class="rt-ico">i</span>';   // 행동 격발 아이콘(ArkhamIcons)
-const RX_KNW = '<span class="rt-ico">f</span>';   // 지식 아이콘
-const ROOM_INFO = {
-  attic:  { info:"강제 — 다락방에 들어온 후 공포 1을 받는다.", victory:1, onEnterHorror:1 },
-  cellar: { info:"강제 — 지하실에 들어온 후 피해 1을 받는다.", victory:1, onEnterDamage:1 },
-  parlor: { withdrawInfo: RX_ACT+" 후퇴. 당신은 겁에 질려 달아납니다.",
-            ritaInfo: RX_ACT+" 협상. "+RX_KNW+" 4 테스트 — 성공 시 리타 챈들러를 통제합니다." },
-};
 // 처음 들어가 본(공개된) 방. 서재·복도는 시작부터 공개. 다락방·거실·지하실은 미공개(회색 안개).
 S.revealedRooms = { study:true, hallway:true };
 S.parlorActionsActive = false;   // 거실 후퇴/협상 가능(act3a 이후)
@@ -2085,7 +2069,6 @@ S.actionPoints = 3;
 const MAX_AP = 3;
 
 /* 연결 그래프(방향성) — 복도 허브 */
-const ADJ={ study:[], hallway:["parlor","attic","cellar"], parlor:["hallway"], attic:["hallway"], cellar:["hallway"] };
 
 /* =====================================================================
    연결된 장소 버튼 — 현재 방에서 갈 수 있는 곳만 노출
@@ -2134,11 +2117,6 @@ function renderRoomButtons(){
    복도→방: 현재위치 → 복도쪽점 → 방쪽점 → 방중심
    방→복도: 현재위치 → 방쪽점 → 복도쪽점 → 복도중심
    ===================================================================== */
-const WAY={
-  attic:  { hall:{x:4.5,y:0,z:12},   room:{x:16,y:11,z:16} },   // 계단 아래/위
-  cellar: { hall:{x:4.5,y:0,z:-12},  room:{x:16,y:-11,z:-16} },
-  parlor: { hall:{x:4.5,y:0,z:0},    room:{x:15,y:0,z:0} },       // 문 앞
-};
 function roomCenterPt(k){ const c=roomCenter(k); return {x:c.x,y:c.y,z:c.z}; }
 function buildPath(from, to){
   const pawnPos={x:pawn.position.x,y:pawn.position.y,z:pawn.position.z};
