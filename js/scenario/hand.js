@@ -297,6 +297,7 @@ function finishMulligan(){
   if(back.length){
     back.forEach(c=>S.playerDeck.push(c));
     shuffle(S.playerDeck);
+    audio.sfx("card-shuffle");
     if(mulliganAside.length) addLog("교체한 "+mulliganAside.length+"장을 덱에 도로 섞었습니다.");
     if(setAsideWeaknesses.length) addLog("약점 "+setAsideWeaknesses.length+"장을 덱에 섞었습니다.");
     mulliganAside=[]; setAsideWeaknesses=[];

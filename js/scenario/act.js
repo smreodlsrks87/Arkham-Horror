@@ -17,6 +17,7 @@ import { isGhoul, ghoulsInRoom, spawnEnemy } from "./enemy.js";
 import { showPopup, showForcedPopup, hidePopup } from "./popup.js";
 import { renderHand } from "./hand.js";
 import { updatePiles } from "./piles.js";
+import { audio } from "../shared/audio.js";
 
 // 주입(scenario1 인라인: 종료·피해·3D투영·조우버림·마커·데이터·막전환).
 let D = {
@@ -130,6 +131,7 @@ export function agenda2bResolve(done){
   const flyIn = ()=>{
     if(di >= discards.length){
       shuffle(S.encounterDeck); updateEncounterUI();
+      audio.sfx("card-shuffle");
       addLog("의제2b — 버린 조우 더미를 조우덱에 섞었습니다.");
       setTimeout(drawStep, 450);
       return;

@@ -1482,7 +1482,16 @@ S.playedCards=[];
 function drawCards(n){
   let drew=0, toHand=0;
   for(let k=0;k<(n||1);k++){
-    if(!S.playerDeck.length) break;
+    if(!S.playerDeck.length){
+      if(!S.playerDiscard.length) break;   // 덱·버린 더미 모두 비면 더 못 뽑음
+      // 빈 덱 규칙: 뽑아야 하는데 덱이 비면 → 버린 더미를 섞어 새 덱 + 공포 1 (리셔플할 때마다). 그 뒤 계속 뽑음.
+      S.playerDeck = S.playerDiscard.slice(); S.playerDiscard.length = 0;
+      shuffle(S.playerDeck);
+      audio.sfx("card-shuffle");
+      addLog("덱이 비어 버린 더미를 섞어 새 덱을 만들었습니다. (공포 1)");
+      applyToInvestigator(0, 1, "빈 덱");   // 공포 1 — 초상화 표시 + 쓰러짐 판정 일원화
+      updatePiles();
+    }
     const code=S.playerDeck.shift(); drew++;
     if(handleOnDraw(code)) continue;      // 폭로가 별도 처리(위협영역 배치 등) → 손패 안 감
     S.playerHand.push(code); toHand++;
@@ -1635,7 +1644,7 @@ function promptKeepOne(idxs, title){
 // 덱에서 조건(유형·특성) 맞는 카드 검색 → 팝업 선택 → 손패 + 셔플 (연구 사서)
 function searchDeckToHand(eff){
   const uniq = [...new Set(S.playerDeck.filter(code=>{ const c=S.byCode[code]; return c && (!eff.card_type || c.type_code===eff.card_type) && (!eff.trait || (c.real_traits||"").includes(eff.trait)); }))];   // 영어 특성(Tome 등)
-  if(!uniq.length){ addLog("덱에서 조건에 맞는 카드를 찾지 못했습니다."); shuffle(S.playerDeck); updatePiles(); return; }
+  if(!uniq.length){ addLog("덱에서 조건에 맞는 카드를 찾지 못했습니다."); shuffle(S.playerDeck); audio.sfx("card-shuffle"); updatePiles(); return; }
   showPopup("덱에서 손에 들 <span class='hl'>"+(eff.trait||"")+"</span> 카드를 고르세요.",
     uniq.map(code=>({ label:(S.byCode[code]?S.byCode[code].name:code), act:()=>{ hidePopup(); pickFromDeck(code); } })));
 }
@@ -1643,6 +1652,7 @@ function pickFromDeck(code){
   const i = S.playerDeck.indexOf(code);
   if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); }
   shuffle(S.playerDeck);
+  audio.sfx("card-shuffle");
   renderHand(); updatePiles(); flyLastCardFromDeck();
   addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 덱에서 찾아 손에 들었습니다. 덱을 섞었습니다.");
 }
@@ -1652,8 +1662,8 @@ function lookTopDraw(eff){
   const top = S.playerDeck.slice(0, n);
   if(!top.length){ addLog("덱이 비어 있습니다."); return; }
   const drawable = eff.trait ? top.filter(code=>{ const c=S.byCode[code]; return c && (c.real_traits||"").includes(eff.trait); }) : top;   // 영어 특성(Spell 등)
-  if(!drawable.length){ addLog("덱 맨 위 "+n+"장 중 조건에 맞는 카드가 없습니다."); shuffle(S.playerDeck); updatePiles(); return; }
-  const pick=(code)=>{ const i=S.playerDeck.indexOf(code); if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); } shuffle(S.playerDeck); renderHand(); updatePiles(); flyLastCardFromDeck(); addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 뽑았습니다. 나머지는 덱에 넣고 섞었습니다."); };
+  if(!drawable.length){ addLog("덱 맨 위 "+n+"장 중 조건에 맞는 카드가 없습니다."); shuffle(S.playerDeck); audio.sfx("card-shuffle"); updatePiles(); return; }
+  const pick=(code)=>{ const i=S.playerDeck.indexOf(code); if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); } shuffle(S.playerDeck); audio.sfx("card-shuffle"); renderHand(); updatePiles(); flyLastCardFromDeck(); addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 뽑았습니다. 나머지는 덱에 넣고 섞었습니다."); };
   if(drawable.length===1) pick(drawable[0]);
   else showCardPickPopup("덱 맨 위 "+n+"장 중에서 뽑을 카드를 고르세요. (일러스트에 마우스를 올리면 설명)", drawable, (code)=> pick(code));   // 일러스트+호버 텍스트
 }

@@ -15,6 +15,8 @@ import { renderPlayArea, discardPlayed } from "./play.js";
 import { startSkillTest, encCardHeaderHtml, testResultHtml, applyCommittedDraws } from "./skilltest.js";
 import { showPopup, hidePopup } from "./popup.js";
 import { spawnEnemy, enemySpawnRoom } from "./enemy.js";
+import { shuffle } from "./util.js";
+import { audio } from "../shared/audio.js";
 
 // 주입(scenario1 인라인: 3D투영·효과엔진·피해할당·조우버림·데이터).
 let D = {
@@ -31,7 +33,18 @@ export function drawEncounterPhase(){
 }
 
 export function drawOneEncounter(inv){
-  if(!S.encounterDeck.length){ addLog("신화 1.4 — 조우덱이 비어 뽑지 못했습니다."); S.phasePaused=false; resumeAfterCutscene(); return; }   // 빈 덱이어도 멈추지 않게 재개(agenda2b로 소진된 경우 등)
+  if(!S.encounterDeck.length){
+    // 조우덱 소진 → 뽑아야 하면 조우 버린 더미를 섞어 새 조우덱 (공포 없음). surge 등 후속 뽑기도 이 경로.
+    if(S.encounterDiscard.length){
+      S.encounterDeck = S.encounterDiscard.slice(); S.encounterDiscard.length = 0;
+      shuffle(S.encounterDeck);
+      audio.sfx("card-shuffle");
+      addLog("신화 1.4 — 조우덱이 비어 버린 더미를 섞어 새 조우덱을 만들었습니다.");
+      updateEncounterUI();
+    } else {   // 덱·버린 더미 모두 비면 못 뽑음(멈추지 않게 재개)
+      addLog("신화 1.4 — 조우덱·버린 더미가 모두 비어 뽑지 못했습니다."); S.phasePaused=false; resumeAfterCutscene(); return;
+    }
+  }
   const card = S.encounterDeck.shift(); updateEncounterUI();
   addLog("신화 1.4 — 조우 뽑기: "+card.name+".");
   S.phasePaused = true;   // 공개 연출·해결이 끝날 때까지 신화 단계 정지
