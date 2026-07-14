@@ -56,7 +56,6 @@ function cannotPlayType(type){
   return S.playedCards.some(p=> ((S.cardAbilities[p.code]||{}).abilities||[]).some(ab=> ab.timing==="constant" && ab.effect==="cannot_play" && (ab.card_types||[]).includes(type)));
 }
 
-function killByIndices(idxs){ [...idxs].sort((a,b)=>b-a).forEach(i=> discardPlayed(i)); }   // 인덱스 큰 것부터 버려 안 꼬이게
 
 export function tryPlayCard(idx){
   const code=S.playerHand[idx];
@@ -112,7 +111,7 @@ export function tryPlayCard(idx){
         // 카드 일러스트로 고르기 + 호버 시 카드 설명(D.showCardPickPopup)
         D.showCardPickPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. 버리고 <b>'+nm(code)+'</b>을(를) 플레이할 카드를 고르세요.',
           solos.map(o=>o.code),
-          (c,i)=>{ discardPlayed(solos[i].i); doPlay(); },
+          (c,i)=>{ doPlay([S.playedCards[solos[i].i]]); },   // 버릴 카드는 기회공격 뒤에 버림(룰: 데미지 할당이 먼저)
           { cancelable:true, onCancel:()=>{ renderHand(); } });
         return;
       }
@@ -123,7 +122,7 @@ export function tryPlayCard(idx){
       showPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. 아래 자산을 버리고 <b>'+nm(code)+'</b>을(를) 플레이하시겠습니까?'+
         '<div class="slot-kill-row">'+killImgs+'</div>', [
         {label:"아니오", act:()=>{ hidePopup(); renderHand(); }},
-        {label:"예(버리고 플레이)", primary:true, act:()=>{ hidePopup(); killByIndices(kill); doPlay(); }},
+        {label:"예(버리고 플레이)", primary:true, act:()=>{ hidePopup(); doPlay(kill.map(i=>S.playedCards[i])); }},   // 버릴 카드는 기회공격 뒤에 버림(룰: 데미지 할당이 먼저)
       ], null, "slot-pop");
       document.querySelectorAll("#popup-msg .slot-kill").forEach(el=>{   // 일러스트 호버 → 카드 텍스트
         el.addEventListener("mouseenter", ()=> showCardInfo(el, el.dataset.code));
@@ -134,7 +133,7 @@ export function tryPlayCard(idx){
   }
   doPlay();
 
-  function doPlay(){
+  function doPlay(deferredKill){
     audio.sfx("card-play");   // 카드 플레이 소리
     // 자원·행동 차감
     S.invResource -= cost;
@@ -142,7 +141,13 @@ export function tryPlayCard(idx){
     renderInvestigator();
     S.playerHand.splice(idx,1);
     const actLog = needAction ? "" : " [신속]";
-    if(needAction){ renderHand(); provokeAoO(()=> playBody()); } else playBody();   // 신속 아님 = 행동 → 기회공격
+    // 룰: 기회공격은 "행동 효과 적용 전"에 해결 → 슬롯에서 밀려날 기존 자산이 아직 판에 있어 그 데미지를 흡수(사망)할 수 있다.
+    // 기회공격이 끝난 뒤에야 밀려난 기존 자산을 버리고(살아남았으면), 새 자산을 등장시킨다.
+    const discardDeferred = ()=>{
+      (deferredKill||[]).forEach(obj=>{ const i=S.playedCards.indexOf(obj); if(i>=0) discardPlayed(i); });   // 기회공격에 죽어 이미 빠졌으면(indexOf<0) 건너뜀
+    };
+    if(needAction){ renderHand(); provokeAoO(()=>{ discardDeferred(); playBody(); }); }   // 신속 아님 = 행동 → 기회공격(기존 자산 흡수 가능) → 버림 → 등장
+    else { discardDeferred(); playBody(); }
     function playBody(){
     if(c.type_code==="event"){
       // 이벤트: 즉시 효과(on_play) 또는 지금 열린 반응 창(증거!=적 처치 직후) 효과 실행. 부착 이벤트는 붙고, 아니면 버린 더미로.
