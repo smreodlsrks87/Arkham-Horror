@@ -1,0 +1,103 @@
+/* =====================================================================
+   campaign-log.css — 캠페인 기록지(notzCampaignLog) 전용 스타일.
+   ※ 이 화면은 tokens.css를 쓰지 않는다(자체 색). 링크를 새로 넣지 않음.
+   ===================================================================== */
+  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }   /* 트라우마 숫자 등 */
+  /* 기록지 한글 필기체 — 나눔손글씨 펜 */
+  @font-face{ font-family:'Handwriting'; src:url('fonts/NanumPenScript.ttf'); }
+  /* 본명조(=Noto Serif KR, 구글폰트) — scenario1과 동일한 나레이션·팝업 폰트 */
+  :root{ --ink:#2d3a55; --hand:'Handwriting',"Batang","바탕",serif;
+         --serif:'Noto Serif KR','Iowan Old Style','Hoefler Text','맑은 고딕',serif; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:#000; display:flex; align-items:center; justify-content:center;
+    min-height:100vh; overflow:hidden; font-family:var(--hand);
+    user-select:none; -webkit-user-select:none; -moz-user-select:none;   /* 텍스트 드래그 선택 차단 */
+  }
+  img{ -webkit-user-drag:none; user-drag:none; }   /* 이미지 드래그 잔상 차단 */
+
+  /* ───────── PART 2: 캠페인 기록지(배경 1605×903) ───────── */
+  #stage2{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1.8s ease; pointer-events:none; }
+  #stage2.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:relative;
+    width:min(100vw, calc(100vh * 1605 / 903));
+    aspect-ratio:1605 / 903;
+    background:url("images/notzCampaignLog.png") center/100% 100% no-repeat;
+    container-type:inline-size;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);
+  }
+  .f{ position:absolute; font-family:var(--hand);
+    color:var(--ink); font-weight:600; line-height:1; white-space:nowrap; transform:translateY(-50%); }
+  .fld{ font-size:1.5cqw; }
+  .sm { font-size:1.3cqw; }
+  .r  { transform:translate(-100%,-50%); }          /* 우측 정렬(경험치=승점 숫자) */
+  .c  { transform:translate(-50%,-50%); }           /* 중앙(트라우마 값) */
+  .ico{ font-family:var(--hand); color:#7a1f1f; font-weight:600; }  /* 트라우마 = 나눔손글씨 펜(손글씨) */
+
+  /* 손글씨(Campaign Notes) — 살짝 기운 각도 + 한 글자씩 */
+  #notes-write{ position:absolute; left:55.4%; top:50.5%; width:18.2cqw;
+    transform:rotate(-2deg); transform-origin:left top;
+    font-family:var(--hand); color:var(--ink);
+    font-size:1.25cqw; line-height:1.7; white-space:pre-wrap; }
+  #notes-write .wc{ opacity:0; transition:opacity .18s ease; }
+  #notes-write .wc.on{ opacity:1; }
+  /* 만년필(이미지 없으면 SVG 폴백) */
+  #pen{ position:absolute; width:5.2cqw; height:5.2cqw; z-index:40; pointer-events:none;
+    opacity:0; transition:left .12s ease, top .12s ease, opacity .3s ease;
+    transform:translate(-4%,-88%); }               /* 펜촉이 글자 위치에 오도록 보정 */
+  #pen.show{ opacity:1; }
+  #pen img{ width:100%; height:100%; object-fit:contain; }
+
+  /* ───────── PART 1: 나레이션(검은 화면) ───────── */
+  #narration{ position:absolute; inset:0; z-index:100; background:#000;
+    display:flex; align-items:center; justify-content:center;
+    opacity:1; transition:opacity 1.6s ease; }
+  #narration.hide{ opacity:0; pointer-events:none; }
+  #narr-text{
+    width:min(820px,86vw); max-height:82vh;
+    font-family:var(--serif);   /* 나레이션 = 본명조(Noto Serif KR) */
+    color:#eee7d8; font-size:20px; line-height:2.0; letter-spacing:.01em;
+    white-space:pre-wrap; text-align:left; text-shadow:0 0 18px rgba(255,255,255,.05);
+  }
+  #narr-text .nc{ opacity:0; transition:opacity .4s ease; }
+  #narr-text .nc.on{ opacity:1; }
+  /* ESC 스킵 게이지(우상단) */
+  #narr-skip{ position:absolute; top:26px; right:30px; z-index:110; font-family:var(--serif);
+    display:flex; align-items:center; gap:12px; color:rgba(244,242,236,.55); font-size:13px; letter-spacing:.04em; }
+  #narr-skip .skip-ring{ transform:rotate(-90deg); }
+  #narr-skip .ring-bg{ fill:none; stroke:rgba(255,255,255,.12); stroke-width:2.5; }
+  #narr-skip .ring-fg{ fill:none; stroke:#eee7d8; stroke-width:2.5; stroke-linecap:round;
+    stroke-dasharray:88; stroke-dashoffset:88; }
+
+  /* ───────── PART 0: 트라우마 선택 팝업 ───────── */
+  #trauma-pop{ position:absolute; inset:0; z-index:200; background:rgba(0,0,0,.72);
+    display:none; align-items:center; justify-content:center; }
+  #trauma-pop.show{ display:flex; }
+  /* 트라우마 팝업 — scenario1 팝업과 동일한 폰트(본명조)·크기 */
+  .tp-box{ font-family:var(--serif); background:linear-gradient(180deg,#1a1322,#120c1a);
+    border:1px solid #6b4d8a; border-radius:14px; padding:26px 34px;
+    text-align:center; box-shadow:0 16px 50px rgba(0,0,0,.75); max-width:480px; }
+  .tp-box .tp-msg{ color:#e8ddc8; font-size:15px; line-height:1.6; letter-spacing:.02em; margin-bottom:20px; }
+  .tp-box .tp-msg b{ color:#c9a86a; font-weight:600; }
+  .tp-btns{ display:flex; gap:10px; justify-content:center; }
+  .tp-btns button{ font-family:inherit; cursor:pointer; font-size:14px; letter-spacing:.06em; padding:9px 22px; border-radius:8px;
+    border:1px solid #4a3a5e; background:#1a1226; color:#e8ddc8; transition:background .15s,border-color .15s; }
+  .tp-btns button:hover{ background:#221730; border-color:#6b4d8a; }
+  .tp-btns button.primary{ background:#3a2c50; border-color:#8a6db0; }
+  .tp-box.tp-danger{ border-color:#8a3030; box-shadow:0 16px 50px rgba(0,0,0,.8), 0 0 26px rgba(180,40,40,.3); }
+  .tp-box.tp-danger .tp-msg{ color:#e88; }
+  /* 결말 연출 — 경험치 +N 플로트 / 트라우마 등장 / 펜 기입 셀 */
+  .xp-plus{ position:absolute; z-index:12; pointer-events:none; font-family:var(--hand); font-weight:800; color:#5fbf6e;
+    font-size:2.2cqw; transform:translate(-125%,-10%); animation:xpUp 1.4s ease forwards; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+  @keyframes xpUp{ 0%{opacity:0;transform:translate(-125%,15%);} 20%{opacity:1;} 100%{opacity:0;transform:translate(-125%,-70%);} }
+  .f.tr-pop{ animation:trPop .9s ease; }
+  @keyframes trPop{ 0%{opacity:0;transform:translate(-50%,-50%) scale(.2);} 55%{opacity:1;transform:translate(-50%,-50%) scale(1.35);} 100%{transform:translate(-50%,-50%) scale(1);} }
+  .pen-cell{ position:absolute; transform:translateY(-50%); font-family:var(--hand); color:var(--ink);
+    font-size:1.3cqw; line-height:1.55; white-space:pre-wrap; z-index:4; }
+  .pen-cell.check{ font-size:2.1cqw; color:#3a2f55; transform:translate(-50%,-50%); }
+  .pen-cell.earned{ font-size:1.2cqw; }
+  .wc{ opacity:0; transition:opacity .18s ease; }   /* 펜 기입 글자(노트·셀 공용) */
+  .wc.on{ opacity:1; }

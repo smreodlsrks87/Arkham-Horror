@@ -1,0 +1,470 @@
+/* =====================================================================
+   menu.css — 시작 메뉴·덱빌딩·프롤로그(arkham_game) 전용 스타일.
+   공통 색 토큰은 css/tokens.css.
+   ===================================================================== */
+  /* ============================================================
+     디자인 방향: 옛 존재의 공포 / 1920년대 신비주의
+     - 배경은 칠흑(#05060a), 강조는 창백한 청록 글로우(영안·심령)
+     - 메뉴 글씨는 가는 세리프, 자간 넓게 → 의식문 느낌
+     ============================================================ */
+  /* 색 토큰(--void·--gold 등)은 css/tokens.css 에서 공통 정의 */
+  /* 아컴 아이콘 폰트 — 카드텍스트 심볼(해골·석판·격발 등) 표시용 */
+  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#000;overflow:hidden;}
+  body{
+    font-family:'Hoefler Text','Iowan Old Style','Apple Garamond','Times New Roman',serif;
+    color:var(--pale);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  img{ -webkit-user-drag:none; user-drag:none; }   /* 이미지 드래그 잔상 차단 */
+
+  /* 1920x1080 무대. 화면이 작으면 비율 유지하며 축소 */
+  #stage{
+    position:relative;
+    width:1920px; height:1080px;
+    margin:0 auto;
+    background:var(--void);
+    overflow:hidden;
+  }
+
+  /* ---------- 공통: 페이드 레이어 ---------- */
+  #fade{
+    position:absolute; inset:0; z-index:90;
+    background:#000; opacity:0;
+    pointer-events:none;
+    transition:opacity 1.1s ease;
+  }
+  #fade.show{opacity:1; pointer-events:all;}
+
+  /* ============================================================
+     프롤로그 연출 — 검은 화면, 중앙 흰 글씨, 손으로 쓰듯 타이핑
+     ============================================================ */
+  #screen-prologue{
+    position:absolute; inset:0; z-index:80;
+    background:#000; display:none;
+    align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1.4s ease;
+  }
+  #screen-prologue.show{ display:flex; opacity:1; }
+  #prologue-text{
+    /* max-height는 스테이지(#stage=1920×1080) 기준 %로 둔다. vh(뷰포트 기준)를 쓰면
+       스케일된 스테이지 좌표와 어긋나 박스가 과도하게 작아져 끝줄이 잘렸다(내용 902px는 스테이지 1080 안에 들어감). */
+    width:min(720px,82vw); max-height:92%; overflow:hidden;
+    color:#f4f2ec; font-size:20px; line-height:2.05;
+    letter-spacing:.02em; text-align:left;
+    font-family:'Iowan Old Style','Hoefler Text','맑은 고딕',serif;
+    text-shadow:0 0 18px rgba(255,255,255,.06);
+    display:flex; flex-direction:column; justify-content:flex-start;  /* 위 정렬(줄이 미리 자리 잡아 안 밀림) */
+  }
+  /* 각 줄이 타이핑 전에도 최종 줄높이(2.05em)를 차지 → 글자가 채워져도 줄 위치 안 밀림 */
+  #prologue-text .pl-line{ opacity:.92; min-height:2.05em; }
+  #prologue-text .pl-cursor::after{ content:"▌"; margin-left:1px; animation:plblink 1s steps(1) infinite; color:#f4f2ec; }
+  @keyframes plblink{ 50%{opacity:0;} }
+
+  /* 스킵 안내 + 원형 게이지 (우상단) */
+  #prologue-skip{
+    position:absolute; top:26px; right:30px; z-index:82;
+    display:flex; align-items:center; gap:12px;
+    color:rgba(244,242,236,.55); font-size:13px; letter-spacing:.04em;
+  }
+  #prologue-skip .skip-ring{ transform:rotate(-90deg); }
+  #prologue-skip .ring-bg{ fill:none; stroke:rgba(255,255,255,.12); stroke-width:2.5; }
+  #prologue-skip .ring-fg{ fill:none; stroke:#f4f2ec; stroke-width:2.5; stroke-linecap:round;
+    stroke-dasharray:88; stroke-dashoffset:88; }   /* 2πr≈88, 처음엔 안 보임 */
+
+  /* ============================================================
+     화면 1 — 메인 메뉴 (영상 배경 + 의식문 메뉴)
+     ============================================================ */
+  #screen-main{position:absolute; inset:0; z-index:10;}
+
+  #bg-video{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    z-index:2;                 /* 대체 배경보다 위 */
+    /* 영상 위에 상호작용 막기 위해 pointer-events 차단 */
+    pointer-events:none;
+    background:#05060a;
+  }
+  /* 영상이 없을 때(미리보기)만 보일 대체 배경 — 영상보다 아래(맨 밑) */
+  #bg-fallback{
+    position:absolute; inset:0;
+    z-index:1;                 /* 영상 뒤로 깔림 */
+    background:
+      radial-gradient(120% 80% at 50% 18%, rgba(40,70,66,.22), transparent 60%),
+      radial-gradient(140% 90% at 50% 120%, rgba(0,0,0,.9), transparent 50%),
+      #05060a;
+    pointer-events:none;
+  }
+  #vignette{
+    position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(130% 100% at 50% 45%, transparent 50%, rgba(0,0,0,.75) 100%);
+    z-index:11;
+  }
+
+  /* 메뉴 묶음: 화면 중앙 세로 */
+  #menu{
+    position:absolute; z-index:12;
+    left:50%; top:calc(50% + 100px);
+    transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center;
+    gap:26px;
+    /* 처음엔 보이지 않음. 3초 시점에 천천히 드러남 */
+    opacity:0;
+    transition:opacity 1s ease;
+    /* 4초 전까지는 클릭 불가 */
+    pointer-events:none;
+  }
+  #menu.reveal{opacity:1;}
+  #menu.interactive{pointer-events:auto;}
+
+  .title{
+    font-size:18px; letter-spacing:.55em; text-transform:uppercase;
+    color:var(--glow); opacity:.65; margin-bottom:14px; font-weight:400;
+    text-indent:.55em;
+  }
+
+  .menu-item{
+    font-size:30px; letter-spacing:.30em; text-transform:uppercase;
+    color:rgba(232,230,221,.78);
+    cursor:pointer;
+    padding:4px 18px;
+    transition:transform .18s ease, color .18s ease, text-shadow .18s ease, letter-spacing .18s ease;
+    text-shadow:0 0 0 rgba(143,214,200,0);
+    line-height:1;
+  }
+  /* 호버: 더 크게 + 더 하얗게 + 청록 글로우(테두리 번짐) */
+  #menu.interactive .menu-item:hover{
+    color:#ffffff;
+    transform:scale(1.18);
+    letter-spacing:.34em;
+    text-shadow:
+      0 0 8px rgba(255,255,255,.55),
+      0 0 22px rgba(143,214,200,.85),
+      0 0 44px rgba(143,214,200,.55);
+  }
+  /* 미구현 항목: 흐릿하게, 호버해도 글로우만 약하게 */
+  .menu-item.disabled{ color:rgba(120,124,135,.55); }
+  #menu.interactive .menu-item.disabled:hover{
+    color:rgba(160,164,175,.8);
+    transform:scale(1.06);
+    text-shadow:0 0 10px rgba(120,124,135,.4);
+  }
+  .menu-item .tag{
+    font-size:11px; letter-spacing:.2em; color:var(--muted);
+    vertical-align:middle; margin-left:8px;
+  }
+
+  /* ============================================================
+     화면 2 — 플레이어 수 팝업 (검은 화면 위)
+     ============================================================ */
+  #screen-setup, #screen-difficulty{
+    position:absolute; inset:0; z-index:40;
+    background:#000;
+    display:none;
+    align-items:center; justify-content:center;
+  }
+  #screen-setup.show, #screen-difficulty.show{display:flex;}
+
+  /* ============================================================
+     헌사·경구 인트로 (모든 캠페인 공통) — 검은 화면 위 글자 페이드
+     ============================================================ */
+  #screen-intro{
+    position:absolute; inset:0; z-index:45;
+    background:#050506; display:none;
+    align-items:center; justify-content:center;
+    text-align:center; padding:0 32px;
+  }
+  #screen-intro.show{display:flex;}
+  #screen-intro::before{                       /* 극장 비네트 */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%);
+  }
+  #screen-intro .intro-line{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(84%,760px);
+    color:#d7d0c2; font-family:'나눔명조','Nanum Myeongjo','바탕','Batang',serif;
+    opacity:0; transition:opacity 1.6s ease;   /* .show 로 서서히 떴다/짐 */
+  }
+  #screen-intro .intro-line.show{ opacity:1; }
+  #screen-intro .intro-dedication{
+    font-size:clamp(16px,3vw,24px); letter-spacing:.34em; text-indent:.34em; color:#9a927f;
+  }
+  #screen-intro .intro-epigraph{
+    font-size:clamp(19px,3.4vw,30px); letter-spacing:.05em; line-height:1.95;
+    color:#cfc8b6; font-style:italic;
+  }
+  #screen-intro .intro-epigraph .cite{
+    display:block; margin-top:20px; font-style:normal; font-size:.6em;
+    letter-spacing:.2em; color:#7c7566;
+  }
+  #screen-intro .intro-title{
+    font-size:clamp(44px,10vw,96px); letter-spacing:.12em; text-indent:.12em;
+    font-weight:600; color:#e8e2d4;
+  }
+  #screen-intro .intro-title.show{                 /* 등장 후 낡은 영사기 같은 초록빛 깜빡임 */
+    animation:introFlicker 4.2s ease-in-out infinite;
+  }
+  @keyframes introFlicker{  /* opacity는 건드리지 않음(등장 페이드와 안 싸우게) */
+    0%,100%{ text-shadow:0 0 18px rgba(120,180,150,.35),0 0 46px rgba(90,150,120,.18); filter:brightness(1); }
+    47%    { text-shadow:0 0 14px rgba(120,180,150,.28),0 0 40px rgba(90,150,120,.14); filter:brightness(.94); }
+    50%    { text-shadow:0 0 24px rgba(140,200,165,.5), 0 0 60px rgba(90,150,120,.26); filter:brightness(1.08); }
+    53%    { text-shadow:0 0 14px rgba(120,180,150,.28),0 0 40px rgba(90,150,120,.14); filter:brightness(.96); }
+  }
+  @media (prefers-reduced-motion:reduce){         /* 깜빡임 최소화(접근성) */
+    #screen-intro .intro-title.show{ animation:none; text-shadow:0 0 20px rgba(120,180,150,.3); }
+  }
+
+  .dialog{
+    width:440px;
+    background:linear-gradient(180deg,#0b0e15,#070910);
+    border:1px solid var(--edge);
+    box-shadow:0 0 60px rgba(143,214,200,.06), inset 0 0 40px rgba(0,0,0,.6);
+    padding:38px 36px 32px;
+    text-align:center;
+    border-radius:2px;
+  }
+  .dialog .sigil{
+    font-size:20px; color:var(--gold); letter-spacing:.4em; opacity:.7;
+    margin-bottom:18px;
+  }
+  .dialog h2{
+    font-size:19px; font-weight:400; letter-spacing:.08em;
+    margin:0 0 26px; color:var(--pale); line-height:1.5;
+  }
+  .field{ margin-bottom:28px; }
+  .field label{
+    display:block; font-size:12px; letter-spacing:.25em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:10px;
+  }
+  select{
+    appearance:none; -webkit-appearance:none;
+    width:160px; padding:12px 16px;
+    background:#05060a; color:var(--pale);
+    border:1px solid var(--glow-dim);
+    font-family:inherit; font-size:18px; letter-spacing:.1em;
+    text-align:center; text-align-last:center;
+    border-radius:2px; cursor:not-allowed;
+    background-image:linear-gradient(180deg,transparent,rgba(143,214,200,.04));
+  }
+  select:disabled{ opacity:.9; color:var(--glow); }
+  .hint{ font-size:11px; color:var(--muted); margin-top:8px; letter-spacing:.05em; }
+
+  .btn{
+    font-family:inherit;
+    font-size:15px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--pale);
+    background:transparent;
+    border:1px solid var(--glow-dim);
+    padding:12px 38px; cursor:pointer; border-radius:2px;
+    transition:all .2s ease;
+  }
+  .btn:hover{
+    color:#fff; border-color:var(--glow);
+    box-shadow:0 0 18px rgba(143,214,200,.4), inset 0 0 14px rgba(143,214,200,.08);
+    text-shadow:0 0 12px rgba(143,214,200,.6);
+  }
+
+  /* ============================================================
+     화면 3 — 캐릭터 선택 · 덱빌딩
+     ============================================================ */
+  #screen-deck{
+    position:absolute; inset:0; z-index:30;
+    background:
+      radial-gradient(100% 70% at 50% 0%, rgba(30,50,48,.18), transparent 55%),
+      #070910;
+    display:none;
+    flex-direction:column;
+  }
+  #screen-deck.show{display:flex;}
+
+  .deck-head{
+    flex:0 0 auto;
+    padding:30px 30px 20px;
+    border-bottom:1px solid var(--edge);
+    display:flex; align-items:baseline; gap:20px;
+    padding-right:160px;   /* 우상단 '메인으로' 버튼과 겹치지 않게 */
+  }
+  .deck-head h1{
+    font-size:30px; font-weight:400; letter-spacing:.16em; margin:0;
+    text-transform:uppercase; color:var(--pale);
+  }
+  .deck-head .sub{ font-size:15px; color:var(--muted); letter-spacing:.14em; }
+  .deck-head .step{ margin-left:auto; font-size:12px; color:var(--glow); letter-spacing:.2em; }
+
+  .deck-body{ flex:1 1 auto; display:flex; min-height:0; }
+
+  /* 좌: 조사자 선택 */
+  .col-invest{
+    flex:0 0 420px; border-right:1px solid var(--edge);   /* 조사자 탭 30% 확대(320→420) — 그림 안 짤리게 */
+    padding:20px; overflow-y:auto;
+  }
+  .col-title{
+    font-size:17px; letter-spacing:.08em; text-transform:uppercase;   /* 조사자 카드명 크기로 확대(12→17) */
+    color:var(--muted); margin:0 0 16px;
+  }
+  /* 카드풀 직업 분류 드롭다운 */
+  .pool-faction{
+    margin-left:12px; font-family:inherit; font-size:17px; letter-spacing:.05em;
+    color:var(--pale, #e8e0f0); background:#12141c; border:1px solid var(--edge, #2a2e3a);
+    border-radius:4px; padding:3px 8px; cursor:pointer; vertical-align:middle; text-transform:none;
+  }
+  .pool-faction:hover{ border-color:var(--glow-dim, #6a5a8a); }
+  .invest-card{
+    border:1px solid var(--edge); border-radius:3px; overflow:hidden;
+    margin-bottom:14px; cursor:pointer; background:#0a0c12;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .invest-card:hover{ border-color:var(--glow-dim); }
+  .invest-card.sel{
+    border:3px solid var(--gold);
+    box-shadow:0 0 28px rgba(201,168,76,.55), inset 0 0 0 1px rgba(201,168,76,.4);
+  }
+  .invest-card.sel .nm{ color:var(--gold); font-weight:600; }
+  .invest-card img{ width:100%; height:auto; display:block; object-fit:contain; }   /* 잘림 없이 전체 표시 */
+  .invest-card .nm{ padding:10px 12px; font-size:17px; letter-spacing:.05em; }
+  .invest-card .ph{
+    padding:30px 10px; text-align:center; color:var(--muted); font-size:12px;
+  }
+
+  /* 시험판: 잠긴(선택 불가) 조사자 — 회색 처리 + "준비 중" 배지 */
+  .invest-card{ position:relative; }
+  .invest-card.locked{
+    filter:grayscale(1) brightness(.4); opacity:.75; cursor:not-allowed;
+  }
+  .invest-card.locked:hover{ border-color:var(--edge); box-shadow:none; }
+  .invest-card .lock-tag{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,.72); color:#c9c1b0; white-space:nowrap;
+    font-size:11px; letter-spacing:.15em; padding:3px 12px; border-radius:3px;
+    border:1px solid var(--edge); pointer-events:none;
+  }
+
+  /* 우: 카드 풀 */
+  .col-pool{ flex:1 1 auto; padding:20px 24px; overflow-y:auto; }
+  .pool-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);   /* 한 줄 4장 → 카드 크게 */
+    gap:18px;
+  }
+  .pcard{
+    border:1px solid var(--edge); border-radius:4px; overflow:hidden;
+    background:#0a0c12; cursor:pointer; position:relative;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .pcard:hover{
+    transform:translateY(-3px);
+    border-color:var(--glow-dim);
+    box-shadow:0 6px 22px rgba(0,0,0,.6), 0 0 16px rgba(143,214,200,.15);
+  }
+  .pcard img{ width:100%; display:block; aspect-ratio:5/7; object-fit:cover; }
+  .pcard .nm{
+    padding:8px 10px; font-size:15px; letter-spacing:.03em;
+    border-top:1px solid var(--edge); color:rgba(232,230,221,.85);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .pcard .ph{ padding:40px 6px; text-align:center; color:var(--muted); font-size:11px; }
+
+  .loading{
+    grid-column:1/-1; text-align:center; color:var(--muted);
+    padding:60px 0; font-size:14px; letter-spacing:.15em;
+  }
+  .loading .pulse{ color:var(--glow); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.35;} 50%{opacity:1;} }
+
+  /* 카드 위 매수 배지 (담은 수 / 한도) */
+  .pcard .count{
+    position:absolute; top:6px; right:6px; z-index:2;
+    font-size:11px; letter-spacing:.05em;
+    background:rgba(5,6,10,.82); color:var(--gold);
+    border:1px solid var(--glow-dim); border-radius:3px;
+    padding:2px 6px;
+  }
+  .pcard.full{ opacity:.45; }
+  .pcard.full:hover{ transform:none; box-shadow:none; border-color:var(--edge); }
+
+  /* 헤더 카운트 */
+  .deck-head .deck-count{
+    margin-left:14px; font-size:14px; color:var(--gold); letter-spacing:.1em;
+  }
+  .col-sub{ font-size:11px; color:var(--muted); letter-spacing:.05em; margin-left:6px; }
+
+  /* 우측: 덱 목록 칸 — 세로 배치(목록 위 / 카운터·버튼 하단 고정) */
+  .col-deck{
+    flex:0 0 330px; border-left:1px solid var(--edge);   /* 덱 탭 공간 조금 확대(300→330) */
+    padding:20px; display:flex; flex-direction:column; min-height:0;
+  }
+  .col-deck .col-title{ flex:0 0 auto; }
+  #deck-list{ flex:1 1 auto; overflow-y:auto; min-height:0; }
+  #deck-list .deck-empty{ color:var(--muted); font-size:13px; }
+  /* 덱 칸 하단: 0/30 카운터 + 진행 버튼 */
+  .deck-foot{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding-top:14px; margin-top:10px; border-top:1px solid var(--edge);
+  }
+  .deck-foot .deck-count{ font-size:18px; color:var(--muted); letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+  .deck-foot .deck-count.done{ color:var(--gold); }
+  .confirm-btn{ padding:9px 22px; font-size:14px; }
+  .confirm-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .dcard{
+    display:flex; align-items:center; gap:7px;
+    padding:7px 9px; margin-bottom:3px;                /* 행 살짝 축소(공간 확보) */
+    border:1px solid var(--edge); border-radius:4px;
+    background:#0a0c12; cursor:pointer; font-size:15px;  /* 덱 카드 텍스트 확대(13→15, 한 줄 유지) */
+    transition:border-color .15s, background .15s;
+  }
+  .dcard:hover{ border-color:var(--blood); background:#160d0d; }
+  .dcard .qty{ color:var(--gold); font-weight:600; flex:0 0 auto; }
+  .dcard .dn{ flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:rgba(232,230,221,.9); }
+  .dcard .rm{ flex:0 0 auto; color:var(--muted); font-size:14px; }
+  .dcard:hover .rm{ color:var(--blood); }
+  .dcard.sig{ border-color:#7a5a2a; background:#1a140c; cursor:default; }
+  .dcard .sigtag{ flex:0 0 auto; font-size:10px; color:var(--gold); border:1px solid #7a5a2a; border-radius:3px; padding:1px 5px; letter-spacing:.05em; }
+
+  .deck-back{
+    position:absolute; top:18px; right:30px; z-index:5;
+  }
+
+  /* 덱 완성 확인 팝업 */
+  #deck-pop{ position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+    background:rgba(5,6,10,.6); }
+  .deck-pop-box{ background:linear-gradient(180deg,#1f1828,#15101c); border:1px solid var(--glow,#7a4ea8);
+    border-radius:12px; padding:28px 34px; text-align:center; box-shadow:0 14px 44px rgba(0,0,0,.7); }
+  .deck-pop-box p{ margin:0 0 22px; font-size:15px; line-height:1.7; }
+  .deck-pop-btns{ display:flex; gap:12px; justify-content:center; }
+  .deck-pop-btns .btn{ padding:9px 24px; font-size:14px; }
+  .deck-pop-btns .primary{ background:#7a4ea8; }
+
+  /* 무작위 약점 결과 팝업 */
+  #weak-pop{ position:absolute; inset:0; z-index:31; display:flex; align-items:center; justify-content:center;
+    background:rgba(5,6,10,.78); }
+  .weak-pop-box{ background:linear-gradient(180deg,#1f1828,#15101c); border:1px solid #7a4ea8;
+    border-radius:12px; padding:26px 30px; text-align:center; box-shadow:0 14px 44px rgba(0,0,0,.8); }
+  .weak-title{ margin:0 0 16px; font-size:14px; letter-spacing:.1em; color:var(--gold); }
+  .weak-img{ width:240px; height:336px; margin:0 auto 14px; border-radius:10px; overflow:hidden;
+    background:#0a0810; border:1px solid var(--edge); display:flex; align-items:center; justify-content:center; }
+  .weak-img img{ width:100%; height:100%; object-fit:cover; }
+  .weak-name{ margin:0 0 20px; font-size:15px; color:var(--pale); }
+  #weak-ok{ padding:9px 30px; font-size:14px; }
+
+  /* 카드 호버 번역 툴팁 (deckbuilder.html 방식) */
+  #tip{
+    position:fixed; display:none; z-index:200;
+    width:420px; max-height:92vh; overflow:auto;                /* 텍스트 여유 위해 폭 확대 */
+    background:#15111c; border:1px solid var(--glow-dim);
+    border-radius:10px; padding:18px 20px;
+    box-shadow:0 8px 30px rgba(0,0,0,.7), 0 0 22px rgba(143,214,200,.12);
+    font-size:19px; line-height:1.6; pointer-events:none;      /* 본문 13→19 (+50%) */
+    font-family:'Hoefler Text','Iowan Old Style','Times New Roman',serif;
+    color:var(--pale);
+  }
+  #tip .tn{ font-size:25px; font-weight:600; margin-bottom:3px; color:#fff; }   /* 17→25 */
+  #tip .ts{ color:var(--glow); font-size:18px; margin-bottom:6px; letter-spacing:.03em; }  /* 12→18 */
+  #tip .tt{ font-style:italic; color:#b9c9c4; font-size:18px; margin-bottom:8px; }          /* 12→18 */
+  #tip .tx{ white-space:pre-line; border-top:1px solid var(--edge); padding-top:10px; }
+  #tip .tf{ margin-top:10px; font-style:italic; color:var(--muted); font-size:18px; }        /* 12→18 */
+
+  /* 무대 축소 기준점을 좌상단으로 고정 (JS의 left/top 계산과 일치) */
+  #stage{ transform-origin:top left; }
