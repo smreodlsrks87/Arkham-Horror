@@ -615,6 +615,7 @@
 import { cleanText } from "./js/shared/card-text.js";   // 카드텍스트 아이콘 토큰 치환(공통)
 import { fitStage as fitStageShared } from "./js/shared/stage.js";   // 무대 스케일(공통)
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
+import { typeLines, perCharMs } from "./js/shared/typing.js";   // 타이핑 스텝 코어(컷신과 공용)
 import { loadCardsJson, indexByCode } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 /* =====================================================================
    notz_player_cards.json 에 들어있는 카드번호 목록
@@ -939,7 +940,7 @@ function startPrologue(){
 function runTyping(textBox, audio){
   // 빈 줄을 제외한 실제 글자 수로 글자당 간격 계산(일정 속도)
   const realChars = PROLOGUE_LINES.reduce((a,l)=>a+l.length,0);
-  const perChar = TYPING_TOTAL_MS / realChars;
+  const perChar = perCharMs(TYPING_TOTAL_MS, realChars, 0);
 
   // 음성 재생(글자와 동시에 시작, 반복 없음)
   try{ audio.currentTime=0; audio.play().catch(()=>{}); }catch(_){}
@@ -954,27 +955,15 @@ function runTyping(textBox, audio){
   });
   prologueRevealed=false; prologueLineEls=lineEls;   // 좌클릭 노출 대상 등록
 
-  // 단일 타임라인: (줄 인덱스, 글자 인덱스)를 순서대로 진행
-  let li=0, ci=0, t=0;
-  function step(){
-    if(prologueDone || prologueRevealed) return;
-    // 빈 줄은 건너뜀
-    while(li<PROLOGUE_LINES.length && PROLOGUE_LINES[li].length===0) li++;
-    if(li>=PROLOGUE_LINES.length){
-      lineEls.forEach(e=>e.classList.remove("pl-cursor"));
-      return;   // 타이핑 끝
-    }
-    const line=PROLOGUE_LINES[li], el=lineEls[li];
-    // 현재 줄에 커서 표시
-    lineEls.forEach(e=>e.classList.remove("pl-cursor"));
-    el.classList.add("pl-cursor");
-    // 글자 한 개 추가
-    el.textContent = line.slice(0, ci+1);
-    ci++;
-    if(ci>=line.length){ li++; ci=0; }
-    prologueTimers.push(setTimeout(step, perChar));
-  }
-  step();
+  // 단일 타임라인: (줄 인덱스, 글자 인덱스)를 순서대로 진행 — 스텝 로직은 shared/typing.js
+  typeLines({
+    lines: PROLOGUE_LINES,
+    perChar,
+    write: (i, t)=>{ lineEls[i].textContent = t; },
+    cursor: (i)=>{ lineEls.forEach(e=>e.classList.remove("pl-cursor")); if(i >= 0) lineEls[i].classList.add("pl-cursor"); },
+    stopped: ()=> prologueDone || prologueRevealed,
+    timers: prologueTimers,
+  });
 
   // 시작 후 1분 20초 → 다음 장면
   prologueTimers.push(setTimeout(()=>{ endPrologue(); }, PROLOGUE_END_MS));

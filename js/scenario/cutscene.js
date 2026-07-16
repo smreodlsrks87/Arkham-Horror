@@ -6,6 +6,7 @@
    ===================================================================== */
 import { S } from "./state.js";
 import { createSkipRing } from "../shared/skip-ring.js";
+import { typeLines, perCharMs } from "../shared/typing.js";   // 타이핑 스텝 코어(프롤로그와 공용)
 
 // ── 주입(시나리오별) ──
 let CUTSCENES = {};                                   // 컷신 데이터 테이블 {id:{text,typeMs,okDelayMs,introHtml,introMs}}
@@ -109,18 +110,16 @@ function revealCutsceneText(){
 }
 
 function typeCutsceneText(text, totalMs){
-  let i=0;
   csFullText = text;   // 좌클릭 즉시 노출용
-  // 총 시간이 지정되면 글자당 간격 = 총시간/글자수, 아니면 기본 속도
-  const perChar = (totalMs && text.length) ? (totalMs/text.length) : CS_TYPE_MS_PER_CHAR;
-  function step(){
-    if(csDone || csReveal) return;
-    csTextBox.textContent = text.slice(0, i+1);
-    i++;
-    if(i < text.length) csTimers.push(setTimeout(step, perChar));
-    else csTextBox.classList.remove("cs-cursor");
-  }
-  if(text.length) step(); else csTextBox.classList.remove("cs-cursor");
+  // 자막은 한 덩어리(줄 1개) — 커서(cs-cursor)는 박스에 붙어 있다가 끝날 때 뗀다.
+  typeLines({
+    lines: [text],
+    perChar: perCharMs(totalMs, text.length, CS_TYPE_MS_PER_CHAR),
+    write: (i, t)=>{ csTextBox.textContent = t; },
+    cursor: (i)=>{ if(i < 0) csTextBox.classList.remove("cs-cursor"); },
+    stopped: ()=> csDone || csReveal,
+    timers: csTimers,
+  });
 }
 
 function endCutscene(skipped){
