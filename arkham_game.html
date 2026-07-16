@@ -53,7 +53,9 @@
   }
   #screen-prologue.show{ display:flex; opacity:1; }
   #prologue-text{
-    width:min(720px,82vw); max-height:74vh; overflow:hidden;
+    /* max-height는 스테이지(#stage=1920×1080) 기준 %로 둔다. vh(뷰포트 기준)를 쓰면
+       스케일된 스테이지 좌표와 어긋나 박스가 과도하게 작아져 끝줄이 잘렸다(내용 902px는 스테이지 1080 안에 들어감). */
+    width:min(720px,82vw); max-height:92%; overflow:hidden;
     color:#f4f2ec; font-size:20px; line-height:2.05;
     letter-spacing:.02em; text-align:left;
     font-family:'Iowan Old Style','Hoefler Text','맑은 고딕',serif;
