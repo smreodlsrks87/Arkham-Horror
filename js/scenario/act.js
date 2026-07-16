@@ -18,11 +18,12 @@ import { showPopup, showForcedPopup, hidePopup } from "./popup.js";
 import { renderHand } from "./hand.js";
 import { updatePiles } from "./piles.js";
 import { audio } from "../shared/audio.js";
+import { roomStagePos, renderEnemyMarkers } from "./map3d.js";   // 3D 투영·적 마커(map3d)
 
-// 주입(scenario1 인라인: 종료·피해·3D투영·조우버림·마커·데이터·막전환).
+// 주입(scenario1 인라인: 종료·피해·조우버림·데이터·막전환).
 let D = {
-  endScenario(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); }, roomStagePos:()=>({x:0,y:0}),
-  encDiscard(){}, renderEnemyMarkers(){}, ROOMS:{}, ROOM_INFO:{}, cluesInRoom:()=>[],
+  endScenario(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
+  encDiscard(){}, ROOMS:{}, ROOM_INFO:{}, cluesInRoom:()=>[],
   advanceToMansion(){}, advanceToAct3(){},
 };
 export function setActDeps(o){ Object.assign(D, o); }
@@ -146,10 +147,10 @@ export function agenda2bResolve(done){
     if(!S.encounterDeck.length){ addLog("의제2b — 조우덱에 구울이 없습니다."); done(); return; }
     const card = S.encounterDeck.shift(); updateEncounterUI();
     if(isGhoul(card.code)){
-      flyCard(cardFront(card.code), encStackPos("enc-draw"), D.roomStagePos(S.cur), 650, ()=>{
+      flyCard(cardFront(card.code), encStackPos("enc-draw"), roomStagePos(S.cur), 650, ()=>{
         spawnEnemy(card.code);
         const en = S.enemies[S.enemies.length-1];
-        if(en){ en.room = S.cur; en.engaged = true; if(typeof D.renderEnemyMarkers==="function") D.renderEnemyMarkers(); }
+        if(en){ en.room = S.cur; en.engaged = true; if(typeof renderEnemyMarkers==="function") renderEnemyMarkers(); }
         addLog("의제2b — "+card.name+"이(가) "+(D.ROOMS[S.cur]?D.ROOMS[S.cur].name:S.cur)+"에 나타나 대표조사자와 교전합니다!");
         done();
       });

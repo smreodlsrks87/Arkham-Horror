@@ -12,14 +12,15 @@ import { showPopup, hidePopup, showToast } from "./popup.js";
 import { renderPlayArea, weaponFightOptions, activateAbility } from "./play.js";
 import { floatTextAt, hitFlash } from "./combat-fx.js";
 import { resumeEnemy } from "./phases.js";
+import { renderEnemyMarkers, pawnMoving } from "./map3d.js";   // 적 마커 렌더·말 이동중 게터(map3d)
 
 // 주입(scenario1 인라인: 마커렌더·효과엔진·피해할당·반응·메뉴·데이터) — 대부분 안정 함수/상수.
 let D = {
-  renderEnemyMarkers(){}, runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
+  runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
   closeAfterDefeatWindow(){}, showCardPickPopup(){}, cluesInRoom:()=>[], countInvestigatorsAt:()=>0,
   leadInvestigatorName:()=>"", investigatorBlanked:()=>false, canEnemyEnterLocation:()=>true,
   actionSurchargeFor:()=>0, markSurcharge(){}, discardToOrigin(){}, flushDefeatReaction(){},
-  renderMenu(){}, isEncounterCard:()=>false, ROOMS:{}, ADJ:{}, pawnMoving:()=>false,
+  renderMenu(){}, isEncounterCard:()=>false, ROOMS:{}, ADJ:{},
 };
 export function setEnemyDeps(o){ Object.assign(D, o); }
 
@@ -43,7 +44,7 @@ export function doParley(en){
     D.discardToOrigin(en.code);                       // 플레이어 약점 → 플레이어 버림
     addLog(nm+"을(를) 버렸습니다. (협상)");
   }
-  D.renderEnemyMarkers(); renderPlayArea();
+  renderEnemyMarkers(); renderPlayArea();
 }
 
 export function openEnemyMenu(en, clientX, clientY){
@@ -64,7 +65,7 @@ export function openEnemyMenu(en, clientX, clientY){
     run:()=>{ const x=D.actionSurchargeFor("evade"); D.markSurcharge("evade"); S.actionPoints-=(1+x); updateAP(); startEvadeAction({ target:en }); } });
   // 교전(비교전 적) — 대표조사자가 이 적과 교전
   items.push({ label:"교전", state: (!en.engaged && atCur && myTurn && S.actionPoints>=1) ? "active":"hidden",
-    run:()=>{ S.actionPoints--; updateAP(); provokeAoO(()=>{ en.engaged=true; en.exhausted=false; D.renderEnemyMarkers(); renderPlayArea();
+    run:()=>{ S.actionPoints--; updateAP(); provokeAoO(()=>{ en.engaged=true; en.exhausted=false; renderEnemyMarkers(); renderPlayArea();
               addLog(enemyCard(en).name+"과(와) 교전했습니다. (행동)"); }); } });
   // 협상(카드·장소가 허용할 때만)
   // 협상 — 이 적이 협상 능력을 가졌을 때만(교전 무관, 같은 장소)
@@ -103,7 +104,7 @@ export function spawnEnemy(code){
   const a=S.cardAbilities[code]||{};
   S.enemies.push({ code, room, dmg:0, exhausted:false, engaged:false });
   addLog("적 등장 — "+name+" ("+D.ROOMS[room].name+")"+((a.keywords||[]).includes("hunter")?" [사냥꾼]":""));
-  D.renderEnemyMarkers(); resolveEngagements();
+  renderEnemyMarkers(); resolveEngagements();
 }
 
 export function provokeAoO(done){
@@ -130,7 +131,7 @@ export function triggerEnemyAfterAttack(en){
 export function resolveEngagements(){
   let changed=false;
   // 교전 유지 불변식: 같은 방이 아니게 되면(막 전환·강제이동 등 — 기본이동은 따라와서 해당 없음) 교전 해제
-  if(!D.pawnMoving()) S.enemies.forEach(en=>{
+  if(!pawnMoving()) S.enemies.forEach(en=>{
     if(en.engaged && en.room!==S.cur){ en.engaged=false; changed=true; addLog(enemyCard(en).name+"과(와)의 교전이 풀렸습니다. (장소가 달라짐)"); }
   });
   S.enemies.forEach(en=>{
@@ -140,7 +141,7 @@ export function resolveEngagements(){
       addLog(enemyCard(en).name+"이(가) 당신과 교전했습니다!");
     }
   });
-  if(changed){ D.renderEnemyMarkers(); renderPlayArea(); }   // 매 프레임 호출되므로 변경 시에만 재렌더(위협영역 카드도 갱신)
+  if(changed){ renderEnemyMarkers(); renderPlayArea(); }   // 매 프레임 호출되므로 변경 시에만 재렌더(위협영역 카드도 갱신)
 }
 
 export function enemyEl(en){   // 적의 화면 요소(교전 카드 우선, 없으면 맵 마커)
@@ -203,7 +204,7 @@ export function damageEnemy(en, n, o){
     if(wasAtCur) S.pendingDefeatReaction=true;   // 로랜드=단서 발견 등 → 결과 팝업 닫힌 뒤 물어봄(D.flushDefeatReaction)
     if(wasGhoulPriest && S.currentAct===3) S.ghoulPriestDefeated=true;   // 3막 해결 → 결과 팝업 닫힌 뒤 act3b
   }
-  D.renderEnemyMarkers(); renderPlayArea();   // 위협영역 교전 적 카드도 갱신(격파 시 제거)
+  renderEnemyMarkers(); renderPlayArea();   // 위협영역 교전 적 카드도 갱신(격파 시 제거)
 }
 
 let fightTargetOverride=null;
@@ -307,7 +308,7 @@ export function startEvadeAction(opts){
         const base={ action:"회피", skill:"agility", skillLabel:"민첩", skillVal:r.base, drawn:r.drawn,
           total:r.total, target:r.difficulty, targetLabel:"적", targetSkill:"agility", success:r.success, autoFail:r.autoFail };
         const lines = applyCommittedDraws(r);
-        if(r.success){ en.exhausted=true; en.engaged=false; D.renderEnemyMarkers(); renderPlayArea(); }   // 회피 성공 → 교전 해제 → 위협영역서 제거
+        if(r.success){ en.exhausted=true; en.engaged=false; renderEnemyMarkers(); renderPlayArea(); }   // 회피 성공 → 교전 해제 → 위협영역서 제거
         showPopup(testResultHtml({...base, extra:(r.success?"회피 성공 — 적이 소진되고 교전이 풀렸습니다.":"회피 실패.")+(lines.length?" "+lines.join(" "):"")}),
           [{label:"확인", primary:true, act:hidePopup}], null, "pb-test "+(r.success?"pb-ok":"pb-no"));
       } });
@@ -349,7 +350,7 @@ export function runEnemyPhase(){
       addLog(enemyCard(en).name+"의 이동이 바리케이드에 막혔습니다.");
     }
   });
-  D.renderEnemyMarkers();   // 이동 반영(방 이동 + 구울 예측 배지 갱신)
+  renderEnemyMarkers();   // 이동 반영(방 이동 + 구울 예측 배지 갱신)
   resolveEngagements();
   // 3.3 교전 적 공격 — 순차(피해/공포 할당 팝업이 있어 하나씩)
   const attackers = S.enemies.filter(en=>en.engaged && !en.exhausted && en.room===S.cur);   // 같은 방일 때만(교전 적은 따라오므로 원칙상 항상 같은 방)

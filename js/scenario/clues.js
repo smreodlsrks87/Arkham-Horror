@@ -9,10 +9,11 @@ import { showPopup, hidePopup } from "./popup.js";
 import { renderPlayArea } from "./play.js";
 import { committedBonusClues, applyCommittedDraws, testResultHtml } from "./skilltest.js";
 import { maybeShowAdvanceTip } from "./act.js";
+import { updateLocInfo } from "./map3d.js";   // 장소 정보 갱신(map3d)
 
-// 주입(scenario1/map3d 인라인: 단서변경·장소정보·방데이터·부착버림·반응·조사자피해).
+// 주입(scenario1 인라인: 단서변경·방데이터·부착버림·반응·조사자피해).
 let D = {
-  changeClue(){}, updateLocInfo(){}, ROOMS:{}, discardAttachedOnInvestigate(){},
+  changeClue(){}, ROOMS:{}, discardAttachedOnInvestigate(){},
   firePlayedReactions(w,cb){ if(cb) cb(); }, applyToInvestigator(){},
 };
 export function setCluesDeps(o){ Object.assign(D, o); }
@@ -38,7 +39,7 @@ export function gainRoomClues(n, roomKey, prefer){
   let g=0; let list=cluesInRoom(roomKey);
   if(prefer && !prefer.collected && list.includes(prefer)) list=[prefer].concat(list.filter(m=>m!==prefer));   // 클릭한 단서 먼저 수거
   for(let i=0;i<n && i<list.length;i++){ list[i].mesh.visible=false; list[i].collected=true; g++; }
-  if(g){ D.changeClue(g); addLog(D.ROOMS[roomKey].name+"에서 단서 "+g+"개 획득 (현재 "+S.invClue+"개)."); D.updateLocInfo(); }
+  if(g){ D.changeClue(g); addLog(D.ROOMS[roomKey].name+"에서 단서 "+g+"개 획득 (현재 "+S.invClue+"개)."); updateLocInfo(); }
   return g;
 }
 
@@ -48,14 +49,19 @@ export function discoverClues(n, roomKey, done, prefer){
   if(!cover){ done(gainRoomClues(n, roomKey, prefer), 0); return; }
   const cn = S.byCode[cover.code] ? S.byCode[cover.code].name : cover.code;
   const maxR = Math.min(n, cover.uses.count);   // 은폐서 버릴 수 있는 실제 수(잔량 상한)
+  const takeClues = ()=>{ hidePopup(); done(gainRoomClues(n, roomKey, prefer), 0); };   // 아니오 = 평소대로 단서 획득
   showPopup(cn+': 단서 <b>'+n+'개</b> 발견을 <span class="hl">대신</span>해 은폐서 '+maxR+'개를 버리시겠습니까?<br>(선택 시 <b>단서 획득 0</b> · 맵 단서는 모두 유지 · 은폐 남은 '+cover.uses.count+'개)', [
-    {label:"아니오(단서 "+n+"개 획득)", act:()=>{ hidePopup(); done(gainRoomClues(n, roomKey, prefer), 0); }},
+    {label:"아니오(단서 "+n+"개 획득)", act:takeClues},
     {label:"예(은폐서 "+maxR+"개 버림)", primary:true, act:()=>{ hidePopup();
       cover.uses.count -= maxR; renderPlayArea();
       addLog(cn+": 단서 "+n+"개 발견을 대신해 은폐서 "+maxR+"개 버림 (남은 "+cover.uses.count+"). 맵 단서 유지, 획득 0.");
       done(0, maxR);   // 발견 전체가 대체됨 — 초과분도 획득 X(맵에 그대로 남음)
     }},
-  ]);
+  ],
+  // 우클릭 = "아니오(단서 획득)". 취소 콜백을 안 넘기면 window 핸들러가 팝업만 닫아 done이 안 불리고,
+  // 단서도 못 얻고 은폐도 안 줄며 조사 결과 팝업도 없이 행동만 증발한다.
+  // setTimeout: 같은 우클릭이 뒤이어 뜨는 결과 팝업을 닫는 것 방지(판정 커밋 팝업과 동일 패턴).
+  ()=>{ hidePopup(); setTimeout(takeClues, 0); });
 }
 
 export function resolveInvestigateSuccess(r, base, boxCls, cm){

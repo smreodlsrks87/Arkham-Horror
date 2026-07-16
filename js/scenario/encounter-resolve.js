@@ -17,10 +17,11 @@ import { showPopup, hidePopup } from "./popup.js";
 import { spawnEnemy, enemySpawnRoom } from "./enemy.js";
 import { shuffle } from "./util.js";
 import { audio } from "../shared/audio.js";
+import { roomStagePos } from "./map3d.js";   // 3D 투영(map3d)
 
-// 주입(scenario1 인라인: 3D투영·효과엔진·피해할당·조우버림·데이터).
+// 주입(scenario1 인라인: 효과엔진·피해할당·조우버림·데이터).
 let D = {
-  roomStagePos:()=>({x:0,y:0}), runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
+  runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
   attachToLocation(){}, encDiscard(){}, isEncounterCard:()=>false, SKILL_KO:{},
   showCardPickPopup(){}, cluesInRoom:()=>[], investigatorBlanked:()=>false,
 };
@@ -60,8 +61,8 @@ export function rectStageCenter(el){
 
 export function encRevealDest(code){
   const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{};
-  if(c.type_code==="enemy"){ const room=enemySpawnRoom(code); if(room) return D.roomStagePos(room); }   // 적 = 등장 장소. 장소가 게임에 없으면(null) → 아래 조우 버린 더미로 날아감
-  if(a.on_draw==="attach_to_location") return D.roomStagePos(S.cur);                                                 // 부착(안개) = 현재 장소
+  if(c.type_code==="enemy"){ const room=enemySpawnRoom(code); if(room) return roomStagePos(room); }   // 적 = 등장 장소. 장소가 게임에 없으면(null) → 아래 조우 버린 더미로 날아감
+  if(a.on_draw==="attach_to_location") return roomStagePos(S.cur);                                                 // 부착(안개) = 현재 장소
   if(a.on_draw==="put_into_play"){ const pa=document.getElementById("play-area"); if(pa) return rectStageCenter(pa); }   // 위협영역 = 플레이 영역
   if(!D.isEncounterCard(code)){ const pd=document.getElementById("discard-pile"); if(pd) return rectStageCenter(pd); }  // 플레이어 약점(편집증 등) = 플레이어 버린 더미
   const dp=document.getElementById("enc-discard"); if(dp) return rectStageCenter(dp);                            // 조우 즉효 = 조우 버린 더미
