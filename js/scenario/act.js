@@ -19,10 +19,11 @@ import { renderHand } from "./hand.js";
 import { updatePiles } from "./piles.js";
 import { audio } from "../shared/audio.js";
 import { roomStagePos, renderEnemyMarkers } from "./map3d.js";   // 3D 투영·적 마커(map3d)
+import { takeDamageHorror } from "./damage.js";   // 조사자 피해·공포 할당(damage)
 
 // 주입(scenario1 인라인: 종료·피해·조우버림·데이터·막전환).
 let D = {
-  endScenario(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
+  endScenario(){},
   encDiscard(){}, ROOMS:{}, ROOM_INFO:{}, cluesInRoom:()=>[],
   advanceToMansion(){}, advanceToAct3(){},
 };
@@ -88,7 +89,7 @@ export function agenda1bEffect(done){
   done = done || function(){};
   showForcedPopup('<div style="font-size:17px;line-height:1.75;">사건이 깊어질수록, 조사자 일행의 등 뒤로 서늘한 어둠이 스며듭니다. 무언가 크게 잘못되어 가고 있음을 직감합니다…<br><br><b class="hl">아래 두 선택지 중 하나를 반드시 골라야 합니다.</b></div>', [
     {label:"각 조사자, 손패에서 무작위 1장 버림", act:()=>{ hidePopup(); discardRandomEachInvestigator(); done(); }},
-    {label:"대표조사자, 공포 2를 받음", act:()=>{ hidePopup(); D.takeDamageHorror(0, 2, {source:"agenda"}, done); }},
+    {label:"대표조사자, 공포 2를 받음", act:()=>{ hidePopup(); takeDamageHorror(0, 2, {source:"agenda"}, done); }},
   ]);   // 강제 택1(우클릭·취소 불가) · 두 버튼 모두 활성색 · 세로 배치
 }
 

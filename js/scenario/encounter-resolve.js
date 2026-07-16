@@ -1,7 +1,7 @@
 /* =====================================================================
    scenario/encounter-resolve.js — 조우/치레커리 해결(신화 1.4).
    조우덱 뽑기 → 공개 연출 → 배치/등장/폭로테스트 → 폭로효과 적용. 조우 카드 상단 고정 표시.
-   ※ roomStagePos(3D 투영)·encDiscard·isEncounterCard·runEffect·피해할당 등은 인라인 잔류→주입.
+   ※ roomStagePos(3D 투영)은 map3d, runEffect·피해할당은 effects.js·damage.js에서 import. encDiscard·isEncounterCard 등은 인라인 잔류→주입.
    ===================================================================== */
 import { S } from "./state.js";
 import { addLog } from "./log.js";
@@ -18,11 +18,13 @@ import { spawnEnemy, enemySpawnRoom } from "./enemy.js";
 import { shuffle } from "./util.js";
 import { audio } from "../shared/audio.js";
 import { roomStagePos } from "./map3d.js";   // 3D 투영(map3d)
+import { attachToLocation } from "./threats.js";   // 장소 부착(자욱한 안개 등 — threats)
+import { takeDamageHorror } from "./damage.js";   // 조사자 피해·공포 할당(damage)
+import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
 
-// 주입(scenario1 인라인: 효과엔진·피해할당·조우버림·데이터).
+// 주입(scenario1 인라인: 조우버림·데이터).
 let D = {
-  runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
-  attachToLocation(){}, encDiscard(){}, isEncounterCard:()=>false, SKILL_KO:{},
+  encDiscard(){}, isEncounterCard:()=>false, SKILL_KO:{},
   showCardPickPopup(){}, cluesInRoom:()=>[], investigatorBlanked:()=>false,
 };
 export function setEncResolveDeps(o){ Object.assign(D, o); }
@@ -108,7 +110,7 @@ export function resolveEncounter(code, done){
   done = done || function(){};
   const a=S.cardAbilities[code]||{}, c=S.byCode[code]||{}, name=c.name||code, nd=a.on_draw;
   if(nd==="put_into_play"){ S.playedCards.push({code, uses:initialUses(code)}); onEnterPlay(code); renderPlayArea(); addLog("폭로 — "+name+" 위협영역에 놓임."); done(); return; }
-  if(nd==="attach_to_location"){ D.attachToLocation(code, S.cur, a); done(); return; }
+  if(nd==="attach_to_location"){ attachToLocation(code, S.cur, a); done(); return; }
   if(nd==="resolve_and_discard"){ resolveTreachery(code, a, done); return; }
   if(c.type_code==="enemy"){ spawnEnemy(code); done(); return; }   // 적 = 게임판에 등장(조우덱에서 빠짐)
   D.encDiscard(code); done();
@@ -124,7 +126,7 @@ export function resolveTreachery(code, a, done){
       ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>D.cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
       actionLabel:name, targetLabel:"난이도",
       onResolve:(r)=> showRevelationResult(ab, r, name, ()=> runRevEffects(r.success?(ab.on_success||[]):(ab.on_failure||[]), r, finish)) });
-  } else { (ab.do||[]).forEach(eff=> D.runEffect(eff, null)); finish(); }
+  } else { (ab.do||[]).forEach(eff=> runEffect(eff, null)); finish(); }
 }
 
 let persistentCardEl=null;
@@ -160,10 +162,10 @@ export function revAmount(spec, r){
 }
 
 export function applyRevEffect(eff, r, next){
-  if(eff.effect==="damage_investigator"){ D.takeDamageHorror(revAmount(eff.damage, r), 0, {direct:!!eff.direct}, next); return; }
-  if(eff.effect==="horror"){ D.takeDamageHorror(0, revAmount(eff.value, r), {direct:!!eff.direct}, next); return; }
+  if(eff.effect==="damage_investigator"){ takeDamageHorror(revAmount(eff.damage, r), 0, {direct:!!eff.direct}, next); return; }
+  if(eff.effect==="horror"){ takeDamageHorror(0, revAmount(eff.value, r), {direct:!!eff.direct}, next); return; }
   if(eff.effect==="discard_owned_asset"){ discardOwnedAsset(eff, next); return; }
-  D.runEffect(eff, null); next();
+  runEffect(eff, null); next();
 }
 
 export function discardOwnedAsset(eff, next){   // 통제 자산 1개 버림: 1개=자동, 2+=일러스트 팝업, 0개=fallback(피해2)

@@ -10,11 +10,13 @@ import { renderPlayArea } from "./play.js";
 import { committedBonusClues, applyCommittedDraws, testResultHtml } from "./skilltest.js";
 import { maybeShowAdvanceTip } from "./act.js";
 import { updateLocInfo } from "./map3d.js";   // 장소 정보 갱신(map3d)
+import { discardAttachedOnInvestigate } from "./threats.js";   // 조사 성공 시 부착물 버림(threats)
+import { applyToInvestigator } from "./damage.js";   // 조사자 피해·공포 직접 적용(damage)
 
-// 주입(scenario1 인라인: 단서변경·방데이터·부착버림·반응·조사자피해).
+// 주입(scenario1 인라인: 단서변경·방데이터·반응·조사자피해).
 let D = {
-  changeClue(){}, ROOMS:{}, discardAttachedOnInvestigate(){},
-  firePlayedReactions(w,cb){ if(cb) cb(); }, applyToInvestigator(){},
+  changeClue(){}, ROOMS:{},
+  firePlayedReactions(w,cb){ if(cb) cb(); },
 };
 export function setCluesDeps(o){ Object.assign(D, o); }
 
@@ -65,7 +67,7 @@ export function discoverClues(n, roomKey, done, prefer){
 }
 
 export function resolveInvestigateSuccess(r, base, boxCls, cm){
-  D.discardAttachedOnInvestigate(S.cur);   // 자욱한 안개 등 "조사 성공 시 버림" — 은폐 성공 시점(단서 유무 무관)
+  discardAttachedOnInvestigate(S.cur);   // 자욱한 안개 등 "조사 성공 시 버림" — 은폐 성공 시점(단서 유무 무관)
   const present = cluesInRoom(S.cur).length;
   const entitled = 1 + committedBonusClues(r);        // 본 조사 1 + 추론 등 추가 발견
   const wouldDiscover = Math.min(entitled, present);  // 있는 단서 수가 상한(0개면 0)
@@ -93,7 +95,7 @@ export function applyInvestigateResult(cm, r){
       if(t.onFail.spawnGhoul) addLog("토큰 효과: 조우덱서 구울 등장 — 적 시스템 미구현(보류).");
     }
   });
-  if(horror){ D.applyToInvestigator(0, horror, "혼돈 토큰"); }   // 초상화에 공포 표시 + 쓰러짐 판정 일원화
+  if(horror){ applyToInvestigator(0, horror, "혼돈 토큰"); }   // 초상화에 공포 표시 + 쓰러짐 판정 일원화
 
   const base = { action:"조사", skill:"intellect", skillLabel:"지식", skillVal:r.base,
                  drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"은폐", targetBreak:r.difficultyBreak,

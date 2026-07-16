@@ -8,7 +8,7 @@
 
    이 파일은 "엔진"(순수 계산: commitIcons·resolveTest)과 "UI/커밋 흐름"(선언→커밋창→
    토큰공개→결과)을 함께 담는다. UI는 다른 도메인(hand·investigator·popup·play영역)을 쓰므로
-   일부는 import, scenario1 전용(SKILL_KO·showPersistentCard·renderPlayArea·drawCards)은 주입.
+   일부는 import, scenario1 전용(SKILL_KO)은 주입.
    ===================================================================== */
 import { drawChaosToken, resolveToken, tokenChip } from "./tokens.js";
 import { S } from "./state.js";
@@ -22,9 +22,10 @@ import { addLog } from "./log.js";
 import { updatePiles } from "./piles.js";
 import { renderPlayArea } from "./play.js";   // 플레이영역 재렌더(커밋 진입/강화/확정 시)
 import { showPersistentCard } from "./encounter-resolve.js";   // 조우 카드 상단 고정(커밋/판정 동안)
+import { drawCards } from "./effects.js";   // 공용 카드 뽑기(배짱 등 커밋 드로우 — effects)
 
 // ── 주입(scenario1 전용 링크) ──
-let D = { SKILL_KO:{}, drawCards:()=>0 };
+let D = { SKILL_KO:{} };
 export function setSkillTestDeps(o){ Object.assign(D, o); }
 
 const SKILL_FIELD = { willpower:"skill_willpower", intellect:"skill_intellect", combat:"skill_combat", agility:"skill_agility" };
@@ -251,7 +252,7 @@ export function applyCommittedDraws(r){
       if(ab.timing!=="on_commit_resolve" || !commitCondOK(ab.condition, r)) return;
       const name=S.byCode[code]?S.byCode[code].name:code;
       (ab.do||[]).forEach(eff=>{
-        if(eff.effect==="draw"){ const got=D.drawCards(eff.value||1);   // draw_to:committer(1인=활성 조사자)
+        if(eff.effect==="draw"){ const got=drawCards(eff.value||1);   // draw_to:committer(1인=활성 조사자)
           if(got){ addLog(name+": 카드 "+got+"장을 뽑았습니다. (성공)"); extra.push("("+name+") 카드 "+got+"장"); }
           else addLog(name+": 덱이 비어 뽑지 못했습니다."); }
       });

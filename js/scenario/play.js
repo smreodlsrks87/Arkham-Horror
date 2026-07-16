@@ -1,7 +1,7 @@
 /* =====================================================================
    scenario/play.js — 플레이 엔진: 카드 플레이(자원·슬롯·이벤트/자산) + 플레이영역 렌더
    + 발동형 능력(능력 메뉴·판정 연계) + 카드 버림.
-   전투·적·효과엔진 등 아직 인라인인 것들은 setPlayDeps로 주입한다.
+   전투·적 등 아직 인라인인 것들은 setPlayDeps로 주입한다.
    ===================================================================== */
 import { S } from "./state.js";
 import { isFastPlay, initialUses, onEnterPlay, onLeavePlay, activatable } from "./abilities.js";
@@ -16,13 +16,14 @@ import { audio } from "../shared/audio.js";
 import { commitMode, canBoost, useBoostAsset, startSkillTest, applyCommittedDraws, testResultHtml } from "./skilltest.js";
 import { toStageX, toStageY } from "../shared/stage.js";
 import { provokeAoO, enemyAtLocation, openEnemyMenu, enemyHealth } from "./enemy.js";   // 적 코어(기회공격·장소적·적메뉴·적체력)
+import { isThreatCard, attachToLocation, actionSurchargeFor, markSurcharge } from "./threats.js";   // 위협영역 판별·장소 부착·행동 추가비용(threats)
+import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
 
-// 주입(scenario1 인라인: 효과엔진·반응·조사결과 등) — 전부 안정 함수/상수라 게터 불필요.
+// 주입(scenario1 인라인: 반응·조사결과 등) — 전부 안정 함수/상수라 게터 불필요.
 let D = {
-  runEffect(){},
-  closeActionMenu(){}, actionSurchargeFor:()=>0, markSurcharge(){}, showCardPickPopup(){},
-  attachToLocation(){}, triggerEnterPlayReaction(){}, applyInvestigateResult(){}, cluesInRoom:()=>[],
-  investigatorBlanked:()=>false, effShroud:()=>0, isThreatCard:()=>false,
+  closeActionMenu(){}, showCardPickPopup(){},
+  triggerEnterPlayReaction(){}, applyInvestigateResult(){}, cluesInRoom:()=>[],
+  investigatorBlanked:()=>false, effShroud:()=>0,
   hasReactionWhen:()=>false, eventReactionPlayable:()=>false, reactionAbilityOpen:()=>false,
   closeAfterDefeatWindow(){}, discardToOrigin(){}, SKILL_KO:{},
 };
@@ -156,7 +157,7 @@ export function tryPlayCard(idx){
       ((S.cardAbilities[code]||{}).abilities||[]).forEach(ab=>{
         const isReactionNow = (ab.timing==="fast"||ab.timing==="reaction") && ab.when && D.reactionAbilityOpen(ab);
         if(ab.timing!=="on_play" && !isReactionNow) return;
-        (ab.do||[]).forEach(eff=>{ if(eff.effect==="attach_to_location"){ D.attachToLocation(code, S.cur, eff); attached=true; } else D.runEffect(eff, null); }); });
+        (ab.do||[]).forEach(eff=>{ if(eff.effect==="attach_to_location"){ attachToLocation(code, S.cur, eff); attached=true; } else runEffect(eff, null); }); });
       // 증거!(신속) — 창을 닫지 않음: 같은 처치 창에서 여러 장 사용 가능(룰). 창은 다른 행동/페이즈 전환 시 닫힘.
       if(!attached) S.playerDiscard.push(code);
       updatePiles();
@@ -213,8 +214,8 @@ export function renderPlayArea(){
     const c=S.byCode[p.code]||{};
     const hsB = assetHSBadges(p, c);   // 체력/정신력 배지(있는 자산만) — 조사자와 동일 스타일, 위치는 hs_layout
     const boostCls = commitMode ? (canBoost(idx) ? ' pc-boost-ok' : ' pc-boost-no') : "";   // 커밋 중: 강화 가능 자산만 밝게
-    const usableCls = (!commitMode && !D.isThreatCard(p.code) && hasUsableAbility(p)) ? ' pc-usable' : "";   // 지금 발동 가능한 능력 있는 자산(초록)
-    return '<div class="played-card'+(D.isThreatCard(p.code)?' threat-card':'')+(p.exhausted?' pc-exhausted':'')+boostCls+usableCls+'" data-idx="'+idx+'" data-code="'+p.code+'"><img src="'+cardFront(p.code)+'" alt="">'+badge+hsB+'</div>';
+    const usableCls = (!commitMode && !isThreatCard(p.code) && hasUsableAbility(p)) ? ' pc-usable' : "";   // 지금 발동 가능한 능력 있는 자산(초록)
+    return '<div class="played-card'+(isThreatCard(p.code)?' threat-card':'')+(p.exhausted?' pc-exhausted':'')+boostCls+usableCls+'" data-idx="'+idx+'" data-code="'+p.code+'"><img src="'+cardFront(p.code)+'" alt="">'+badge+hsB+'</div>';
   }).join("");
   const enemyHtml = engaged.map(en=>{
     const ei=S.enemies.indexOf(en);
@@ -254,7 +255,7 @@ function canActivateAbility(p, ab){
   if((first==="do_fight"||first==="damage") && !enemyAtLocation()) return false;   // 무기 공격·적 피해는 내 장소에 적이 있어야
   if(S.currentPhase!=="investigation" || S.phaseBusy) return false;
   let apNeed = (ab.cost && ab.cost.action) ? ab.cost.action : (ab.timing==="action" ? 1 : 0);   // 행동 비용(심기증 버리기=2)
-  if(first==="do_fight") apNeed += D.actionSurchargeFor("fight");   // 무기 공격도 공포에 얼어붙다 추가행동
+  if(first==="do_fight") apNeed += actionSurchargeFor("fight");   // 무기 공격도 공포에 얼어붙다 추가행동
   if(apNeed && S.actionPoints < apNeed) return false;
   if(ab.cost && ab.cost.resources && S.invResource < ab.cost.resources) return false;
   if(ab.cost && ab.cost.exhaust && p.exhausted) return false;   // 이미 소진이면 소진 능력 못 씀
@@ -275,10 +276,10 @@ export function activateAbility(pi, ai){
   if(!canActivateAbility(p, ab)){ showToast("지금 발동할 수 없습니다."); return; }
   const isFight = ab.do && ab.do[0] && ab.do[0].effect==="do_fight";
   let apCost = (ab.cost && ab.cost.action) ? ab.cost.action : (ab.timing==="action" ? 1 : 0);   // 행동 비용(기본 1, cost.action이면 그 값=심기증 버리기 2)
-  if(isFight) apCost += D.actionSurchargeFor("fight");   // 무기 공격 = 공포에 얼어붙다 추가행동
-  // 실제 비용 지불(행동·자원·소진·ab.cost 소모품). eff.spend 소모품은 D.runEffect가 소비.
+  if(isFight) apCost += actionSurchargeFor("fight");   // 무기 공격 = 공포에 얼어붙다 추가행동
+  // 실제 비용 지불(행동·자원·소진·ab.cost 소모품). eff.spend 소모품은 runEffect가 소비.
   const pay = ()=>{
-    if(apCost){ if(isFight) D.markSurcharge("fight"); S.actionPoints-=apCost; updateAP(); }
+    if(apCost){ if(isFight) markSurcharge("fight"); S.actionPoints-=apCost; updateAP(); }
     if(ab.cost && ab.cost.resources){ S.invResource-=ab.cost.resources; renderInvestigator(); }
     if(ab.cost && ab.cost.exhaust){ p.exhausted=true; }
     if(ab.cost && p.uses && ab.cost[p.uses.type]){ p.uses.count -= ab.cost[p.uses.type]; }
@@ -327,7 +328,7 @@ export function activateAbility(pi, ai){
     renderPlayArea();
     return;
   }
-  (ab.do||[]).forEach(eff=> D.runEffect(eff, p));                                     // 즉시 효과
+  (ab.do||[]).forEach(eff=> runEffect(eff, p));                                     // 즉시 효과
   if(ab.cost && ab.cost.discard==="self") discardPlayed(pi);                        // 자기 버림 비용
   else if(p.uses && p.uses.discardIfEmpty && p.uses.count<=0) discardPlayed(pi);    // uses 소진 → 버림
   else renderPlayArea();
@@ -335,7 +336,7 @@ export function activateAbility(pi, ai){
 }
 
 function applyAbilityTestResult(ab, p, name, r){
-  (r.success ? (ab.on_success||[]) : (ab.on_failure||[])).forEach(eff=> D.runEffect(eff, p));
+  (r.success ? (ab.on_success||[]) : (ab.on_failure||[])).forEach(eff=> runEffect(eff, p));
   const base = { action:name, skill:ab.test.skill, skillLabel:D.SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base,
                  drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
   const lines = applyCommittedDraws(r);   // 배짱 등 커밋 드로우(능력 판정도)

@@ -2,7 +2,7 @@
    scenario/enemy.js — 적 코어 + 전투 엔진.
    적 데이터·수명(등장/교전/피해)·전투(공격/회피/기회공격/보복)·전투UI·적 액션 메뉴·적 단계.
    ※ 적 마커 렌더(renderEnemyMarkers)는 프레임 루프(updateEnemyMarkers)와 wrap/enemyRowEls를
-     공유하므로 scenario1에 남기고 주입받는다. 그 외 전투/효과/피해할당 인라인도 주입.
+     공유하므로 scenario1에 남기고 주입받는다. 효과엔진·피해할당은 effects.js·damage.js에서 import.
    ===================================================================== */
 import { S } from "./state.js";
 import { addLog } from "./log.js";
@@ -13,13 +13,15 @@ import { renderPlayArea, weaponFightOptions, activateAbility } from "./play.js";
 import { floatTextAt, hitFlash } from "./combat-fx.js";
 import { resumeEnemy } from "./phases.js";
 import { renderEnemyMarkers, pawnMoving } from "./map3d.js";   // 적 마커 렌더·말 이동중 게터(map3d)
+import { canEnemyEnterLocation, actionSurchargeFor, markSurcharge } from "./threats.js";   // 바리케이드 진입차단·행동 추가비용(threats)
+import { takeDamageHorror } from "./damage.js";   // 조사자 피해·공포 할당(damage)
+import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
 
-// 주입(scenario1 인라인: 마커렌더·효과엔진·피해할당·반응·메뉴·데이터) — 대부분 안정 함수/상수.
+// 주입(scenario1 인라인: 마커렌더·반응·메뉴·데이터) — 대부분 안정 함수/상수.
 let D = {
-  runEffect(){}, takeDamageHorror(d,h,o,cb){ if(cb) cb(false); },
   closeAfterDefeatWindow(){}, showCardPickPopup(){}, cluesInRoom:()=>[], countInvestigatorsAt:()=>0,
-  leadInvestigatorName:()=>"", investigatorBlanked:()=>false, canEnemyEnterLocation:()=>true,
-  actionSurchargeFor:()=>0, markSurcharge(){}, discardToOrigin(){}, flushDefeatReaction(){},
+  leadInvestigatorName:()=>"", investigatorBlanked:()=>false,
+  discardToOrigin(){}, flushDefeatReaction(){},
   renderMenu(){}, isEncounterCard:()=>false, ROOMS:{}, ADJ:{},
 };
 export function setEnemyDeps(o){ Object.assign(D, o); }
@@ -38,7 +40,7 @@ export function doParley(en){
   if(res){ S.invResource -= res; renderInvestigator(); }
   const nm = enemyCard(en).name;
   addLog(nm+"과(와) 협상"+(res?" (자원 -"+res+")":"")+".");
-  (ab.do||[]).forEach(eff=> D.runEffect(eff, null));
+  (ab.do||[]).forEach(eff=> runEffect(eff, null));
   if(cost.discard==="self"){                       // 행동대장 = 자신을 버림(게임에서 제거)
     const i=S.enemies.indexOf(en); if(i>=0) S.enemies.splice(i,1);
     D.discardToOrigin(en.code);                       // 플레이어 약점 → 플레이어 버림
@@ -53,16 +55,16 @@ export function openEnemyMenu(en, clientX, clientY){
   const canAct=(extra)=> (atCur && myTurn && S.actionPoints>=1+extra) ? "active":"disabled";
   const items=[];
   // 공격(맨손)
-  items.push({ label:"공격 (맨손)", state:canAct(D.actionSurchargeFor("fight")),
-    run:()=>{ const x=D.actionSurchargeFor("fight"); D.markSurcharge("fight"); S.actionPoints-=(1+x); updateAP(); startFightAction({ label:"공격(맨손)", target:en }); } });
+  items.push({ label:"공격 (맨손)", state:canAct(actionSurchargeFor("fight")),
+    run:()=>{ const x=actionSurchargeFor("fight"); markSurcharge("fight"); S.actionPoints-=(1+x); updateAP(); startFightAction({ label:"공격(맨손)", target:en }); } });
   // 공격(무기) — 지금 쓸 수 있는 do_fight 자산마다
   weaponFightOptions().forEach(w=>{
     items.push({ label:w.label, state:(atCur && myTurn)?"active":"disabled",
       run:()=>{ fightTargetOverride=en; activateAbility(w.pi, w.ai); } });   // 무기 비용은 activateAbility가 처리, 대상은 오버라이드
   });
   // 회피(교전 중일 때만)
-  items.push({ label:"회피", state: en.engaged ? canAct(D.actionSurchargeFor("evade")) : "hidden",
-    run:()=>{ const x=D.actionSurchargeFor("evade"); D.markSurcharge("evade"); S.actionPoints-=(1+x); updateAP(); startEvadeAction({ target:en }); } });
+  items.push({ label:"회피", state: en.engaged ? canAct(actionSurchargeFor("evade")) : "hidden",
+    run:()=>{ const x=actionSurchargeFor("evade"); markSurcharge("evade"); S.actionPoints-=(1+x); updateAP(); startEvadeAction({ target:en }); } });
   // 교전(비교전 적) — 대표조사자가 이 적과 교전
   items.push({ label:"교전", state: (!en.engaged && atCur && myTurn && S.actionPoints>=1) ? "active":"hidden",
     run:()=>{ S.actionPoints--; updateAP(); provokeAoO(()=>{ en.engaged=true; en.exhausted=false; renderEnemyMarkers(); renderPlayArea();
@@ -117,14 +119,14 @@ export function provokeAoO(done){
     if(i>=foes.length){ done(); return; }
     const en=foes[i++], c=enemyCard(en);
     addLog(c.name+"의 기회공격!");
-    D.takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); next(); });   // 취소(재빨리 피하다) 시 "공격한 후" 강제 건너뜀
+    takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); next(); });   // 취소(재빨리 피하다) 시 "공격한 후" 강제 건너뜀
   };
   next();
 }
 
 export function triggerEnemyAfterAttack(en){
   ((S.cardAbilities[en.code]||{}).abilities||[]).forEach(ab=>{
-    if(ab.timing==="forced" && ab.when==="after_this_attacks") (ab.do||[]).forEach(eff=> D.runEffect(eff, null));
+    if(ab.timing==="forced" && ab.when==="after_this_attacks") (ab.do||[]).forEach(eff=> runEffect(eff, null));
   });
 }
 
@@ -292,7 +294,7 @@ export function doRetaliate(en){
   if(!S.enemies.includes(en) || en.exhausted) return;
   const c=enemyCard(en);
   addLog(c.name+"의 보복 공격!");
-  D.takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); });
+  takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); });
 }
 
 export function startEvadeAction(opts){
@@ -343,7 +345,7 @@ export function runEnemyPhase(){
     else if(kw.includes("hunter")) dest=S.cur;
     if(!dest || en.room===dest) return;
     const next=nextStepToward(en.room, dest);
-    if(next && D.canEnemyEnterLocation(next, en)){
+    if(next && canEnemyEnterLocation(next, en)){
       en.room=next;
       addLog(enemyCard(en).name+"이(가) "+D.ROOMS[next].name+"(으)로 이동했습니다. "+tag);
     } else if(next){
@@ -361,7 +363,7 @@ export function runEnemyPhase(){
     if(i>=attackers.length){ S.phasePaused=false; resumeEnemy(); return; }
     const en=attackers[i++]; const c=enemyCard(en);
     addLog(c.name+"의 공격!");
-    D.takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); nextAttack(); });   // 취소 시 "공격한 후"(시종 파멸) 건너뜀
+    takeDamageHorror(c.enemy_damage||0, c.enemy_horror||0, {source:"enemy_attack", attackingEnemy:en}, (canceled)=>{ if(!canceled) triggerEnemyAfterAttack(en); nextAttack(); });   // 취소 시 "공격한 후"(시종 파멸) 건너뜀
   };
   nextAttack();
 }
