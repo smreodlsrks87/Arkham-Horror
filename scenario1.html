@@ -259,7 +259,7 @@ import { fitStage as fitStageShared, toStageX, toStageY, stageScale } from "./js
 import { createSkipRing } from "./js/shared/skip-ring.js";   // ESC 길게 스킵(공통)
 import { loadCardsJson, indexByCode, loadAbilities, loadEncounterAbilities } from "./js/data/load.js";   // 카드 데이터 로딩(공통)
 import { addLog, renderLog } from "./js/scenario/log.js";   // 게임 로그
-import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSignValue, tokenChip } from "./js/scenario/tokens.js";   // 혼돈 주머니
+import { drawChaosToken, resolveToken, renderTokens, setChaosDifficulty, elderSignValue, tokenChip, setTokenDeps } from "./js/scenario/tokens.js";   // 혼돈 주머니
 import { onEnterPlay, onLeavePlay, initialUses, activatable, conditionalTestBonus, isFastPlay } from "./js/scenario/abilities.js";   // 카드 능력 엔진
 import { startSkillTest, confirmCommit, canBoost, useBoostAsset, encCardHeaderHtml, testResultHtml, applyCommittedDraws, committedBonusClues, commitMode, setSkillTestDeps } from "./js/scenario/skilltest.js";   // 능력치 테스트 엔진 + UI/커밋
 import { S, bus } from "./js/scenario/state.js";   // 게임 공유 상태 + 이벤트버스
@@ -1499,6 +1499,7 @@ S.encounterDeck = [];
 S.encounterDiscard = [];
 updateEncounterUI();
 setChaosDifficulty("normal");   // 토큰 효과·주머니 표시
+setTokenDeps({ ghoulsAt: ()=> ghoulsInRoom(S.cur) });   // 해골 −X·석판 조건피해용 "내 장소 구울 수"
 renderLog();
 addLog("시나리오 시작 — 서재에서 조사를 시작합니다.");
 // 1920×1080 무대를 화면 크기에 맞춰 스케일(비율 유지, 중앙 정렬)

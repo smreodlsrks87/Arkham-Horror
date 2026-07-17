@@ -11,7 +11,6 @@ import { committedBonusClues, applyCommittedDraws, testResultHtml } from "./skil
 import { maybeShowAdvanceTip } from "./act.js";
 import { updateLocInfo } from "./map3d.js";   // 장소 정보 갱신(map3d)
 import { discardAttachedOnInvestigate } from "./threats.js";   // 조사 성공 시 부착물 버림(threats)
-import { applyToInvestigator } from "./damage.js";   // 조사자 피해·공포 직접 적용(damage)
 
 // 주입(scenario1 인라인: 단서변경·방데이터·반응·조사자피해).
 let D = {
@@ -88,15 +87,8 @@ export function resolveInvestigateSuccess(r, base, boxCls, cm){
 }
 
 export function applyInvestigateResult(cm, r){
-  let horror=0;   // 실패 시 토큰 추가효과(공포). 구울 의존은 적 미구현 → 보류.
-  r.drawn.forEach(t=>{
-    if(!r.success && t.onFail){
-      if(t.onFail.horror) horror += t.onFail.horror;
-      if(t.onFail.spawnGhoul) addLog("토큰 효과: 조우덱서 구울 등장 — 적 시스템 미구현(보류).");
-    }
-  });
-  if(horror){ applyToInvestigator(0, horror, "혼돈 토큰"); }   // 초상화에 공포 표시 + 쓰러짐 판정 일원화
-
+  // 혼돈 토큰의 추가효과(실패 시 공포·구울 등장·구울 조건피해)는 skilltest.resolveTestNow가
+  // 모든 판정 공통으로 이미 적용함(로그·초상화 표시 포함). 여기선 조사 성공/실패만 처리.
   const base = { action:"조사", skill:"intellect", skillLabel:"지식", skillVal:r.base,
                  drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"은폐", targetBreak:r.difficultyBreak,
                  success:r.success, autoFail:r.autoFail };
@@ -105,7 +97,7 @@ export function applyInvestigateResult(cm, r){
   if(r.success){
     resolveInvestigateSuccess(r, base, boxCls, cm);   // cm = 클릭한 단서(우선 수거). 발견 합산·은폐 리다이렉트는 내부에서
   }else{
-    showPopup(testResultHtml({...base, extra:'단서를 얻지 못했습니다.'+(horror?' 공포 '+horror+' 획득.':'')}),
+    showPopup(testResultHtml({...base, extra:'단서를 얻지 못했습니다.'}),
       [{label:"확인", primary:true, act:hidePopup}], null, boxCls);
   }
 }

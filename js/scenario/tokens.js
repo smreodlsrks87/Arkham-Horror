@@ -3,7 +3,8 @@
    화면 표시(renderTokens)와 실제 뽑기(drawChaosToken)가 같은 데이터를 쓴다.
    난이도별 주머니 4개 + 심볼효과(2단계) + 표식값(캐릭터별 pull) + 아이콘.
 
-   ※ 구울(적) 의존 효과는 적/조우 시스템 미구현이라 지금은 상수 0 / 스텁(TODO).
+   ※ 구울 의존 효과(해골 −X·석판 조건피해)는 setTokenDeps로 "내 장소 구울 수"를 주입받아 동작.
+     실제 추가효과(피해·공포·구울 등장) 적용은 skilltest.resolveTestNow가 모든 판정 공통으로 처리.
    ===================================================================== */
 
 /* ── 주머니 구성(난이도별). 숫자 + 심볼(모든 난이도 공통). ── */
@@ -24,7 +25,10 @@ function tier(){ return (chaosDifficulty==="hard" || chaosDifficulty==="expert")
 
 /* ── 심볼 효과(2단계 tier: low=쉬움·보통 / high=어려움·전문가).
    mod=수정치, 추가효과(onFail·ifGhoul·drawMore·spawnGhoul)를 데이터로. ── */
-export function ghoulsAtMyLocation(){ return 0; }   // TODO(적 시스템): 내 장소 구울(특성) 수
+// 내 장소 구울 수 — 적 시스템(ghoulsInRoom)을 주입받아 반환(해골 −X·석판 조건피해용).
+let D = { ghoulsAt: ()=>0 };
+export function setTokenDeps(o){ Object.assign(D, o); }
+export function ghoulsAtMyLocation(){ return D.ghoulsAt(); }
 const SYMBOL_EFFECTS = {
   low: {
     skull:   { mod: ()=> -ghoulsAtMyLocation(), desc: "−X (내 장소 구울 수)" },

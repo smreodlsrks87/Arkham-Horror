@@ -10,7 +10,7 @@
    토큰공개→결과)을 함께 담는다. UI는 다른 도메인(hand·investigator·popup·play영역)을 쓰므로
    일부는 import, scenario1 전용(SKILL_KO)은 주입.
    ===================================================================== */
-import { drawChaosToken, resolveToken, tokenChip } from "./tokens.js";
+import { drawChaosToken, resolveToken, tokenChip, ghoulsAtMyLocation } from "./tokens.js";
 import { S } from "./state.js";
 import { cardFront, cardTextOf } from "./card-img.js";
 import { cleanText } from "../shared/card-text.js";
@@ -21,8 +21,9 @@ import { showPopup, hidePopup, showToast } from "./popup.js";
 import { addLog } from "./log.js";
 import { updatePiles } from "./piles.js";
 import { renderPlayArea } from "./play.js";   // 플레이영역 재렌더(커밋 진입/강화/확정 시)
-import { showPersistentCard } from "./encounter-resolve.js";   // 조우 카드 상단 고정(커밋/판정 동안)
+import { showPersistentCard, spawnGhoulFromEncounter } from "./encounter-resolve.js";   // 조우 카드 상단 고정 + 토큰 구울 등장
 import { drawCards } from "./effects.js";   // 공용 카드 뽑기(배짱 등 커밋 드로우 — effects)
+import { applyToInvestigator } from "./damage.js";   // 혼돈 토큰 피해·공포 적용
 
 // ── 주입(scenario1 전용 링크) ──
 let D = { SKILL_KO:{} };
@@ -225,7 +226,21 @@ function resolveTestNow(cfg, extraBonus, committed){
   r.testType = cfg.testType;
   r.location = cfg.location;
   r.difficultyBreak = cfg.difficultyBreak;   // 은폐 감소 표시용(손전등 등)
+  applyTokenEffects(r);   // 심볼 토큰 추가효과(구울 조건피해·실패 시 공포/구울 등장) — 모든 판정 공통
   cfg.onResolve(r);
+}
+// 뽑힌 심볼 토큰의 추가효과를 일괄 적용. mod(수정치)와 drawMore는 resolveTest에서 이미 처리됨.
+//  - ifGhoul: 내 장소에 구울이 있으면 피해/공포 (석판)
+//  - onFail : 판정 실패 시 공포/피해/구울 등장 (추종자·어려움 해골)
+function applyTokenEffects(r){
+  const ghouls = ghoulsAtMyLocation();
+  let dmg=0, hor=0, spawn=0;
+  (r.drawn||[]).forEach(t=>{
+    if(t.ifGhoul && ghouls>0){ dmg += t.ifGhoul.damage||0; hor += t.ifGhoul.horror||0; }
+    if(!r.success && t.onFail){ dmg += t.onFail.damage||0; hor += t.onFail.horror||0; spawn += t.onFail.spawnGhoul||0; }
+  });
+  if(dmg || hor) applyToInvestigator(dmg, hor, "혼돈 토큰");
+  for(let i=0;i<spawn;i++) spawnGhoulFromEncounter();
 }
 // 커밋 후처리 조건 통과 여부 (조건 없으면 통과)
 function commitCondOK(cond, r){

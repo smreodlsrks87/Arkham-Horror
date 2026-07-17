@@ -14,7 +14,7 @@ import { initialUses, onEnterPlay } from "./abilities.js";
 import { renderPlayArea, discardPlayed } from "./play.js";
 import { startSkillTest, encCardHeaderHtml, testResultHtml, applyCommittedDraws } from "./skilltest.js";
 import { showPopup, hidePopup } from "./popup.js";
-import { spawnEnemy, enemySpawnRoom } from "./enemy.js";
+import { spawnEnemy, enemySpawnRoom, isGhoul } from "./enemy.js";
 import { shuffle } from "./util.js";
 import { audio } from "../shared/audio.js";
 import { roomStagePos } from "./map3d.js";   // 3D 투영(map3d)
@@ -159,6 +159,19 @@ export function revAmount(spec, r){
   if(spec==="success_by") return Math.max(0, r.total - r.difficulty);
   if(spec && typeof spec==="object"){ let v=revAmount(spec.value, r); if(spec.min!=null)v=Math.max(spec.min,v); if(spec.max!=null)v=Math.min(spec.max,v); return v; }
   return 0;
+}
+
+// 혼돈 토큰(어려움 해골) 효과 — 조우덱에서 구울 1마리를 찾아 등장시킨다. 없으면 무효.
+export function spawnGhoulFromEncounter(){
+  const deck = S.encounterDeck || [];
+  // 지금 등장 가능한(등장 장소가 현재 게임에 있는) 구울 우선. 다락/지하 전용은 그 스테이지가 없으면 건너뜀.
+  let idx = deck.findIndex(c => isGhoul(c) && enemySpawnRoom(c));
+  if(idx < 0) idx = deck.findIndex(c => isGhoul(c));   // 그런 구울이 없으면 아무 구울(제한 구울은 spawnEnemy가 버림)
+  if(idx < 0){ addLog("혼돈 토큰(해골) — 조우덱에 구울이 없어 등장하지 않았습니다."); return; }
+  const code = deck.splice(idx, 1)[0];
+  updateEncounterUI();
+  addLog("혼돈 토큰(해골) — 조우덱에서 구울이 나타납니다.");
+  spawnEnemy(code);
 }
 
 export function applyRevEffect(eff, r, next){
