@@ -131,7 +131,9 @@
   .played-card .pc-hp{ background:rgba(150,30,30,.92); color:#ffe0e0; border-color:#ff9a9a; }
   .played-card .pc-san{ background:rgba(40,60,140,.92); color:#e0e8ff; border-color:#9ab0ff; }
   /* 강제 택1 세로 팝업 — 선택지 각 1줄, 둘 다 활성색 */
-  .vpop .popup-btns{flex-direction:column;gap:10px;align-items:center;}
+  /* 강제 택1(세로 나열) — 컨테이너를 '가장 긴 버튼' 폭(fit-content)으로 잡고 나머지를 stretch로
+     늘려, 선택지들의 버튼 크기를 같게 한다(예: 집을 불태운다 / 집을 불태우지 않는다). */
+  .vpop .popup-btns{flex-direction:column;gap:10px;align-items:stretch;width:fit-content;margin-inline:auto;}
   .vpop .popup-btns button{width:auto;min-width:135px;max-width:100%;padding:12px 22px;font-size:15px;}
   /* 쓰러지거나 후퇴한 조사자 — 좌측 하단 초상화 회색 처리 */
   .bt-investigator.inv-out{ filter:grayscale(1) brightness(.55); transition:filter 1.2s ease; }

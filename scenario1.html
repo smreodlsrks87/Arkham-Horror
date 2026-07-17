@@ -540,7 +540,7 @@ const BASIC_ACTIONS = [
     state:()=> (S.actionPoints>=1 && S.playerDeck.length>0) ? "active" : "disabled",
     run:()=>{ S.actionPoints--; updateAP(); provokeAoO(()=>{ drawCards(1);   // drawCards로 뽑아야 폭로(on_draw) 발동
               addLog("카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)"); }); } },
-  { key:"fight",  label:"공격", state:()=> enemyAtLocation() ? (S.actionPoints>=1+actionSurchargeFor("fight")?"active":"disabled") : "disabled",
+  { key:"fight",  label:"공격 (맨손)", state:()=> enemyAtLocation() ? (S.actionPoints>=1+actionSurchargeFor("fight")?"active":"disabled") : "disabled",
     run:()=>{ const x=actionSurchargeFor("fight"); markSurcharge("fight"); S.actionPoints-=(1+x); updateAP(); startFightAction({ label:"공격(맨손)" }); } },   // 맨손 = 보너스 0·피해 1(무기는 카드 능력으로)
   { key:"evade",  label:"회피", state:()=> (S.enemies||[]).some(e=>e.room===S.cur&&e.engaged) ? (S.actionPoints>=1+actionSurchargeFor("evade")?"active":"disabled") : "disabled",
     run:()=>{ const x=actionSurchargeFor("evade"); markSurcharge("evade"); S.actionPoints-=(1+x); updateAP(); startEvadeAction(); } },
