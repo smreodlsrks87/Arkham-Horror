@@ -74,11 +74,14 @@ const RESOLUTION = (CAMP.resolutions && CAMP.resolutions.length) ? CAMP.resoluti
 /* ── 결말별 나레이션 텍스트(전역 번호) ── 시나리오1=0~3. 시나리오2=4~7, 3=8~11 … 여기에 이어 추가.
    (없는 번호는 narrationPhase가 0으로 폴백) ── */
 const NARRATION = {
-0:"당신은 간신히 목숨을 건져 집 밖으로 빠져나옵니다. 거실에 있던 여자가 현관문을 닫고 나오며 문을 쾅 소리 나게 닫습니다. \"이 바보들! 무슨 짓을 저질렀는지 알기나 해?\" 그녀는 의자를 문 앞으로 밀어 가져가더니, 등받이를 문손잡이 아래에 끼워 넣어 문을 고정합니다. \"여길 벗어나야 해. 날 따라와. 내가 아는 걸 전부 말해줄 테니까. 저 아래 도사리고 있는 위협이 도시 전체로 퍼져나가는 걸 막을 수 있는 건 우리뿐이야.\" 당신은 반박할 여력이 없습니다. 고개를 끄덕인 당신은 현관을 나서서 비 내리는 거리, 리버타운을 향해 달려가는 여자를 뒤따릅니다.",
+0:"당신은 간신히 목숨을 건져 집 밖으로 빠져나옵니다.\n\n거실에 있던 여자가 현관문을 닫고 나오며 문을 쾅 소리 나게 닫습니다. \"이 바보들! 무슨 짓을 저질렀는지 알기나 해?\" 그녀는 의자를 문 앞으로 밀어 가져가더니, 등받이를 문 손잡이 아래에 끼워 넣어 문을 고정합니다. \"여길 벗어나야 해. 날 따라와. 내가 아는 걸 전부 말해줄 테니까. 저 아래 도사리고 있는 위협이 도시 전체로 퍼져나가는 걸 막을 수 있는 건 우리뿐이야.\"\n\n당신은 반박할 여력이 없습니다. 고개를 끄덕인 당신은 현관을 나서서 비 내리는 거리, 리버타운을 향해 달려가는 여자를 뒤따릅니다.",
 1:"당신은 고개를 끄덕이며 붉은 머리의 여자가 집의 벽과 바닥에 불을 지르도록 내버려 둡니다. 불길이 빠르게 번져나가고, 당신은 그 거센 화염에 휩쓸리지 않으려 서둘러 현관문 밖으로 뛰쳐나갑니다. 보도에 서서 당신은 자신의 모든 소유물이 불길에 삼켜지는 모습을 지켜봅니다. “나를 따라와.” 여자가 말합니다. “너희들은 저 아래 도사리고 있는 위협에 대해 알아야만 해. 혼자서는 어렵겠지만… 함께라면 막아낼 수 있어.”",
 2:"당신은 여자가 당신의 허락도 없이 집에 불을 지를지도 모른다는 우려 때문에, 여자의 요구를 거절하고 그녀를 집 밖으로 내쫓으려 합니다. \"어리석은 놈들! 너희들은 아주 큰 실수를 저지르고 있어!\" 그녀가 경고합니다. \"너희들은 저 아래 도사리고 있는 위협을, 우리 모두가 엄청난 위험에 처했다는 사실을 전혀 모르고 있다고!\" 오늘 밤 겪은 일로 동요하던 당신은 일단 그녀의 말을 들어보기로 합니다. 어쩌면 그녀가 이 기이한 사건들에 대해 무언가 실마리를 제공해 줄지도 모르니까요... 하지만 그녀는 당신을 별로 신뢰하지 않는 듯합니다.",
 3:"집을 빠져나갈 방법을 찾으려 복도로 달려가 보지만, 여전히 뜨겁게 타오르는 장벽이 앞길을 가로막고 있습니다. 꼼짝없이 갇힌 상황에서 집에 침입한 흉포한 괴물 무리가 점점 더 가까이 다가오고, 이제 도망칠 곳은 어디에도 없습니다."
 };
+
+/* 결말별 텍스트 출력 시간(ms). 지정 없으면 40초. 출력 종료 2초 뒤 자동으로 다음 화면(arkham_game 프롤로그와 동일한 자동 전환). */
+const NARR_TOTAL = { 0:44500 };   // 결말0: 44.5초 출력 → 46.5초에 자동 전환
 
 /* 결말별 Campaign Notes 인용문(전역 번호). 각 원소 = 한 줄('따옴표'). 여러 줄이면 한 줄 끝나고 1초 뒤 다음 줄. */
 const RESOLUTION_NOTES = {
@@ -152,12 +155,12 @@ function narrationPhase(){
     const au=document.getElementById("narr-audio");
     au.src="cutscenes/ending"+RESOLUTION+".mp3";
     au.onerror=()=>{}; try{ au.currentTime=0; au.play().catch(()=>{}); }catch(_){}
-    const TOTAL=40000, per=TOTAL/spans.length;   // 일괄 40초
+    const TOTAL = NARR_TOTAL[RESOLUTION] || 40000, per=TOTAL/spans.length;   // 결말별 출력 시간(없으면 40초)
     skip.enable();
     let k=0;
     (function step(){
       if(gen!==narrGen) return;                  // 스킵/재시작되면 중단
-      if(k>=spans.length){ setTimeout(armContinue, 1500); return; }   // 출력 완료 → "계속하려면 아무거나"로 대기(자동 전환 안 함)
+      if(k>=spans.length){ armContinue(); return; }   // 출력 완료 → "계속" 안내 표시 + 2초 뒤 자동 전환(armContinue가 처리)
       spans[k].classList.add("on"); k++;
       setTimeout(step, per);
     })();
@@ -182,13 +185,17 @@ function armContinue(){
   const ring=document.querySelector("#narr-skip .skip-ring");
   if(ring) ring.style.display="none";   // ESC 길게 게이지 숨김(이제 아무거나로 넘어감)
   const go=()=>{
+    if(narrAutoTimer){ clearTimeout(narrAutoTimer); narrAutoTimer=null; }
     document.removeEventListener("keydown", go, true);
     document.removeEventListener("mousedown", go, true);
     finishNarration();
   };
   document.addEventListener("keydown", go, true);
   document.addEventListener("mousedown", go, true);
+  // 출력 종료 2초 뒤 자동으로 다음 화면(그동안 안내 표시 → 넘어가며 사라짐). 아무거나 누르면 즉시.
+  narrAutoTimer = setTimeout(go, 2000);
 }
+let narrAutoTimer=null;
 
 /* ══ PART 2: 기록지 페이드인 + Campaign Notes 손글씨 ══ */
 function sheetPhase(){
