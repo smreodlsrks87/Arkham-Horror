@@ -80,8 +80,10 @@ const NARRATION = {
 3:"집을 빠져나갈 방법을 찾으려 복도로 달려가 보지만, 여전히 뜨겁게 타오르는 장벽이 앞길을 가로막고 있습니다. 꼼짝없이 갇힌 상황에서 집에 침입한 흉포한 괴물 무리가 점점 더 가까이 다가오고, 이제 도망칠 곳은 어디에도 없습니다."
 };
 
-/* 결말별 텍스트 출력 시간(ms). 지정 없으면 40초. 출력 종료 2초 뒤 자동으로 다음 화면(arkham_game 프롤로그와 동일한 자동 전환). */
-const NARR_TOTAL = { 0:44500 };   // 결말0: 44.5초 출력 → 46.5초에 자동 전환
+/* 결말별 텍스트 출력 시간(ms). 지정 없으면 40초. 출력 종료 후 자동으로 다음 화면(arkham_game 프롤로그와 동일한 자동 전환). */
+const NARR_TOTAL = { 0:44500 };   // 결말0: 44.5초 출력
+/* 출력 종료 → 자동 전환까지 간격(ms). 지정 없으면 2000. */
+const NARR_ADVANCE_GAP = { 0:1500 };   // 결말0: 44.5초 출력 → 46초에 전환(간격 1.5초)
 
 /* 결말별 Campaign Notes 인용문(전역 번호). 각 원소 = 한 줄('따옴표'). 여러 줄이면 한 줄 끝나고 1초 뒤 다음 줄. */
 const RESOLUTION_NOTES = {
@@ -192,8 +194,8 @@ function armContinue(){
   };
   document.addEventListener("keydown", go, true);
   document.addEventListener("mousedown", go, true);
-  // 출력 종료 2초 뒤 자동으로 다음 화면(그동안 안내 표시 → 넘어가며 사라짐). 아무거나 누르면 즉시.
-  narrAutoTimer = setTimeout(go, 2000);
+  // 출력 종료 후 자동으로 다음 화면(그동안 안내 표시 → 넘어가며 사라짐). 아무거나 누르면 즉시.
+  narrAutoTimer = setTimeout(go, NARR_ADVANCE_GAP[RESOLUTION] || 2000);
 }
 let narrAutoTimer=null;
 
