@@ -2,9 +2,9 @@
    campaign-log.css — 캠페인 기록지(notzCampaignLog) 전용 스타일.
    ※ 이 화면은 tokens.css를 쓰지 않는다(자체 색). 링크를 새로 넣지 않음.
    ===================================================================== */
-  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }   /* 트라우마 숫자 등 */
+  @font-face{ font-family:'ArkhamIcons'; src:url('../fonts/arkham-icons.ttf'); }   /* 트라우마 숫자 등 */
   /* 기록지 한글 필기체 — 나눔손글씨 펜 */
-  @font-face{ font-family:'Handwriting'; src:url('fonts/NanumPenScript.ttf'); }
+  @font-face{ font-family:'Handwriting'; src:url('../fonts/NanumPenScript.ttf'); }
   /* 본명조(=Noto Serif KR, 구글폰트) — scenario1과 동일한 나레이션·팝업 폰트 */
   :root{ --ink:#2d3a55; --hand:'Handwriting',"Batang","바탕",serif;
          --serif:'Noto Serif KR','Iowan Old Style','Hoefler Text','맑은 고딕',serif; }
@@ -25,7 +25,7 @@
     position:relative;
     width:min(100vw, calc(100vh * 1605 / 903));
     aspect-ratio:1605 / 903;
-    background:url("images/notzCampaignLog.png") center/100% 100% no-repeat;
+    background:url("../images/notzCampaignLog.png") center/100% 100% no-repeat;
     container-type:inline-size;
     box-shadow:0 10px 40px rgba(0,0,0,.6);
   }

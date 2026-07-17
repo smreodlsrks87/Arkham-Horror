@@ -4,7 +4,7 @@
    순서 그대로 합친 것 — 캐스케이드 순서 동일.
    ===================================================================== */
   /* 아컴 폰트 — fonts 폴더에 넣으면 적용, 없으면 폴백 */
-  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }  /* 심볼·숫자 */
+  @font-face{ font-family:'ArkhamIcons'; src:url('../fonts/arkham-icons.ttf'); }  /* 심볼·숫자 */
   /* 한글 본문은 본명조(Noto Serif KR, 구글폰트)로 사용 — 별도 ttf 불필요 */
   /* 게임판 전용 색 — tokens.css 기본값을 덮어씀(보라빛 분위기). 나머지 토큰은 tokens.css 사용 */
   :root{ --void:#0b0910; --pale:#ece9e2; --muted:#8a8296; --gold:#d4b15a; --glow:#8a6fb0; }

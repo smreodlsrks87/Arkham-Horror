@@ -9,7 +9,7 @@
      ============================================================ */
   /* 색 토큰(--void·--gold 등)은 css/tokens.css 에서 공통 정의 */
   /* 아컴 아이콘 폰트 — 카드텍스트 심볼(해골·석판·격발 등) 표시용 */
-  @font-face{ font-family:'ArkhamIcons'; src:url('fonts/arkham-icons.ttf'); }
+  @font-face{ font-family:'ArkhamIcons'; src:url('../fonts/arkham-icons.ttf'); }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:#000;overflow:hidden;}
   body{
