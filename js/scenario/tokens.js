@@ -36,7 +36,7 @@ const SYMBOL_EFFECTS = {
     tablet:  { mod: ()=> -2, ifGhoul:{damage:1},         desc: "−2, 구울과 같은 장소면 피해 1" },
   },
   high: {
-    skull:   { mod: ()=> -2, onFail:{spawnGhoul:1},      desc: "−2, 실패 시 조우덱에서 구울 등장" },
+    skull:   { mod: ()=> -2, onFail:{spawnGhoul:1},      desc: "−2, 실패 시 조우덱·버린 더미에서 구울을 찾아 뽑음" },
     cultist: { mod: ()=> 0, drawMore:1, onFail:{horror:2}, desc: "토큰 1개 더, 실패 시 공포 2" },
     tablet:  { mod: ()=> -4, ifGhoul:{damage:1,horror:1}, desc: "−4, 구울과 같은 장소면 피해 1, 공포 1" },
   },

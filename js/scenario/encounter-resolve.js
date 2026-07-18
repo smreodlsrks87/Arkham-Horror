@@ -161,17 +161,34 @@ export function revAmount(spec, r){
   return 0;
 }
 
-// 혼돈 토큰(어려움 해골) 효과 — 조우덱에서 구울 1마리를 찾아 등장시킨다. 없으면 무효.
-export function spawnGhoulFromEncounter(){
-  const deck = S.encounterDeck || [];
-  // 지금 등장 가능한(등장 장소가 현재 게임에 있는) 구울 우선. 다락/지하 전용은 그 스테이지가 없으면 건너뜀.
-  let idx = deck.findIndex(c => isGhoul(c) && enemySpawnRoom(c));
-  if(idx < 0) idx = deck.findIndex(c => isGhoul(c));   // 그런 구울이 없으면 아무 구울(제한 구울은 spawnEnemy가 버림)
-  if(idx < 0){ addLog("혼돈 토큰(해골) — 조우덱에 구울이 없어 등장하지 않았습니다."); return; }
-  const code = deck.splice(idx, 1)[0];
-  updateEncounterUI();
-  addLog("혼돈 토큰(해골) — 조우덱에서 구울이 나타납니다.");
-  spawnEnemy(code);
+/* 혼돈 토큰(어려움 해골) 효과 —
+   룰: "실패 시, 이 판정 후에 조우덱과 버린 더미에서 구울 적을 찾아 뽑는다. 그 뒤 조우덱을 섞는다."
+   찾는 곳(덱/버린더미)에 우선순위가 없으므로 어느 쪽이든 플레이어가 고른다.
+   (구울 사제는 따로 세팅돼 덱·버린더미에 없으므로 자연히 후보에서 빠진다)
+   고른 구울은 spawnEnemy가 등장 장소를 판정 — 지정 장소(다락·지하)가 아직 게임에 없으면 조우 버린 더미로. */
+export function spawnGhoulFromEncounter(done){
+  done = done || function(){};
+  // ※ 조우덱·버린 더미는 코드 문자열이 아니라 {code,name,imagesrc} 객체를 담는다(buildEncounterDeck·encDiscard).
+  const codeOf = (c)=> (c && typeof c === "object") ? c.code : c;
+  const picks = [];
+  (S.encounterDeck   || []).forEach((c,i)=>{ if(isGhoul(codeOf(c))) picks.push({ code:codeOf(c), zone:"deck",    i }); });
+  (S.encounterDiscard|| []).forEach((c,i)=>{ if(isGhoul(codeOf(c))) picks.push({ code:codeOf(c), zone:"discard", i }); });
+  if(!picks.length){ addLog("혼돈 토큰(해골) — 조우덱·버린 더미에 구울이 없어 등장하지 않았습니다."); done(); return; }
+
+  const take = (sel)=>{
+    const arr = (sel.zone==="deck") ? S.encounterDeck : S.encounterDiscard;
+    arr.splice(sel.i, 1);                 // 찾은 곳에서 꺼냄
+    shuffle(S.encounterDeck);             // 룰: 찾은 뒤 조우덱을 섞는다
+    updateEncounterUI();
+    const nm = (S.byCode[sel.code]||{}).name || sel.code;
+    addLog("혼돈 토큰(해골) — "+nm+"을(를) "+(sel.zone==="deck"?"조우덱":"버린 더미")+"에서 찾아 뽑습니다. (조우덱을 섞습니다)");
+    spawnEnemy(sel.code);                 // 등장 장소가 게임에 없으면 spawnEnemy가 버린 더미로 보냄
+    done();
+  };
+  if(picks.length===1){ take(picks[0]); return; }
+  // 후보가 여럿 — 일러스트로 고르기(호버 시 카드 텍스트)
+  D.showCardPickPopup("혼돈 토큰(해골) — 등장시킬 구울을 고르세요. (조우덱·버린 더미)",
+    picks.map(p=>p.code), (code, idx)=> take(picks[idx]));
 }
 
 export function applyRevEffect(eff, r, next){

@@ -23,7 +23,7 @@ import { updatePiles } from "./piles.js";
 import { renderPlayArea } from "./play.js";   // 플레이영역 재렌더(커밋 진입/강화/확정 시)
 import { showPersistentCard, spawnGhoulFromEncounter } from "./encounter-resolve.js";   // 조우 카드 상단 고정 + 토큰 구울 등장
 import { drawCards } from "./effects.js";   // 공용 카드 뽑기(배짱 등 커밋 드로우 — effects)
-import { applyToInvestigator } from "./damage.js";   // 혼돈 토큰 피해·공포 적용
+import { takeDamageHorror } from "./damage.js";   // 혼돈 토큰 피해·공포 — 조력자 흡수(할당) 가능하게
 
 // ── 주입(scenario1 전용 링크) ──
 let D = { SKILL_KO:{} };
@@ -226,21 +226,27 @@ function resolveTestNow(cfg, extraBonus, committed){
   r.testType = cfg.testType;
   r.location = cfg.location;
   r.difficultyBreak = cfg.difficultyBreak;   // 은폐 감소 표시용(손전등 등)
-  applyTokenEffects(r);   // 심볼 토큰 추가효과(구울 조건피해·실패 시 공포/구울 등장) — 모든 판정 공통
-  cfg.onResolve(r);
+  // 심볼 토큰 추가효과(구울 조건피해·실패 시 공포/구울 등장) — 모든 판정 공통.
+  // 피해 할당·구울 선택이 팝업(비동기)이라, 다 끝난 뒤에 판정 결과를 넘긴다.
+  applyTokenEffects(r, ()=> cfg.onResolve(r));
 }
-// 뽑힌 심볼 토큰의 추가효과를 일괄 적용. mod(수정치)와 drawMore는 resolveTest에서 이미 처리됨.
+// 뽑힌 심볼 토큰의 추가효과를 순차 적용. mod(수정치)와 drawMore는 resolveTest에서 이미 처리됨.
 //  - ifGhoul: 내 장소에 구울이 있으면 피해/공포 (석판)
 //  - onFail : 판정 실패 시 공포/피해/구울 등장 (추종자·어려움 해골)
-function applyTokenEffects(r){
+// 피해·공포는 takeDamageHorror로 보내 조력자 흡수(할당 팝업)를 거치게 한다.
+function applyTokenEffects(r, done){
   const ghouls = ghoulsAtMyLocation();
   let dmg=0, hor=0, spawn=0;
   (r.drawn||[]).forEach(t=>{
     if(t.ifGhoul && ghouls>0){ dmg += t.ifGhoul.damage||0; hor += t.ifGhoul.horror||0; }
     if(!r.success && t.onFail){ dmg += t.onFail.damage||0; hor += t.onFail.horror||0; spawn += t.onFail.spawnGhoul||0; }
   });
-  if(dmg || hor) applyToInvestigator(dmg, hor, "혼돈 토큰");
-  for(let i=0;i<spawn;i++) spawnGhoulFromEncounter();
+  const spawnStep = (n)=>{   // 해골: 구울 찾아 뽑기(선택 팝업) — 여러 개면 순차
+    if(n <= 0){ done(); return; }
+    spawnGhoulFromEncounter(()=> spawnStep(n-1));
+  };
+  if(dmg || hor) takeDamageHorror(dmg, hor, { source:"chaos_token" }, ()=> spawnStep(spawn));
+  else spawnStep(spawn);
 }
 // 커밋 후처리 조건 통과 여부 (조건 없으면 통과)
 function commitCondOK(cond, r){
