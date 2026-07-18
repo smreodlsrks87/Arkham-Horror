@@ -264,16 +264,16 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 | uses:{type:"clue",count:3} | 카드 위 단서를 **총알처럼 카운터**로 관리(우상단 숫자). 실제 단서토큰 안 씀 | ✅ |
 | reaction when:"you_would_discover_clue" | 단서를 **발견하려는 순간** 가로채는 반응(대체 효과). auto 없음 → 팝업으로 물어봄(선택) | ✅ 본조사분 |
 | effect:"redirect_discover_to_uses" | 발견할 단서 수만큼 **이 카드 uses에서 제거**(조사자 획득 X, **맵 단서는 유지** — "발견 대신"). 0이어도 **버려지지 않음** | ✅ |
-| 발견 개수 = 실제 발견분 | 0개 장소=0 제거 / 추론 등 추가발견은 합산(있는 단서 수가 상한). ※추론 합산은 확장 예정 | 🔲 추론합산 |
-| timing:"forced" + when:"scenario_end" | 강제 효과 · 시나리오 종료 시점(종료 시스템 필요) | 🔲 종료훅 |
-| condition:"uses_remaining" | 이 카드 uses(단서)가 1개 이상 남았을 때만 | 🔲 |
-| effect:"mental_trauma" value:1 target:"owner" | **소유자(owner)**에게 정신적 트라우마 N(수량 무관 1). ※약점 소유주 표현은 `owner`로 통일(bearer_investigator는 적약점 전용) | 🔲 종료훅 |
+| 발견 개수 = 실제 발견분 | 0개 장소=0 제거 / 추론 등 추가발견은 합산(있는 단서 수가 상한). ※추론 합산은 확장 예정 | ✅ |
+| timing:"forced" + when:"scenario_end" | 강제 효과 · 시나리오 종료 시점(종료 시스템 필요) | ✅ |
+| condition:"uses_remaining" | 이 카드 uses(단서)가 1개 이상 남았을 때만 | ✅ |
+| effect:"mental_trauma" value:1 target:"owner" | **소유자(owner)**에게 정신적 트라우마 N(수량 무관 1). ※약점 소유주 표현은 `owner`로 통일(bearer_investigator는 적약점 전용) | ✅ |
 
 **심기증 01600(기본약점)에서 추가:**
 | 키/값 | 뜻 | 상태 |
 |---|---|---|
 | timing:"forced" when:"after_damage_on_owner" | **소유자(조사자)가** 피해 받은 후 발동. 조력자 소화로 조사자 0이면 발동 X | 🔲 피해훅 |
-| effect:"horror" value direct:true | 공포 N. direct=조력자 할당 불가(바로 조사자 정신). EFFECTS.horror | ✅(효과) 🔲(강제훅) |
+| effect:"horror" value direct:true | 공포 N. direct=조력자 할당 불가(바로 조사자 정신). EFFECTS.horror | ✅(효과) ✅ |
 | cost:{action:2} | 발동에 **행동 2** 소비. activate/canActivate가 cost.action 읽음(없으면 timing:action=1) | ✅ |
 | cost:{discard:"self"} + zone:threat | 같은 장소 **타 조사자도** 행동 2로 버릴 수 있음(위협영역 일반규칙) | ✅ |
 
@@ -304,7 +304,7 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 | 키/값 | 영어 | 뜻 | 상태 |
 |---|---|---|---|
 | 신속(키워드) | fast:true | 최상위 플래그. 행동 소비 없이 플레이. 능력의 timing:fast 와 **별개** | ✅ |
-| 슬롯 | slot:"hand" | 착용 슬롯(hand/arcane/body/accessory/ally/tarot). **지금은 기록만, 개수 제한 미구현** | 🔲(데이터만) |
+| 슬롯 | slot:"hand" | 착용 슬롯(hand/arcane/body/accessory/ally/tarot). **지금은 기록만, 개수 제한 미구현** | ✅ |
 | 조사중 | condition:"while_investigating" | 상시 보너스가 조사(지식 판정) 중에만 적용 | ✅ |
 | 테스트유형 | testType | 판정 종류(investigate 등) — 조건부 보너스 매칭용 | ✅ |
 
@@ -339,7 +339,7 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 | 반응은 원칙적으로 선택(may) | **반응격발 아이콘 확인 팝업**으로 발동 여부를 물음(로랜드 고유반응과 동일 스타일). `firePlayedReactions(when,done)`가 순차 처리 | ✅ |
 | prompt_ko | 확인 팝업에 띄울 한글 문구(예: 밀란="조사 성공! 돈을 받으시겠습니까? (자원 +1)"). 없으면 "…반응을 발동하시겠습니까?" 기본 | ✅ |
 | auto:true | 확인 없이 자동 발동(순수 이득이면서 팝업이 번거로운 경우만). 밀란은 auto 제거 → 확인 팝업으로 전환 | ✅ |
-| slot:"ally" | 조력자 슬롯(기록만, 개수 제한 미구현) | 🔲 |
+| slot:"ally" | 조력자 슬롯(기록만, 개수 제한 미구현) | ✅ |
 | 상시 vs 조건부 지식 | 밀란=무조건 +1(모든 지식판정) / 돋보기=조사중만. condition 유무로 구분 | ✅ |
 | timing:"on_play" | 이벤트 플레이 시 즉시 실행하는 do 효과(직감=단서 발견). when 있는 이벤트는 반응이라 손패 직접 플레이 불가(증거!) | ✅ |
 | effect:"skill_substitute" | 이번 라운드 from 능력치 판정을 to로 대체 가능(정신력=전투·민첩→지식). optional=매 판정 확인 팝업 | ✅ |
@@ -362,8 +362,8 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 | uses:{type:"supply",count:3} | 소모품(보급) 카운터. cost로 소비. **소진돼도 자동 버림 X**(discard_if_empty 없음 → 장착 유지, 능력만 비활성) | ✅ |
 | cost:{supply:1}/{ammo:1} | uses 토큰 소비 비용. `cost[p.uses.type]`만큼 count 감소(손전등=보급) | ✅ |
 | cost:{discard:"self"} | 발동 비용으로 이 카드를 버림(단도 둘째 능력) | ✅ |
-| effect:"do_fight" | 전투(공격). bonus·extra_damage. **전투/적 시스템 전까지 스텁**(능력 회색·발동 불가) | 🔲(스텁) |
-| bonus_if:{cond,bonus} | do_fight의 조건부 보너스 — cond 참이면 bonus로 교체(로랜드=clue_at_your_location 시 전투+1→+3). 스텁이라 구조만 | 🔲 |
+| effect:"do_fight" | 전투(공격). bonus·extra_damage. **전투/적 시스템 전까지 스텁**(능력 회색·발동 불가) | ✅ |
+| bonus_if:{cond,bonus} | do_fight의 조건부 보너스 — cond 참이면 bonus로 교체(로랜드=clue_at_your_location 시 전투+1→+3). 스텁이라 구조만 | ✅ |
 | effect:"search_deck" | 덱에서 card_type·trait 맞는 카드 검색 → 팝업 선택 → 손패 + 셔플(연구 사서) | ✅ |
 | when:"after_this_enters_play" | 이 카드가 플레이영역에 들어온 직후 반응(연구 사서, auto:true) | ✅ |
 | heal:{damage:N} / {horror:N} | 피해/공포만 회복(의학 서적) vs choose_one(응급처치=선택) | ✅ |
@@ -402,22 +402,22 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 
 | 키/값 | 뜻 | 상태 |
 |---|---|---|
-| keywords:["hunter"] | 키워드 배열(사냥꾼 등). text의 "Hunter." 검색 대신 데이터로 | 🔲 적엔진 |
+| keywords:["hunter"] | 키워드 배열(사냥꾼 등). text의 "Hunter." 검색 대신 데이터로 | ✅ |
 | prey:"lowest_health" | 먹잇감 — **교전 상대를 정할 때** 기준. 1명이면 자동 교전, **2명 이상일 때만** 이 기준으로 택1. 이미 교전 중이면 발동 안 함 | 🔲 적엔진 |
-| revelation_test:{skill,difficulty} | 폭로 시 굴리는 능력 테스트(움켜쥐는 손=민첩3). on_draw:resolve_and_discard와 함께 | 🔲 조우엔진 |
-| on_success/on_failure:[…] | 폭로 테스트 성공/실패별 효과 | 🔲 |
-| damage:{value:"fail_by"} | **fail_by** = 난이도−능력값(능력값 최소0 적용 → 난이도 이하). **success_by** = 능력값−난이도. min/max로 clamp(산탄총=최소1·최대5, 움켜쥐는 손=clamp 없음). 산탄총(01529)과 **공통 규약** | 🔲 |
+| revelation_test:{skill,difficulty} | 폭로 시 굴리는 능력 테스트(움켜쥐는 손=민첩3). on_draw:resolve_and_discard와 함께 | ✅ |
+| on_success/on_failure:[…] | 폭로 테스트 성공/실패별 효과 | ✅ |
+| damage:{value:"fail_by"} | **fail_by** = 난이도−능력값(능력값 최소0 적용 → 난이도 이하). **success_by** = 능력값−난이도. min/max로 clamp(산탄총=최소1·최대5, 움켜쥐는 손=clamp 없음). 산탄총(01529)과 **공통 규약** | ✅ |
 
 **fail_by/success_by 검증(산탄총 01529 참조):** 로직 이상 없음. 차이 = `r.total`(이미 최소0 clamp)와 `r.difficulty`로 계산 → `fail_by=max(0, diff−total)`, `success_by=max(0, total−diff)`. 능력값이 아무리 낮아도 fail_by가 난이도를 못 넘음(값이 0 밑으로 안 감). 두 카드가 같은 규약 사용.
 
 **엄습하는 공포 세트(01163~01165)에서 추가:**
 | 키/값 | 뜻 | 상태 |
 |---|---|---|
-| damage/value: "fail_by" (문자열) | 동적 차이값. 숫자=고정, "fail_by"/"success_by"=차이(clamp 없음), {value:"fail_by",min,max}=clamp(산탄총). 세 형태 허용 | 🔲 조우엔진 |
-| effect:"action_surcharge" | 지정 행동(actions:[move/fight/evade])에 추가 행동력. per:"round_first"=라운드 첫 1회. 공포에 얼어붙다 | 🔲 |
-| effect:"cannot_play" card_types:[…] | 위협영역에 있는 동안 해당 유형 플레이 금지(시끄러운 소음=자산·이벤트). ※커밋·발동·기본행동은 가능 | 🔲 |
-| forced when:"end_of_turn"/"end_of_round" | 강제 발동 시점. 공포에얼어붙다=턴 종료 테스트 후 성공 시 버림 / 시끄러운소음=라운드 종료 시 버림 | 🔲 |
-| ability.test + on_success:[discard self] | 강제 테스트 성공 시 자신 버림(공포에 얼어붙다) | 🔲 |
+| damage/value: "fail_by" (문자열) | 동적 차이값. 숫자=고정, "fail_by"/"success_by"=차이(clamp 없음), {value:"fail_by",min,max}=clamp(산탄총). 세 형태 허용 | ✅ |
+| effect:"action_surcharge" | 지정 행동(actions:[move/fight/evade])에 추가 행동력. per:"round_first"=라운드 첫 1회. 공포에 얼어붙다 | ✅ |
+| effect:"cannot_play" card_types:[…] | 위협영역에 있는 동안 해당 유형 플레이 금지(시끄러운 소음=자산·이벤트). ※커밋·발동·기본행동은 가능 | ✅ |
+| forced when:"end_of_turn"/"end_of_round" | 강제 발동 시점. 공포에얼어붙다=턴 종료 테스트 후 성공 시 버림 / 시끄러운소음=라운드 종료 시 버림 | ✅ |
+| ability.test + on_success:[discard self] | 강제 테스트 성공 시 자신 버림(공포에 얼어붙다) | ✅ |
 
 **버림 더미 라우팅(구현됨):** `discardToOrigin(code)` — **조우(faction:mythos)=조우 버림 더미(encounterDiscard), 그 외(약점 등 플레이어)=플레이어 버림(S.playerDiscard).** discardPlayed·폭로 버림 모두 이걸 경유. (판별: 조우=mythos, 플레이어 약점=neutral)
 
@@ -426,16 +426,16 @@ notz_player_cards = 어떻게 작동하는가(abilities + 구조화 keywords/pre
 |---|---|---|
 | text_ko | **표시용 한글 텍스트.** cards.json 수정 금지라, 영문뿐인 조우 카드는 notz의 text_ko로 툴팁·확대뷰 출력. `cardTextOf(code)` = text_ko ‖ cards.json text | ✅ |
 | effect:"place_doom" target:"agenda" | 의제에 파멸 N(agendaDoom=좌측·턴파멸과 같은 칸, 영구). 우측 fieldDoom은 카드 위 파멸(카드 떠나면 사라짐) | ✅(효과) |
-| effect:"check_agenda_advance" | 파멸이 임계값 이상이면 의제 진행. 원래 신화 1.3에만 돌지만 고대의 악은 뽑을 때 실행 | ✅(효과) 🔲(조우드로우 연동) |
-| per:"first_of_group_per_round" | actions 그룹 중 **매 라운드 첫 1회에만** 적용(공포에 얼어붙다=이동/전투/회피 중 가장 먼저 1회). ※per:round_first에서 개명(중의성 제거) | 🔲 |
+| effect:"check_agenda_advance" | 파멸이 임계값 이상이면 의제 진행. 원래 신화 1.3에만 돌지만 고대의 악은 뽑을 때 실행 | ✅(효과) ✅ |
+| per:"first_of_group_per_round" | actions 그룹 중 **매 라운드 첫 1회에만** 적용(공포에 얼어붙다=이동/전투/회피 중 가장 먼저 1회). ※per:round_first에서 개명(중의성 제거) | ✅ |
 
 **한글 오버라이드 판정 + 조우덱 구성 + 나머지 조우(01116/01118/01119/01167/01168):**
 | 키/값 | 뜻 | 상태 |
 |---|---|---|
 | text_ko 필요 판정 | cards.json `text`에 **한글이 없으면(영문)** text_ko 작성. 카드명·특성은 항상 한글이라 본문만 판정. 대상은 사실상 core 조우 카드 | ✅ |
 | 조우덱 구성 | `buildEncounterDeck()` — cards.json에서 `SCENARIO1_SETS`(torch·rats·ghouls·striking_fear·ancient_evils·**chilling_cold**)의 enemy·treachery를 quantity만큼. 구울 사제(01116)는 set aside 제외. **데이터 로드 후** boot에서 구성 | ✅ |
-| spawn:"attic"/"cellar" | 등장 지정 장소(식인귀·냉기구울) | 🔲 적엔진 |
-| keywords:["retaliate"] | 보복(구울 사제) | 🔲 |
+| spawn:"attic"/"cellar" | 등장 지정 장소(식인귀·냉기구울) | ✅ |
+| keywords:["retaliate"] | 보복(구울 사제) | ✅ |
 | prey:"highest_combat" | 먹잇감=전투 최고(구울 사제) | 🔲 |
-| discard_owned_asset + fallback | 통제 자산 1 버림, 못 버리면 fallback(피해2). 으스스한 한기 | 🔲 |
-| on_draw:"attach_to_location" + shroud_mod + limit_per_location + discard_when:"attached_location_investigated" | 자욱한 안개 — 장소 부착·은폐+2·장소당1·성공 조사 시 버림 | 🔲 |
+| discard_owned_asset + fallback | 통제 자산 1 버림, 못 버리면 fallback(피해2). 으스스한 한기 | ✅ |
+| on_draw:"attach_to_location" + shroud_mod + limit_per_location + discard_when:"attached_location_investigated" | 자욱한 안개 — 장소 부착·은폐+2·장소당1·성공 조사 시 버림 | ✅ |

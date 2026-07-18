@@ -118,9 +118,8 @@ export const EFFECTS = {
       const v=Math.min(h.horror, S.invHorror); if(v>0){ S.invHorror-=v; renderInvestigator(); addLog("공포 "+v+" 회복."); } else addLog("회복할 공포가 없습니다.");
     }
   },
-  damage(){ addLog("피해 효과 — 적 시스템 미구현(보류)."); },
-  do_fight(){ addLog("공격(전투 판정) — 적 시스템 미구현(보류)."); },
-  bonus(){ addLog("능력치 강화 — 판정 커밋 시스템 이후(보류)."); },
+  // 자산의 판정 강화는 커밋 창에서 useBoostAsset으로 쓴다. 행동으로 직접 발동하는 건 아직 미구현(STUB_EFFECTS).
+  bonus(){ addLog("능력치 강화 — 판정 커밋 창에서 자산을 사용하세요."); },
   discover_clue(eff){ const want=(eff&&eff.value)||1, n=Math.min(want, cluesInRoom(S.cur).length);   // 직감 등 직접 발견 — 은폐 있으면 discoverClues가 가로챔
     if(n<=0){ addLog(ROOMS[S.cur].name+"에 발견할 단서가 없습니다."); return; }
     discoverClues(n, S.cur); },

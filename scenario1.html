@@ -437,7 +437,6 @@ document.addEventListener("mousedown",(e)=>{ if(zoomOpen && e.button===0){ close
    ===================================================================== */
 function canAct(){ return !csActive && !S.phaseBusy && S.currentPhase==="investigation" && !pawnMoving() && !walkTo(); }  // 이동중(방간·방내)에도 잠금
 
-// 적/상황 시스템 미구현 — 스텁(나중에 실제 판정으로 교체)
 // 협상(parley) — 대상의 parley 능력을 발동. 교전 여부 무관, 같은 장소면 됨(공식 룰). 행동 소모하되 기회공격 면제.
 function parleyTargetsAt(room){ return (S.enemies||[]).filter(e=> e.room===room && enemyParleyAbility(e)); }
 function parleyAvailable(){ return S.currentPhase==="investigation" && !S.phaseBusy && S.actionPoints>=1 && parleyTargetsAt(S.cur).length>0; }
@@ -909,7 +908,7 @@ bus.on("phase:enemy", ()=>{
 });
 // 정비 단계 — 4.2~4.5 (비전투)
 bus.on("phase:upkeep", ()=> doUpkeep());
-// 신화 단계 — 1.2 파멸+1, 1.3 임계(1.4 조우 뽑기는 보류)
+// 신화 단계 — 1.2 파멸+1, 1.3 임계, 1.4 조우 뽑기
 bus.on("phase:changed", ()=>{ S.innateUse.phase = {}; S.afterDefeatWindow=false; });   // 페이즈당 한정 리셋 + 처치 반응 창 닫힘
 bus.on("phase:mythos", ()=>{
   S.innateUse.round = {};   // 라운드당 한정(로랜드 등) 리셋
@@ -938,7 +937,7 @@ function doUpkeep(){
   S.enemies.forEach(e=> e.exhausted=false); renderEnemyMarkers();
   // 4.4 카드 1장 뽑기(+자원 1). drawCards로 뽑아야 폭로(on_draw)가 발동 — 예: 편집증 뽑으면 자원 상실.
   if(drawCards(1)) addLog("정비 — 카드 1장을 뽑았습니다. (남은 덱 "+S.playerDeck.length+"장)");
-  else addLog("정비 — 덱이 비어 카드를 뽑지 못했습니다.");   // TODO: 빈 덱 규칙
+  else addLog("정비 — 덱이 비어 카드를 뽑지 못했습니다.");   // 빈 덱 규칙(재섞기+공포1)은 drawCards가 처리 — 여기는 덱·버린더미 둘 다 빈 경우
   // 자원 획득은 뽑기(폭로) '뒤'. 편집증처럼 폭로가 리빌로 지연되면(phasePaused) 리빌 완료 후로 미룬다.
   if(S.phasePaused){ S.pendingUpkeepResource = true; }
   else gainUpkeepResource();
@@ -1134,7 +1133,7 @@ function spawnGhoulPriest(){
    패배: 체력0(유형1)·정신0(유형2)·동시(유형3 — 공식 룰: 트라우마 하나를 '선택').
    결말: 0=전멸/act3 파멸10 · 1=집 불태움 · 2=안 태움 · 3=1·2막 파멸10.
    종료 시 localStorage(arkham_decks의 victoryPoints·status, arkham_resolution)
-   갱신 → notzCampaignLog.html(제작 예정)이 읽음.
+   갱신 → notzCampaignLog.html이 읽음.
    ===================================================================== */
 S.victoryDisplay = [];      // 승리 더미(처치한 승점 적 카드 코드 — 버린 더미로 안 감)
 S.enemyVictoryPoints = 0;   // 적 처치 승점 누적
@@ -1414,7 +1413,7 @@ function countInvestigatorsAt(roomKey){
 /* ===== 적 · 전투 엔진 (기본) =====
    상태: S.enemies = [{code, room, dmg, exhausted, engaged}]  (1인: engaged=활성 조사자와 교전)
    [기본 규칙 구현] 등장(spawn) → 자동 교전(같은 장소·준비 상태) → 공격/회피 행동 → 적 단계(사냥꾼 이동·교전 적 공격) → 정비 준비.
-   [보류·주석] 기회공격(AoO), 피해 조력자 할당(소화), 보복(retaliate), 다인 prey 선택, 승점. */
+   [미구현] 다인 prey 선택(1인은 자동 교전). 그 외 기회공격·피해 할당·보복·승점은 구현됨. */
 S.enemies = [];
 // 등장 장소 결정 — 지정 장소가 지금 게임에 있으면 그곳, 없으면 null(등장 불가 → 버림), 지정 없으면 뽑은 조사자 위치.
 // 회합 FAQ: 서재 단계에서 식인귀(다락방)·냉기구울(지하실)을 뽑으면 등장 장소가 게임에 없어 그냥 버려짐.
