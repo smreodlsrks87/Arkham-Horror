@@ -10,7 +10,7 @@
    토큰공개→결과)을 함께 담는다. UI는 다른 도메인(hand·investigator·popup·play영역)을 쓰므로
    일부는 import, scenario1 전용(SKILL_KO)은 주입.
    ===================================================================== */
-import { drawChaosToken, resolveToken, tokenChip, ghoulsAtMyLocation } from "./tokens.js";
+import { makeChaosPool, drawFromPool, resolveToken, tokenChip, ghoulsAtMyLocation } from "./tokens.js";
 import { S } from "./state.js";
 import { cardFront, cardTextOf } from "./card-img.js";
 import { cleanText } from "../shared/card-text.js";
@@ -43,13 +43,21 @@ export function isCommittable(card, skill){ return commitIcons(card, skill) > 0;
 // ctx = { charCode, myLocation, cluesAt } (엘더사인 등 토큰 해석용)
 // 반환: { drawn, tokenMod, base, total, difficulty, success, autoFail }
 export function resolveTest(base, difficulty, ctx){
+  // 이 판정 동안 쓸 주머니 — 공개한 토큰은 빠지므로 같은 토큰이 두 번 나오지 않는다.
+  // "토큰 1개 더"(추종자 어려움)는 새로 공개된 토큰이 또 요구하면 이어서 공개한다.
+  // 주머니가 유한하고 매번 줄어드니 연쇄는 저절로 끝난다(상한 불필요).
+  const pool = makeChaosPool();
   const drawn = [];
-  const first = resolveToken(drawChaosToken(), ctx);
-  drawn.push(first);
-  let mod = first.value, autoFail = first.autoFail;
-  for(let i=0; i<(first.drawMore||0); i++){           // 추가 뽑기(예: 추종자 어려움)
-    const more = resolveToken(drawChaosToken(), ctx);
-    drawn.push(more); mod += more.value; if(more.autoFail) autoFail = true;
+  let mod = 0, autoFail = false, pending = 1;
+  while(pending > 0){
+    pending--;
+    const ty = drawFromPool(pool);
+    if(ty == null) break;                              // 주머니가 비면 더 못 뽑음
+    const t = resolveToken(ty, ctx);
+    drawn.push(t);
+    mod += t.value;
+    if(t.autoFail) autoFail = true;
+    pending += (t.drawMore || 0);
   }
   // 능력치는 최소 0 — 토큰 페널티로 (능력치+커밋+보너스+토큰)이 음수가 돼도 0으로 계산.
   // 예: 지식2 + 토큰(-5) = -3 → 0. 은폐0이면 0>=0 성공(단, 촉수=autoFail이면 실패).

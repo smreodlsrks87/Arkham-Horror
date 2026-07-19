@@ -53,12 +53,18 @@ export function elderSignValue(charCode, ctx){
   return fn ? fn(ctx) : 0;   // 정의 없으면 0
 }
 
-/* ── 뽑기 (실제 주머니에서) ── */
+/* ── 뽑기 (실제 주머니에서) ──
+   한 판정 안에서 토큰을 여러 개 공개할 때(추종자 "1개 더")는 이미 공개한 토큰을 빼고 뽑는다.
+   → 판정 시작 시 makeChaosPool()로 주머니를 한 번 펼치고, drawFromPool로 하나씩 꺼낸다(제거). */
 function expand(bag){ const out=[]; bag.forEach(([ty,n])=>{ for(let i=0;i<n;i++) out.push(ty); }); return out; }
-export function drawChaosToken(){
-  const pool = expand(CHAOS_BAGS[chaosDifficulty]);
-  return pool[Math.floor(Math.random()*pool.length)];   // 토큰 종류 문자열
+export function makeChaosPool(){ return expand(CHAOS_BAGS[chaosDifficulty]); }
+// 주머니에서 무작위 1개를 꺼낸다(꺼낸 건 배열에서 제거). 비었으면 null.
+export function drawFromPool(pool){
+  if(!pool || !pool.length) return null;
+  return pool.splice(Math.floor(Math.random()*pool.length), 1)[0];
 }
+// 단발 뽑기(주머니 전체에서 1개) — 판정 밖에서 쓰는 용도.
+export function drawChaosToken(){ return drawFromPool(makeChaosPool()); }
 
 /* ── 뽑은 토큰 1개 → 판정 정보 해석 ──
    반환: { type, value, autoFail, drawMore, onFail, ifGhoul } ── */
