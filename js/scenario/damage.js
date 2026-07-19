@@ -15,7 +15,7 @@ import { updatePiles } from "./piles.js";
 import { renderPlayArea, discardPlayed } from "./play.js";
 import { floatTextAt, hitFlash } from "./combat-fx.js";
 import { enemyCard, damageEnemy } from "./enemy.js";
-import { isThreatCard } from "./threats.js";   // 위협영역 카드엔 피해·공포 할당 X(threats)
+import { isThreatCard, fireAfterHitThreats } from "./threats.js";   // 위협영역 판별 + "피해/공포 받은 후" 강제(심기증·정신병)
 import { audio } from "../shared/audio.js";
 
 // 주입(scenario1 인라인: 쓰러짐 판정·요구조건·처치반응·반응 아이콘)
@@ -39,6 +39,9 @@ export function applyToInvestigator(dmg, hor, tag){
   renderInvestigator();
   if(dmg||hor) addLog((tag?tag+" ":"")+"조사자 "+[dmg?"피해 "+dmg:"",hor?"공포 "+hor:""].filter(Boolean).join("·")+" 받음.");
   if(dmg||hor) D.checkInvestigatorDefeat();   // 체력/정신 0 → 쓰러짐(에필로그)
+  // 위협영역 "받은 후" 강제(심기증·정신병) — 조사자에게 실제로 들어간 양으로만 발동.
+  // 쓰러짐 판정 뒤에 둬서, 이 피해로 이미 쓰러졌으면(S.scenarioOver) 더 진행하지 않는다.
+  if(dmg||hor) fireAfterHitThreats(dmg, hor);
 }
 // 피해/공포 받기 진입점
 // done(canceled) — canceled=true면 공격이 취소됨(재빨리 피하다). 호출부는 이때 "공격한 후" 강제효과를 건너뜀.

@@ -102,6 +102,36 @@ export function processForcedThreat(when, done){
   let i=0; const next=()=>{ if(i>=jobs.length){ done(); return; } const j=jobs[i++]; runForcedThreat(j.p, j.ab, next); };
   next();
 }
+/* 위협영역 강제 — "당신이 피해/공포를 받은 후"(심기증=피해→직접 공포1, 정신병=공포→직접 피해1).
+   조사자에게 '실제로 들어간' 양으로만 판단한다 → 조력자가 다 흡수해 조사자가 0이면 발동 안 함.
+   ※ 심기증·정신병이 동시에 있으면 서로를 촉발해 끝없이 이어질 수 있다(공식 룰상으로도 연쇄).
+     기본 약점은 보통 1장이라 실제로 겹칠 일은 거의 없지만, 브라우저가 멈추면 안 되므로 깊이 상한을 둔다. */
+let afterHitDepth = 0;
+const AFTER_HIT_MAX = 8;
+export function fireAfterHitThreats(dmg, hor){
+  if(S.scenarioOver) return;
+  const whens = [];
+  if(dmg > 0) whens.push("after_damage_on_owner");
+  if(hor > 0) whens.push("after_horror_on_owner");
+  if(!whens.length) return;
+  const jobs = [];
+  S.playedCards.slice().forEach(p=>{   // 실행 중 목록이 바뀔 수 있어 스냅샷
+    ((S.cardAbilities[p.code]||{}).abilities||[]).forEach(ab=>{
+      if(ab.timing==="forced" && whens.includes(ab.when)) jobs.push({ p, ab });
+    });
+  });
+  if(!jobs.length) return;
+  if(afterHitDepth >= AFTER_HIT_MAX){ addLog("강제 효과 연쇄가 너무 길어 여기서 멈춥니다."); return; }
+  afterHitDepth++;
+  try{
+    jobs.forEach(({p, ab})=>{
+      if(!S.playedCards.includes(p)) return;        // 그 사이 버려졌으면 건너뜀
+      const nm = (S.byCode[p.code]||{}).name || p.code;
+      addLog(nm+" — 강제: "+(ab.when==="after_damage_on_owner" ? "피해" : "공포")+"를 받은 후.");
+      (ab.do||[]).forEach(eff=> applyForcedEffect(p, eff));
+    });
+  } finally { afterHitDepth--; }
+}
 export function applyForcedEffect(p, eff){
   if(eff.effect==="discard" && eff.target==="self"){ const idx=S.playedCards.indexOf(p); if(idx>=0) discardPlayed(idx); return; }
   runEffect(eff, p);
