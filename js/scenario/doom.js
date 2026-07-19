@@ -33,6 +33,9 @@ export function updateDoom(){
   if(pe){ if(pend>0){ pe.textContent = "라운드끝 +"+pend; pe.style.display="inline-block"; pe.title="거실·복도의 구울 수만큼 라운드 끝에 파멸이 증가합니다."; } else pe.style.display="none"; }
 }
 
-/* 필드 파멸원 등록/해제 — 파멸이 게임에 등장/제거될 때 호출 */
+/* 필드 파멸원 등록/해제 — 파멸이 게임에 등장/제거될 때 호출.
+   ※ [훅] 합산(fieldDoom)·표시(d-field)·막 전환 시 초기화까지 배선은 끝나 있고,
+     아직 "자기 위에 파멸을 놓는 카드"가 구현되지 않아 호출부만 비어 있다.
+     그런 카드를 넣을 때 등장/퇴장에서 이 둘을 부르면 된다. (미사용이라고 지우지 말 것) */
 export function addDoomSource(id, getter){ S.doomSources.push({id, get:getter}); updateDoom(); }
 export function removeDoomSource(id){ S.doomSources = S.doomSources.filter(s=>s.id!==id); updateDoom(); }

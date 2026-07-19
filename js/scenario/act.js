@@ -43,12 +43,6 @@ export function updateGoal(text){
 
 export function refreshGoal(){ updateGoal(lastGoalText); }   // 특별규칙 박스 토글 등 재렌더
 
-export function setActGoal(multiplier, prefix, suffix){
-  S.actGoalClues = S.playerCount * multiplier;
-  const text = (prefix||"") + "단서(" + S.actGoalClues + ")" + (suffix||"를 모아라");
-  updateGoal(text);
-}
-
 function pendingGhoulDoom(){ return S.agenda3aRule ? (ghoulsInRoom("parlor")+ghoulsInRoom("hallway")) : 0; }
 
 setPendingDoomGetter(pendingGhoulDoom);   // 적 결합 예고 파멸을 doom 게이지에 주입

@@ -88,8 +88,6 @@ export function enemyHasKeyword(en, kw){ return ((S.cardAbilities[en.code]||{}).
 
 export function enemiesAt(k){ return S.enemies.filter(e=>e.room===k); }
 
-export function enemyAtLoc(){ return enemiesAt(S.cur).length>0; }
-
 export function enemySpawnRoom(code){
   const a=S.cardAbilities[code]||{};
   if(a.spawn && D.ROOMS[a.spawn]) return (D.ROOMS[a.spawn].stage===S.currentStage) ? a.spawn : null;

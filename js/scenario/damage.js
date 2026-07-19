@@ -27,7 +27,6 @@ export function setDamageDeps(o){ Object.assign(D, o); }
 export function assetHP(p){ return (S.byCode[p.code]||{}).health || 0; }
 export function assetSN(p){ return (S.byCode[p.code]||{}).sanity || 0; }
 export function assetRemain(p, kind){ return kind==="damage" ? assetHP(p)-(p.dmg||0) : assetSN(p)-(p.hor||0); }
-export function soakAssets(kind){ return S.playedCards.filter(p=> !isThreatCard(p.code) && assetRemain(p,kind)>0); }   // 위협영역엔 할당 X
 // 조사자에게 직접 적용(격파 확인 포함)
 export function applyToInvestigator(dmg, hor, tag){
   // 좌측하단 초상화 위에 크게 — 피해=빨강 −N, 공포=파랑 −N (둘 다면 좌우로 나눠 표시)
