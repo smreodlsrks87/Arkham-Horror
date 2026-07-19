@@ -8,7 +8,7 @@ import { S } from "./state.js";
 import { addLog } from "./log.js";
 import { startSkillTest, testResultHtml, applyCommittedDraws } from "./skilltest.js";
 import { updateAP, renderInvestigator } from "./investigator.js";
-import { showPopup, hidePopup, showToast } from "./popup.js";
+import { showPopup, hidePopup, showToast, showCardPickPopup } from "./popup.js";
 import { renderPlayArea, weaponFightOptions, activateAbility } from "./play.js";
 import { floatTextAt, hitFlash } from "./combat-fx.js";
 import { resumeEnemy } from "./phases.js";
@@ -16,10 +16,11 @@ import { renderEnemyMarkers, pawnMoving } from "./map3d.js";   // 적 마커 렌
 import { canEnemyEnterLocation, actionSurchargeFor, markSurcharge } from "./threats.js";   // 바리케이드 진입차단·행동 추가비용(threats)
 import { takeDamageHorror } from "./damage.js";   // 조사자 피해·공포 할당(damage)
 import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
+import { cluesInRoom } from "./clues.js";
 
 // 주입(scenario1 인라인: 마커렌더·반응·메뉴·데이터) — 대부분 안정 함수/상수.
 let D = {
-  closeAfterDefeatWindow(){}, showCardPickPopup(){}, cluesInRoom:()=>[], countInvestigatorsAt:()=>0,
+  closeAfterDefeatWindow(){}, countInvestigatorsAt:()=>0,
   leadInvestigatorName:()=>"", investigatorBlanked:()=>false,
   discardToOrigin(){}, flushDefeatReaction(){},
   renderMenu(){}, isEncounterCard:()=>false, ROOMS:{}, ADJ:{},
@@ -218,17 +219,17 @@ export function startFightAction(opts){
   const doIt=(en)=>{
     combatBanner("⚔ "+D.leadInvestigatorName()+"  →  "+enemyCard(en).name);   // 전투 시작 배너(D)
     let bonus = opts.bonus||0;
-    if(opts.bonusIf && opts.bonusIf.cond==="clue_at_your_location" && D.cluesInRoom(S.cur).length>0)
+    if(opts.bonusIf && opts.bonusIf.cond==="clue_at_your_location" && cluesInRoom(S.cur).length>0)
       bonus = (opts.bonusIf.bonus && opts.bonusIf.bonus.combat) || bonus;   // 로랜드 권총: 단서 있으면 +1→+3
     startSkillTest({ skill:"combat", testType:"fight", location:S.cur, difficulty:(enemyCard(en).enemy_fight||1),
-      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>D.cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
+      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
       actionLabel:(opts.label||"공격"), targetLabel:"적 전투",
       extraTestBonus:bonus,
       onResolve:(r)=> applyFightResult(en, r, opts) });
   };
   if(forced && targets.indexOf(forced)>=0){ doIt(forced); return; }   // 지정 대상 우선
   if(targets.length===1) doIt(targets[0]);
-  else D.showCardPickPopup("공격할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
+  else showCardPickPopup("공격할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
 }
 
 export function committedAttackDamage(r){
@@ -302,7 +303,7 @@ export function startEvadeAction(opts){
   if(!targets.length){ showToast("교전 중인 적이 없습니다."); return; }
   const doIt=(en)=>{
     startSkillTest({ skill:"agility", testType:"evade", location:S.cur, difficulty:(enemyCard(en).enemy_evade||1),
-      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>D.cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
+      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
       actionLabel:"회피", targetLabel:"적 회피",
       onResolve:(r)=>{
         const base={ action:"회피", skill:"agility", skillLabel:"민첩", skillVal:r.base, drawn:r.drawn,
@@ -315,7 +316,7 @@ export function startEvadeAction(opts){
   };
   if(opts.target && targets.indexOf(opts.target)>=0){ doIt(opts.target); return; }   // 적 메뉴에서 지정한 대상
   if(targets.length===1) doIt(targets[0]);
-  else D.showCardPickPopup("회피할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
+  else showCardPickPopup("회피할 적을 선택하세요", targets.map(e=>e.code), (c,i)=> doIt(targets[i]));
 }
 
 export function nextStepToward(from, to){

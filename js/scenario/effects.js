@@ -8,9 +8,9 @@
    ===================================================================== */
 import { S } from "./state.js";
 import { addLog } from "./log.js";
-import { shuffle } from "./util.js";
+import { shuffle, SKILL_KO } from "./util.js";
 import { audio } from "../shared/audio.js";
-import { showPopup, showForcedPopup, hidePopup, showToast } from "./popup.js";
+import { showPopup, showForcedPopup, hidePopup, showToast, showCardPickPopup } from "./popup.js";
 import { renderInvestigator } from "./investigator.js";
 import { renderHand } from "./hand.js";
 import { updatePiles } from "./piles.js";
@@ -28,7 +28,7 @@ import { takeDamageHorror, applyToInvestigator } from "./damage.js";   // 조사
 // 주입(scenario1 인라인: 소리·연출·출신버림·정비자원·약점판별·카드선택·처치반응·능력치 한글명)
 let D = {
   playCoinSound(){}, flyLastCardFromDeck(){}, discardToOrigin(){}, gainUpkeepResource(){},
-  isWeakness:()=>false, showCardPickPopup(){}, flushDefeatReaction(){}, SKILL_KO:{},
+  isWeakness:()=>false, flushDefeatReaction(){}, SKILL_KO:{},
 };
 export function setEffectsDeps(o){ Object.assign(D, o); }
 
@@ -124,14 +124,14 @@ export const EFFECTS = {
     if(n<=0){ addLog(ROOMS[S.cur].name+"에 발견할 단서가 없습니다."); return; }
     discoverClues(n, S.cur); },
   skill_substitute(eff){ S.roundEffects.push({ kind:"skill_substitute", from:eff.from||[], to:eff.to, auto:eff.auto===true, duration:eff.duration||"this_round" });
-    addLog("이번 라운드 동안 "+(eff.from||[]).map(s=>D.SKILL_KO[s]||s).join("·")+" 판정을 "+(D.SKILL_KO[eff.to]||eff.to)+"으로 대체할 수 있습니다."); },
+    addLog("이번 라운드 동안 "+(eff.from||[]).map(s=>SKILL_KO[s]||s).join("·")+" 판정을 "+(SKILL_KO[eff.to]||eff.to)+"으로 대체할 수 있습니다."); },
   damage_investigator(eff){ takeDamageHorror(eff.damage||1, 0, {direct:!!eff.direct}, ()=>{}); },   // direct면 조사자 직접, 아니면 할당 시스템
   damage(eff){   // 적에게 피해(순찰경찰 자유격발 등)
     const v=eff.value||1;
     const targets=enemiesAt(S.cur);
     if(!targets.length){ showToast("이 장소에 적이 없습니다."); return; }
     if(targets.length===1){ damageEnemy(targets[0], v); D.flushDefeatReaction(); }
-    else D.showCardPickPopup("피해를 줄 적을 선택하세요", targets.map(e=>e.code), (c,i)=>{ damageEnemy(targets[i], v); D.flushDefeatReaction(); });
+    else showCardPickPopup("피해를 줄 적을 선택하세요", targets.map(e=>e.code), (c,i)=>{ damageEnemy(targets[i], v); D.flushDefeatReaction(); });
   },
   horror(eff){ takeDamageHorror(0, eff.value||1, {direct:!!eff.direct}, ()=>{}); },                  // 직접 공포=할당 불가(심기증)
   search_deck(eff){ searchDeckToHand(eff); },
@@ -221,7 +221,7 @@ export function lookTopDraw(eff){
   if(!drawable.length){ addLog("덱 맨 위 "+n+"장 중 조건에 맞는 카드가 없습니다."); shuffle(S.playerDeck); audio.sfx("card-shuffle"); updatePiles(); return; }
   const pick=(code)=>{ const i=S.playerDeck.indexOf(code); if(i>=0){ S.playerDeck.splice(i,1); S.playerHand.push(code); } shuffle(S.playerDeck); audio.sfx("card-shuffle"); renderHand(); updatePiles(); D.flyLastCardFromDeck(); addLog((S.byCode[code]?S.byCode[code].name:code)+"을(를) 뽑았습니다. 나머지는 덱에 넣고 섞었습니다."); };
   if(drawable.length===1) pick(drawable[0]);
-  else D.showCardPickPopup("덱 맨 위 "+n+"장 중에서 뽑을 카드를 고르세요. (일러스트에 마우스를 올리면 설명)", drawable, (code)=> pick(code));   // 일러스트+호버 텍스트
+  else showCardPickPopup("덱 맨 위 "+n+"장 중에서 뽑을 카드를 고르세요. (일러스트에 마우스를 올리면 설명)", drawable, (code)=> pick(code));   // 일러스트+호버 텍스트
 }
 export function runEffect(eff, p){
   if(eff.spend && p && p.uses){ for(const k in eff.spend){ if(p.uses.type===k) p.uses.count -= eff.spend[k]; } }   // uses 소비(플레이 자산만)

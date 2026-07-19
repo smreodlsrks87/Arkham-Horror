@@ -7,9 +7,10 @@
 import { S } from "./state.js";
 import { cleanText } from "../shared/card-text.js";
 import { elderSignValue } from "./tokens.js";
+import { cluesInRoom } from "./clues.js";
 
 // ── 주입(다른 도메인 링크) ──
-let D = { cluesInRoom: ()=>[], investigatorBlanked: ()=>false };
+let D = { investigatorBlanked: ()=>false };
 export function setInvDeps(o){ Object.assign(D, o); }
 
 // 세로형 조사자 카드 설정(편집기 확정 값)
@@ -72,7 +73,7 @@ export function renderInvestigator(){
   if(card) card.onmouseenter = ()=>{
     const el=document.getElementById("inv-es-val");
     if(el && S.activeInvestigator){
-      const ctx={ charCode:S.activeInvestigator.investigator, myLocation:S.cur, cluesAt:(room)=>D.cluesInRoom(room).length, blanked:D.investigatorBlanked() };
+      const ctx={ charCode:S.activeInvestigator.investigator, myLocation:S.cur, cluesAt:(room)=>cluesInRoom(room).length, blanked:D.investigatorBlanked() };
       const v=elderSignValue(S.activeInvestigator.investigator, ctx);
       el.textContent=(v>=0?"+":"")+v;
     }

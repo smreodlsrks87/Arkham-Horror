@@ -20,11 +20,12 @@ import { updatePiles } from "./piles.js";
 import { audio } from "../shared/audio.js";
 import { roomStagePos, renderEnemyMarkers } from "./map3d.js";   // 3D 투영·적 마커(map3d)
 import { takeDamageHorror } from "./damage.js";   // 조사자 피해·공포 할당(damage)
+import { cluesInRoom } from "./clues.js";
 
 // 주입(scenario1 인라인: 종료·피해·조우버림·데이터·막전환).
 let D = {
   endScenario(){},
-  encDiscard(){}, ROOMS:{}, ROOM_INFO:{}, cluesInRoom:()=>[],
+  encDiscard(){}, ROOMS:{}, ROOM_INFO:{},
   advanceToMansion(){}, advanceToAct3(){},
 };
 export function setActDeps(o){ Object.assign(D, o); }
@@ -201,7 +202,7 @@ export function locationVictoryPoints(){
     const info=D.ROOM_INFO[k];
     if(!info.victory || !D.ROOMS[k]) return;
     if(D.ROOMS[k].stage!==S.currentStage) return;        // 게임에 없던 장소(서재 단계 종료 등)는 제외
-    if(D.cluesInRoom(k).length===0) v += info.victory; // 단서를 전부 회수한 장소만
+    if(cluesInRoom(k).length===0) v += info.victory; // 단서를 전부 회수한 장소만
   });
   return v;
 }

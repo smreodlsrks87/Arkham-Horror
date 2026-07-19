@@ -6,7 +6,7 @@
 import { S } from "./state.js";
 import { isFastPlay, initialUses, onEnterPlay, onLeavePlay, activatable } from "./abilities.js";
 import { renderHand } from "./hand.js";
-import { showToast, showPopup, hidePopup } from "./popup.js";
+import { showToast, showPopup, hidePopup, showCardPickPopup } from "./popup.js";
 import { cardFront } from "./card-img.js";
 import { showCardInfo, hideCardInfo } from "./tooltip.js";
 import { updateAP, renderInvestigator } from "./investigator.js";
@@ -18,11 +18,13 @@ import { toStageX, toStageY } from "../shared/stage.js";
 import { provokeAoO, enemyAtLocation, openEnemyMenu, enemyHealth } from "./enemy.js";   // 적 코어(기회공격·장소적·적메뉴·적체력)
 import { isThreatCard, attachToLocation, actionSurchargeFor, markSurcharge } from "./threats.js";   // 위협영역 판별·장소 부착·행동 추가비용(threats)
 import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
+import { cluesInRoom } from "./clues.js";
+import { SKILL_KO } from "./util.js";
 
 // 주입(scenario1 인라인: 반응·조사결과 등) — 전부 안정 함수/상수라 게터 불필요.
 let D = {
-  closeActionMenu(){}, showCardPickPopup(){},
-  triggerEnterPlayReaction(){}, applyInvestigateResult(){}, cluesInRoom:()=>[],
+  closeActionMenu(){},
+  triggerEnterPlayReaction(){}, applyInvestigateResult(){},
   investigatorBlanked:()=>false, effShroud:()=>0,
   hasReactionWhen:()=>false, eventReactionPlayable:()=>false, reactionAbilityOpen:()=>false,
   closeAfterDefeatWindow(){}, discardToOrigin(){}, SKILL_KO:{},
@@ -109,8 +111,8 @@ export function tryPlayCard(idx){
       S.playedCards.forEach((p,i)=>{ const s=slotInfo(p.code); if(s && s.type===sl.type) occ.push({i, units:s.count, code:p.code}); });
       const solos=occ.filter(o=>o.units>=needFree);
       if(solos.length>=2 && needFree<used){   // 한 장만 버려도 되는 선택지 여럿 → 어느 걸 버릴지 고르기(예: 한손 2개 중)
-        // 카드 일러스트로 고르기 + 호버 시 카드 설명(D.showCardPickPopup)
-        D.showCardPickPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. 버리고 <b>'+nm(code)+'</b>을(를) 플레이할 카드를 고르세요.',
+        // 카드 일러스트로 고르기 + 호버 시 카드 설명(showCardPickPopup)
+        showCardPickPopup(SLOT_KO[sl.type]+' 슬롯이 찼습니다. 버리고 <b>'+nm(code)+'</b>을(를) 플레이할 카드를 고르세요.',
           solos.map(o=>o.code),
           (c,i)=>{ doPlay([S.playedCards[solos[i].i]]); },   // 버릴 카드는 기회공격 뒤에 버림(룰: 데미지 할당이 먼저)
           { cancelable:true, onCancel:()=>{ renderHand(); } });
@@ -313,7 +315,7 @@ export function activateAbility(pi, ai){
     const shroud = D.effShroud(S.cur), mod = ab.difficulty_mod||0;   // 안개 등 수정치 포함
     startSkillTest({ skill:"intellect", testType:"investigate", location:S.cur,
       difficulty: Math.max(0, shroud+mod), difficultyBreak:{ base:shroud, mod },   // 은폐 하한 0 + 표시용(0=2-2)
-      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(room)=>D.cluesInRoom(room).length, blanked:D.investigatorBlanked() },
+      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(room)=>cluesInRoom(room).length, blanked:D.investigatorBlanked() },
       actionLabel:"조사("+name+")", targetLabel:"은폐",
       onResolve:(r)=> D.applyInvestigateResult(null, r) });
     renderPlayArea();
@@ -322,7 +324,7 @@ export function activateAbility(pi, ai){
   if(ab.test){                                                                     // 능력이 판정을 굴림(의학 서적)
     const name = S.byCode[p.code] ? S.byCode[p.code].name : p.code;
     startSkillTest({ skill:ab.test.skill, testType:"ability", difficulty:ab.test.difficulty,
-      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(room)=>D.cluesInRoom(room).length, blanked:D.investigatorBlanked() },
+      ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(room)=>cluesInRoom(room).length, blanked:D.investigatorBlanked() },
       actionLabel:name, targetLabel:"난이도",
       onResolve:(r)=> applyAbilityTestResult(ab, p, name, r) });
     renderPlayArea();
@@ -337,7 +339,7 @@ export function activateAbility(pi, ai){
 
 function applyAbilityTestResult(ab, p, name, r){
   (r.success ? (ab.on_success||[]) : (ab.on_failure||[])).forEach(eff=> runEffect(eff, p));
-  const base = { action:name, skill:ab.test.skill, skillLabel:D.SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base,
+  const base = { action:name, skill:ab.test.skill, skillLabel:SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base,
                  drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
   const lines = applyCommittedDraws(r);   // 배짱 등 커밋 드로우(능력 판정도)
   const ex = (r.success ? "성공 — 효과 적용." : "실패 — 효과 적용.") + (lines.length?" "+lines.join(" "):"");

@@ -260,7 +260,7 @@ import { loadCardsJson, indexByCode, loadAbilities, loadEncounterAbilities } fro
 import { addLog, renderLog } from "./js/scenario/log.js";   // 게임 로그
 import { setChaosDifficulty, setTokenDeps } from "./js/scenario/tokens.js";   // 혼돈 주머니(난이도 적용·구울 수 주입)
 import { onEnterPlay, initialUses } from "./js/scenario/abilities.js";   // 카드 능력 엔진
-import { startSkillTest, confirmCommit, testResultHtml, applyCommittedDraws, commitMode, setSkillTestDeps } from "./js/scenario/skilltest.js";   // 능력치 테스트 엔진 + UI/커밋
+import { startSkillTest, confirmCommit, testResultHtml, applyCommittedDraws, commitMode } from "./js/scenario/skilltest.js";   // 능력치 테스트 엔진 + UI/커밋
 import { S, bus } from "./js/scenario/state.js";   // 게임 공유 상태 + 이벤트버스
 import { cardFront, PLAYER_BACK, cardTextOf } from "./js/scenario/card-img.js";   // 카드 이미지 URL·텍스트
 import { shuffle } from "./js/scenario/util.js";   // 공용 소도구(셔플 등)
@@ -275,7 +275,7 @@ import { cluesInRoom, applyInvestigateResult, nearestClueTo, setCluesDeps } from
 import { ROOMS, ROOM_INFO, ADJ } from "./js/scenario/rooms-data.js";   // 방 지오메트리·정보·인접·경유점 데이터
 import { showCardInfo, hideCardInfo, openCardZoom, closeCardZoom, zoomOpen } from "./js/scenario/tooltip.js";   // 카드 호버 정보·확대뷰
 import { renderInvestigator, updateAP, setInvDeps } from "./js/scenario/investigator.js";   // 세로형 조사자 카드·행동력
-import { showPopup, hidePopup, popupOpen, showToast, popupForced, popupCancelAct } from "./js/scenario/popup.js";   // 공용 팝업·토스트
+import { showPopup, hidePopup, popupOpen, showToast, popupForced, popupCancelAct, showCardPickPopup } from "./js/scenario/popup.js";   // 공용 팝업·토스트
 import { totalDoom, updateDoom, setPendingDoomGetter } from "./js/scenario/doom.js";   // 파멸·게이지
 import { playCutscene, playCutsceneSequence, setCutscenes, setCancelActions, csActive } from "./js/scenario/cutscene.js";   // 컷신 재생기
 import { setPhase, startInvestigatorPhase, resumeAfterCutscene, endTurnToEnemy, resumeUpkeep, PHASE_NAMES } from "./js/scenario/phases.js";   // 라운드 루프
@@ -756,7 +756,6 @@ function getTestDeck(){
    cfg = { skill, difficulty, ctx, actionLabel, targetLabel, onResolve }
    흐름: 커밋옵션 검사 → 없으면 즉시 판정 / 있으면 "커밋?" 팝업 → 커밋모드 → 판정
    ===================================================================== */
-const SKILL_KO = { willpower:"의지", intellect:"지식", combat:"전투", agility:"민첩" };
 S.roundEffects = [];   // 이번 라운드 지속 효과(정신력에 달린 문제 등). 라운드 시작(신화) 때 비움.
 S.innateUse = { round:{}, phase:{} };   // 조사자 고유능력 사용 횟수(라운드/페이즈 스코프 한정 추적)
 
@@ -1277,18 +1276,6 @@ function changeClue(delta){
    팝업
    ===================================================================== */
 // 일러스트 카드 선택 팝업 — 카드명만 텍스트로 뜨던 선택을, 카드 썸네일 가로 배열로. onPick(code) 호출.
-function showCardPickPopup(title, codes, onPick, opts){
-  opts = opts || {};
-  const grid = codes.map((c,i)=>'<div class="cpick" data-code="'+c+'" data-i="'+i+'"><img src="'+cardFront(c)+'" alt=""><span>'+((S.byCode[c]||{}).name||c)+'</span></div>').join("");
-  const html = '<div class="cpick-title">'+title+'</div><div class="cpick-row">'+grid+'</div>';
-  const cancel = opts.cancelable ? ()=>{ hidePopup(); if(opts.onCancel) opts.onCancel(); } : null;
-  showPopup(html, cancel ? [{label:"취소", act:cancel}] : [], cancel, "cpick-pop");
-  document.querySelectorAll("#popup-msg .cpick").forEach(el=>{
-    el.onclick = ()=>{ hideCardInfo(); hidePopup(); onPick(el.dataset.code, +el.dataset.i); };   // 같은 코드 여럿(쥐 떼×2) 구분용 인덱스
-    el.addEventListener("mouseenter", ()=> showCardInfo(el, el.dataset.code));   // 일러스트 호버 → 카드 텍스트(번역)
-    el.addEventListener("mouseleave", hideCardInfo);
-  });
-}
 
 S.shroudMod = S.shroudMod || {};   // 장소별 은폐 수정치(자욱한 안개 등) {roomKey:+2}
 function effShroud(key){ return (ROOMS[key].shroud||0) + (S.shroudMod[key]||0); }   // 실제 은폐값(수정치 반영)
@@ -1522,71 +1509,68 @@ function playOpeningCutscenes(){
 setHandDeps({
   canAct, eventReactionPlayable,
   discardMode: ()=>discardMode, discardOne,
-  isWeakness, playOpeningCutscenes,
+  isWeakness, playOpeningCutscenes
 });   // tryPlayCard는 play.js에서 hand가 직접 import
 
 // 조사자 모듈(js/scenario/investigator.js)에 표식 계산용 도메인 함수 주입(호버 시 사용).
-setInvDeps({ cluesInRoom, investigatorBlanked });
+setInvDeps({ investigatorBlanked });
 
 // 판정/커밋 모듈(js/scenario/skilltest.js)에 scenario1 전용 링크 주입.
-setSkillTestDeps({ SKILL_KO });   // renderPlayArea·showPersistentCard는 play.js·encounter-resolve.js, drawCards는 effects.js에서 skilltest가 직접 import
 
 // 플레이 엔진(js/scenario/play.js)에 scenario1 인라인(전투·적·반응·조사결과) 주입.
 setPlayDeps({
   closeActionMenu,
-  showCardPickPopup,
-  triggerEnterPlayReaction, applyInvestigateResult, cluesInRoom, investigatorBlanked,
+  triggerEnterPlayReaction, applyInvestigateResult, investigatorBlanked,
   effShroud, hasReactionWhen, eventReactionPlayable,
-  reactionAbilityOpen, closeAfterDefeatWindow, discardToOrigin, SKILL_KO,
+  reactionAbilityOpen, closeAfterDefeatWindow, discardToOrigin
 });   // provokeAoO·enemyAtLocation·openEnemyMenu·enemyHealth는 play.js가 enemy.js에서 직접 import
      // actionSurchargeFor·markSurcharge·attachToLocation·isThreatCard는 play.js가 threats.js에서 직접 import
 
 // 적 모듈(js/scenario/enemy.js)에 scenario1 인라인(마커렌더·반응·메뉴·데이터) 주입.
 setEnemyDeps({
-  closeAfterDefeatWindow, showCardPickPopup,
-  cluesInRoom, countInvestigatorsAt, leadInvestigatorName, investigatorBlanked,
+  closeAfterDefeatWindow, countInvestigatorsAt, leadInvestigatorName, investigatorBlanked,
   discardToOrigin, flushDefeatReaction, renderMenu, isEncounterCard,
-  ROOMS, ADJ,
+  ROOMS, ADJ
 });   // canEnemyEnterLocation·actionSurchargeFor·markSurcharge는 threats.js, takeDamageHorror는 damage.js, runEffect는 effects.js에서 직접 import
 
 // 조우해결 모듈(js/scenario/encounter-resolve.js)에 scenario1 인라인(3D투영·조우버림·데이터) 주입.
 setEncResolveDeps({
   encDiscard,
-  isEncounterCard, SKILL_KO, showCardPickPopup, cluesInRoom, investigatorBlanked,
+  isEncounterCard, investigatorBlanked
 });   // attachToLocation은 threats.js, takeDamageHorror는 damage.js, runEffect는 effects.js에서 직접 import
 
 // 진행 모듈(js/scenario/act.js)에 scenario1 인라인(종료·3D투영·조우버림·마커·데이터·막전환) 주입.
 setActDeps({
   endScenario, encDiscard,
-  ROOMS, ROOM_INFO, cluesInRoom, advanceToMansion, advanceToAct3,
+  ROOMS, ROOM_INFO, advanceToMansion, advanceToAct3
 });   // takeDamageHorror는 act.js가 damage.js에서 직접 import
 
 // 단서 모듈(js/scenario/clues.js)에 scenario1/map3d 인라인(단서변경·장소정보·방데이터·반응) 주입.
 setCluesDeps({
-  changeClue, ROOMS, firePlayedReactions,
+  changeClue, ROOMS, firePlayedReactions
 });   // discardAttachedOnInvestigate는 threats.js, applyToInvestigator는 damage.js에서 직접 import
 
 // 3D 맵 모듈(js/scenario/map3d.js)에 인라인 잔류 게임로직 주입.
 setMap3dDeps({
   canAct, effShroud,
   leadInvestigatorName,
-  askInvestigate, ritaParleyAvailable, parleyRita,
+  askInvestigate, ritaParleyAvailable, parleyRita
 });   // actionSurchargeFor·markSurcharge·attachmentIcon/Label·sweepAttachmentLeaves는 threats.js, takeDamageHorror는 damage.js에서 직접 import
 
 // 위협영역 모듈(js/scenario/threats.js)에 scenario1 인라인(출신버림·조사자 수·백지화·능력치 한글명) 주입.
 setThreatsDeps({
-  discardToOrigin, countInvestigatorsAt, investigatorBlanked, SKILL_KO,
+  discardToOrigin, countInvestigatorsAt, investigatorBlanked
 });   // runEffect는 threats.js가 effects.js에서 직접 import
 
 // 효과 엔진(js/scenario/effects.js)에 scenario1 인라인(소리·연출·출신버림·정비자원·약점판별·카드선택·처치반응·능력치 한글명) 주입.
 setEffectsDeps({
   playCoinSound, flyLastCardFromDeck, discardToOrigin, gainUpkeepResource,
-  isWeakness, showCardPickPopup, flushDefeatReaction, SKILL_KO,
+  isWeakness, flushDefeatReaction
 });
 
 // 피해할당 모듈(js/scenario/damage.js)에 scenario1 인라인(쓰러짐 판정·요구조건·처치반응·반응 아이콘) 주입.
 setDamageDeps({
-  checkInvestigatorDefeat, requiresMet, flushDefeatReaction, RX_ICON,
+  checkInvestigatorDefeat, requiresMet, flushDefeatReaction, RX_ICON
 });
 
 // ===== 로딩 화면 시스템 =====

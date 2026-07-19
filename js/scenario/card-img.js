@@ -5,9 +5,10 @@
    ※ 메뉴 화면(arkham_game)은 자체 byCode를 쓰므로 여기 대신 별도 처리.
    ===================================================================== */
 import { S } from "./state.js";
+import { EN_API } from "../shared/arkham-db.js";   // ArkhamDB 주소 단일 소스(메뉴 화면과 공용)
 
 export const PLAYER_BACK = "images/player_back.png";   // 플레이어 카드 뒷면
-export const CARD_IMG_BASE = "https://arkhamdb.com";   // 영문 카드 이미지 베이스
+export const CARD_IMG_BASE = EN_API;                   // 영문 카드 이미지 베이스
 
 // 카드 코드 → 앞면 이미지 URL(imagesrc 없으면 뒷면)
 export function cardFront(code){

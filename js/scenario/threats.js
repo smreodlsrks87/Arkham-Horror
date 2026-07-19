@@ -15,6 +15,7 @@ import { startSkillTest, applyCommittedDraws, testResultHtml } from "./skilltest
 import { cluesInRoom } from "./clues.js";
 import { updateLocInfo, renderBarricades, BARRICADE_SVG } from "./map3d.js";   // 장소정보·부착물 마커·바리케이드 아이콘(map3d)
 import { runEffect } from "./effects.js";   // 효과 실행 엔진(effects)
+import { SKILL_KO } from "./util.js";
 
 // 주입(scenario1 인라인: 출신버림·조사자 수·백지화·능력치 한글명)
 let D = {
@@ -143,7 +144,7 @@ export function runForcedThreat(p, ab, next){
       ctx:{ charCode: S.activeInvestigator?S.activeInvestigator.investigator:null, myLocation:S.cur, cluesAt:(rm)=>cluesInRoom(rm).length, blanked:D.investigatorBlanked() },
       actionLabel:name+" (강제)", targetLabel:"난이도",
       onResolve:(r)=>{
-        const base={ action:name, skill:ab.test.skill, skillLabel:D.SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base, drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
+        const base={ action:name, skill:ab.test.skill, skillLabel:SKILL_KO[ab.test.skill]||ab.test.skill, skillVal:r.base, drawn:r.drawn, total:r.total, target:r.difficulty, targetLabel:"난이도", success:r.success, autoFail:r.autoFail };
         const lines = applyCommittedDraws(r);   // 배짱 등 커밋 드로우 — 강제 위협도 능력 판정이므로 성공 시 적용(누락 버그 수정)
         const ex = (r.success?"성공 — "+name+"을(를) 버립니다.":"실패 — 유지됩니다.") + (lines.length?" "+lines.join(" "):"");
         showPopup(testResultHtml({...base, extra: ex}),
